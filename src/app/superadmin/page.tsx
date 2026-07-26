@@ -178,13 +178,10 @@ export default function SuperAdminPage() {
     }
   };
 
-  // switch to manage church
+  // switch to manage church (keep superadmin session, only change active church)
   const handleManageChurch = (church: any) => {
-    document.cookie = `active_iglesia_id=${church.id}; path=/; max-age=31536000`;
-    if (church.adminUserId) {
-      document.cookie = `session_user_id=${church.adminUserId}; path=/; max-age=31536000`;
-    }
-    alert(`Gestionando la iglesia: ${church.nombre}\nRol: Administrador (Pastor)`);
+    document.cookie = `active_iglesia_id=${church.id}; path=/; max-age=31536000; SameSite=Lax`;
+    alert(`Gestionando la iglesia: ${church.nombre}\nRol: Super Administrador`);
     router.push("/admin");
   };
 

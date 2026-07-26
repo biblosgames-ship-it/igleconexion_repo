@@ -88,8 +88,8 @@ export async function GET(request: Request) {
 
     // 5. Autenticar estableciendo cookies
     const cookieStore = await cookies();
-    cookieStore.set("session_user_id", user.id, { path: "/", maxAge: 31536000 });
-    cookieStore.set("active_iglesia_id", user.iglesia_id, { path: "/", maxAge: 31536000 });
+    cookieStore.set("session_user_id", user.id, { path: "/", maxAge: 31536000, sameSite: "lax" });
+    cookieStore.set("active_iglesia_id", user.iglesia_id, { path: "/", maxAge: 31536000, sameSite: "lax" });
 
     // 6. Redirigir basado en el rol
     if (user.rol === "SUPERADMIN") {

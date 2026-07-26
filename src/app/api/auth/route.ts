@@ -117,7 +117,7 @@ export async function POST(request: Request) {
       if (!iglesia) {
         return NextResponse.json({ error: "No se encontró ninguna iglesia registrada con ese código." }, { status: 404 });
       }
-      cookieStore.set("active_iglesia_id", iglesia.id, { path: "/", maxAge: 31536000 });
+      cookieStore.set("active_iglesia_id", iglesia.id, { path: "/", maxAge: 31536000, sameSite: "lax" });
       return NextResponse.json({ success: true, iglesiaId: iglesia.id });
     }
 
@@ -149,8 +149,8 @@ export async function POST(request: Request) {
       }
 
       if (usuario) {
-        cookieStore.set("session_user_id", usuario.id, { path: "/", maxAge: 31536000 });
-        cookieStore.set("active_iglesia_id", usuario.iglesia_id, { path: "/", maxAge: 31536000 });
+        cookieStore.set("session_user_id", usuario.id, { path: "/", maxAge: 31536000, sameSite: "lax" });
+        cookieStore.set("active_iglesia_id", usuario.iglesia_id, { path: "/", maxAge: 31536000, sameSite: "lax" });
         return NextResponse.json(mapUserToResponse(usuario));
       }
 
@@ -168,8 +168,8 @@ export async function POST(request: Request) {
         where: { rol: "SUPERADMIN" }
       });
       if (superAdminUser) {
-        cookieStore.set("session_user_id", superAdminUser.id, { path: "/", maxAge: 31536000 });
-        cookieStore.set("active_iglesia_id", superAdminUser.iglesia_id, { path: "/", maxAge: 31536000 });
+        cookieStore.set("session_user_id", superAdminUser.id, { path: "/", maxAge: 31536000, sameSite: "lax" });
+        cookieStore.set("active_iglesia_id", superAdminUser.iglesia_id, { path: "/", maxAge: 31536000, sameSite: "lax" });
         return NextResponse.json(mapUserToResponse(superAdminUser));
       }
     }
@@ -232,8 +232,8 @@ export async function POST(request: Request) {
     }
 
     // Guardar cookies de sesión y redirigir
-    cookieStore.set("session_user_id", user.id, { path: "/", maxAge: 31536000 });
-    cookieStore.set("active_iglesia_id", user.iglesia_id, { path: "/", maxAge: 31536000 });
+    cookieStore.set("session_user_id", user.id, { path: "/", maxAge: 31536000, sameSite: "lax" });
+    cookieStore.set("active_iglesia_id", user.iglesia_id, { path: "/", maxAge: 31536000, sameSite: "lax" });
 
     return NextResponse.json(mapUserToResponse(user));
 
