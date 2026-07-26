@@ -1,0 +1,266 @@
+.container {
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background-color: var(--bg-secondary);
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: var(--shadow-sm);
+}
+
+.brand {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--accent-blue);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.userMenu {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.avatar {
+  background-color: var(--accent-blue);
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.main {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 2rem;
+  color: var(--text-primary);
+  font-weight: 800;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  margin-top: 0.25rem;
+}
+
+.moduleSelector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.moduleLabel {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.select {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid #cbd5e1;
+  background-color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 300px;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+.dashboardGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.cardHeader {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+}
+
+.cardTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.tableContainer {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.th {
+  text-align: left;
+  padding: 1rem 1.5rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.td {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: middle;
+}
+
+.tr:last-child .td {
+  border-bottom: none;
+}
+
+.tr:hover .td {
+  background-color: #f8fafc;
+}
+
+.personInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.personAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.personName {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 1.05rem;
+}
+
+.personMeta {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.statusPending {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.statusProgress {
+  background-color: #e0f2fe;
+  color: #0284c7;
+}
+
+.taskList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.taskRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: white;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid #e2e8f0;
+}
+
+.taskName {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.approveBtn {
+  background-color: var(--success);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.approveBtn:hover {
+  background-color: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+}
+
+.approvedText {
+  color: var(--success);
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}

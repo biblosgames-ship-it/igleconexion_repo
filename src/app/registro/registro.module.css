@@ -1,0 +1,122 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-primary);
+  padding: 2rem;
+}
+
+.card {
+  background: var(--bg-card);
+  padding: 3rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  width: 100%;
+  max-width: 600px;
+  border: 1px solid #e2e8f0;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.title {
+  color: var(--accent-blue);
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.input, .select {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  background-color: #f8fafc;
+  font-family: inherit;
+}
+
+.input:focus, .select:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+  background-color: white;
+}
+
+.helpText {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 1rem;
+  background-color: var(--success);
+  color: white;
+  border-radius: var(--radius-md);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+}
+
+.submitBtn:hover {
+  background-color: #059669; /* hover success */
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.backBtn {
+  display: inline-block;
+  margin-top: 1.5rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-align: center;
+  width: 100%;
+  transition: color 0.2s ease;
+}
+
+.backBtn:hover {
+  color: var(--accent-blue);
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}

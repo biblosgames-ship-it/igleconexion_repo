@@ -1,0 +1,1167 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Iglesia {
+  id                    String    @id @default(uuid())
+  nombre_iglesia        String
+  subdominio_o_slug     String    @unique
+  slogan                String?
+  logo_url              String?
+  color_principal       String?   @default("#0284c7")
+  descripcion           String?
+  quienes_somos         String?
+  mision                String?
+  vision                String?
+  valores               String?
+  historia              String?
+  contacto_telefono     String?
+  contacto_email        String?
+  contacto_direccion    String?
+  link_google_maps      String?
+  link_waze             String?
+  redes_sociales        String? // JSON de redes sociales
+  recursos              String? // JSON de biblioteca de recursos
+  eventos               String? // JSON de eventos/agenda
+  imagenes_slider       String? // JSON de hasta 5 imágenes base64
+  tema_anual            String? // JSON de la visión del año y meses
+  plan                  String    @default("BASICO") // BASICO, PREMIUM, PRO
+  estado                String    @default("ACTIVO") // ACTIVO, SUSPENDIDO
+  limite_personas       Int       @default(50)
+  limite_usuarios       Int       @default(5)
+  precio_mensual        Float     @default(29.99)
+  fecha_vencimiento     DateTime?
+  estado_pago           String    @default("PAGADO") // PAGADO, PENDIENTE, VENCIDO
+  label_cuerpo_oficial  String?   @default("Cuerpo Oficial")
+  label_sociedades      String?   @default("Sociedades")
+  label_grupos_conexion String?   @default("Grupos de Conexión")
+  label_departamentos   String?   @default("Departamentos")
+  label_ministerios     String?   @default("Ministerios")
+  label_instituciones   String?   @default("Instituciones")
+  opciones_registro     String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  etapas                EtapaConfig[]
+  modulos               ModuloConfig[]
+  tareas                TareaConfig[]
+  personas              Persona[]
+  usuarios              Usuario[]
+  sociedades            Sociedad[]
+  grupo_trabajos        GrupoTrabajo[]
+  soporte_tickets       SoporteTicket[]
+  comunicados           Comunicado[]
+  transacciones         TransaccionFinanciera[]
+  peticiones_oracion    PeticionOracion[]
+  bitacora_pastoral     BitacoraPastoral[]
+  cuentas_bancarias     CuentaBancaria[]
+  cajas_chicas          CajaChica[]
+  presupuestos          Presupuesto[]
+  proyectos_fin         ProyectoFinanciero[]
+  auditorias_fin        AuditoriaFinanciera[]
+  conceptos_financieros ConceptoFinanciero[]
+  historial_pastoral    HistorialPastoral[]
+  etiquetas             Etiqueta[]
+  inventarios           Inventario[]
+  cuentas_fondo         CuentaFondo[]
+  nominas_empleados     NominaEmpleado[]
+  historiales_diezmo    HistorialDiezmo[]
+  eventos_gestionados   Evento[]
+  bienes_inventario     BienInventario[]
+  formularios           Formulario[]
+  promesaFes            PromesaFe[]
+  proyectoPromesas      ProyectoPromesa[]
+  salones               SalonEspacio[]
+  reservas_espacios     ReservaEspacio[]
+  recursos_biblioteca   RecursoBiblioteca[]
+}
+
+model Usuario {
+  id         String   @id @default(uuid())
+  iglesia_id String
+  email      String   @unique
+  password   String
+  rol        String   @default("MIEMBRO") // SUPERADMIN, ADMIN_IGLESIA, LIDER, MIEMBRO
+  persona_id String?  @unique
+  estado         String   @default("ACTIVO") // ACTIVO, SUSPENDIDO
+  paginas_acceso String?
+  createdAt      DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  iglesia                   Iglesia               @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  persona                   Persona?              @relation(fields: [persona_id], references: [id])
+  modulos_lider             LiderModulo[]
+  grupo_trabajos            MiembroGrupoTrabajo[]
+  comentarios_foro_trabajo  ForoGrupoTrabajo[]
+  comentarios_foro_sociedad ForoSociedad[]
+  comunicados_leidos        ComunicadoLeido[]
+  notificaciones            Notificacion[]
+  liderEventos              LiderEvento[]
+}
+
+model LiderModulo {
+  id         String  @id @default(uuid())
+  usuario_id String
+  modulo_id  String?
+
+  alcance_tipo      String  @default("GRUPO_CONEXION") // GLOBAL, SOCIEDAD, GRUPO_CONEXION, CUERPO_OFICIAL, DEPARTAMENTO, MINISTERIO, INSTITUCION
+  sociedad_id       String?
+  grupo_conexion_id String?
+  grupo_trabajo_id  String?
+
+  usuario        Usuario        @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  modulo         ModuloConfig?  @relation(fields: [modulo_id], references: [id], onDelete: Cascade)
+  sociedad       Sociedad?      @relation(fields: [sociedad_id], references: [id])
+  grupo_conexion GrupoConexion? @relation(fields: [grupo_conexion_id], references: [id])
+  grupo_trabajo  GrupoTrabajo?  @relation(fields: [grupo_trabajo_id], references: [id])
+}
+
+model EtapaConfig {
+  id               String @id @default(uuid())
+  iglesia_id       String
+  nombre_etapa     String
+  orden_secuencial Int
+
+  iglesia  Iglesia       @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  tareas   TareaConfig[]
+  personas Persona[]
+  formularios Formulario[]
+  eventos     Evento[]
+
+  @@unique([iglesia_id, orden_secuencial])
+}
+
+model ModuloConfig {
+  id            String @id @default(uuid())
+  iglesia_id    String
+  nombre_modulo String
+  orden         Int    @default(0)
+
+  iglesia Iglesia       @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  tareas  TareaConfig[]
+  lideres LiderModulo[]
+}
+
+model TareaConfig {
+  id             String  @id @default(uuid())
+  iglesia_id     String
+  etapa_id       String? // Opcional: permite tener procesos sin asignar a etapa
+  modulo_id      String
+  nombre_tarea   String
+  es_obligatoria Boolean @default(true)
+  dias_limite    Int? // Días límite relativos para completar la tarea
+  orden          Int     @default(0)
+
+  iglesia Iglesia      @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  etapa   EtapaConfig? @relation(fields: [etapa_id], references: [id], onDelete: Cascade)
+  modulo  ModuloConfig @relation(fields: [modulo_id], references: [id], onDelete: Cascade)
+
+  historial HistorialTarea[]
+  subtareas SubtareaConfig[]
+}
+
+model Sociedad {
+  id              String  @id @default(uuid())
+  iglesia_id      String
+  nombre_sociedad String
+  rango_edad_min  Int?
+  rango_edad_max  Int?
+  sexo_requerido  String? // "M", "F", "MIXTO"
+  logo_url        String?
+  orden           Int     @default(0)
+  descripcion     String?
+  horarios        String?
+  galeria         String? // JSON de hasta 5 imágenes base64
+
+  iglesia         Iglesia             @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  grupos_conexion GrupoConexion[]
+  lideres_modulo  LiderModulo[]
+  acuerdos        AcuerdoSociedad[]
+  agenda          AgendaSociedad[]
+  foro            ForoSociedad[]
+  asistencias     AsistenciaReunion[]
+  inventarios     Inventario[]
+  presupuestos    Presupuesto[]
+  contacto_mensajes ContactoMensaje[]
+}
+
+model GrupoConexion {
+  id                     String  @id @default(uuid())
+  sociedad_id            String
+  nombre_grupo           String
+  rango_edad_min         Int?
+  rango_edad_max         Int?
+  estado_civil_requerido String? // "SOLTERO", "CASADO" o null para cualquiera
+  sexo                   String? // "M", "F", "MIXTO"
+  lugar_reunion          String? // ej. "Salón B - Templo Principal" o "Dirección asignada"
+  dia_reunion            String? // ej. "Jueves 7:30 PM"
+  mensaje_bienvenida     String? // Mensaje de bienvenida para los integrantes
+
+  sociedad         Sociedad            @relation(fields: [sociedad_id], references: [id], onDelete: Cascade)
+  personas         Persona[]
+  lideres_modulo   LiderModulo[]
+  asistencias      AsistenciaReunion[]
+  acuerdos         AcuerdoGrupo[]
+  agenda           AgendaGrupo[]
+  comentarios_foro ForoComentario[]
+  clases_biblicas  ClaseBiblica[]
+}
+
+model Persona {
+  id               String    @id @default(uuid())
+  iglesia_id       String
+  etapa_id         String
+  nombre           String
+  telefono         String?
+  whatsapp         String?
+  fecha_nacimiento DateTime?
+  fecha_conversion DateTime?
+  es_oyente        Boolean   @default(false)
+  sexo             String? // "M", "F"
+  medio_relacion   String?
+  foto_url         String? // Foto del usuario
+
+  // Nuevos campos opcionales
+  correo                String?
+  estado_civil          String?
+  tiene_hijos           Boolean @default(false)
+  
+  familia_codigo        String?
+  rol_familiar          String? // ESPOSO, ESPOSA, HIJO, HIJA, PADRE, MADRE, HERMANO, HERMANA
+  nivel_academico       String?
+  profesion_oficio      String?
+  formacion_ministerial Boolean @default(false)
+  sector                String?
+  calle                 String?
+  numero_casa           String?
+
+  // Nómina
+  es_empleado Boolean @default(false)
+
+  grupo_conexion_id String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  iglesia                 Iglesia               @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  etapa                   EtapaConfig           @relation(fields: [etapa_id], references: [id])
+  grupo_conexion          GrupoConexion?        @relation(fields: [grupo_conexion_id], references: [id])
+  usuario                 Usuario?
+  historial_tareas        HistorialTarea[]
+  historial_subtareas     HistorialSubtarea[]
+  confirmaciones_acuerdos AcuerdoConfirmacion[]
+  comentarios_foro        ForoComentario[]
+  historial_pastoral      HistorialPastoral[]
+  etiquetas               PersonaEtiqueta[]
+  nomina                  NominaEmpleado?
+  historial_diezmos       HistorialDiezmo[]
+  asistenteEventos        AsistenteEvento[]
+  respuestas_formularios  RespuestaFormulario[]
+  promesaFes              PromesaFe[]
+}
+
+model HistorialTarea {
+  id                String    @id @default(uuid())
+  persona_id        String
+  tarea_id          String
+  completada        Boolean   @default(false)
+  fecha_completa    DateTime?
+  fecha_vencimiento DateTime? // Fecha de vencimiento exacta de la tarea
+  aprobado_por      String? // ID del líder que aprobó
+
+  persona Persona     @relation(fields: [persona_id], references: [id], onDelete: Cascade)
+  tarea   TareaConfig @relation(fields: [tarea_id], references: [id], onDelete: Cascade)
+
+  @@unique([persona_id, tarea_id])
+}
+
+model SubtareaConfig {
+  id              String @id @default(uuid())
+  tarea_config_id String
+  nombre_subtarea String
+  dias_limite     Int? // Días límite relativos para completar esta subtarea
+
+  tarea          TareaConfig         @relation(fields: [tarea_config_id], references: [id], onDelete: Cascade)
+  historial_subs HistorialSubtarea[]
+}
+
+model HistorialSubtarea {
+  id          String  @id @default(uuid())
+  persona_id  String
+  subtarea_id String
+  completada  Boolean @default(false)
+
+  persona  Persona        @relation(fields: [persona_id], references: [id], onDelete: Cascade)
+  subtarea SubtareaConfig @relation(fields: [subtarea_id], references: [id], onDelete: Cascade)
+
+  @@unique([persona_id, subtarea_id])
+}
+
+model CodigoActivacion {
+  id         String   @id @default(uuid())
+  codigo     String   @unique
+  plan       String   @default("BASICO") // BASICO, PREMIUM, PRO
+  usado      Boolean  @default(false)
+  iglesia_id String?  @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// Reunión para llevar historial de asistencias
+model AsistenciaReunion {
+  id                String   @id @default(uuid())
+  grupo_conexion_id String?
+  sociedad_id       String?
+  grupo_trabajo_id  String?
+  fecha             DateTime
+  titulo_reunion    String?  @default("Reunión Semanal del Grupo")
+  presentes_ids     String // Guardado como array JSON serializado de Persona IDs
+  createdAt         DateTime @default(now())
+
+  grupo         GrupoConexion? @relation(fields: [grupo_conexion_id], references: [id], onDelete: Cascade)
+  sociedad      Sociedad?      @relation(fields: [sociedad_id], references: [id], onDelete: Cascade)
+  grupo_trabajo GrupoTrabajo?  @relation(fields: [grupo_trabajo_id], references: [id], onDelete: Cascade)
+}
+
+// Acuerdos, avisos y anuncios fijados del grupo
+model AcuerdoGrupo {
+  id                String   @id @default(uuid())
+  grupo_conexion_id String
+  titulo            String
+  contenido         String
+  creado_por        String // Nombre del líder que publica
+  fecha_publicacion DateTime @default(now())
+
+  grupo          GrupoConexion         @relation(fields: [grupo_conexion_id], references: [id], onDelete: Cascade)
+  confirmaciones AcuerdoConfirmacion[]
+}
+
+// Cotejo de confirmación de acuerdos
+model AcuerdoConfirmacion {
+  id                 String   @id @default(uuid())
+  acuerdo_id         String
+  persona_id         String
+  confirmado         Boolean  @default(true)
+  fecha_confirmacion DateTime @default(now())
+
+  acuerdo AcuerdoGrupo @relation(fields: [acuerdo_id], references: [id], onDelete: Cascade)
+  persona Persona      @relation(fields: [persona_id], references: [id], onDelete: Cascade)
+
+  @@unique([acuerdo_id, persona_id])
+}
+
+// Eventos y agenda interna del grupo
+model AgendaGrupo {
+  id                String   @id @default(uuid())
+  grupo_conexion_id String
+  titulo            String
+  descripcion       String?
+  fecha             DateTime
+  hora              String?
+
+  grupo GrupoConexion @relation(fields: [grupo_conexion_id], references: [id], onDelete: Cascade)
+}
+
+// Foro de discusión interno del grupo
+model ForoComentario {
+  id                String   @id @default(uuid())
+  grupo_conexion_id String
+  persona_id        String
+  comentario        String
+  fecha             DateTime @default(now())
+
+  grupo   GrupoConexion @relation(fields: [grupo_conexion_id], references: [id], onDelete: Cascade)
+  persona Persona       @relation(fields: [persona_id], references: [id], onDelete: Cascade)
+}
+
+// Clase Bíblica Semanal del Grupo de Conexión
+model ClaseBiblica {
+  id                String   @id @default(uuid())
+  grupo_conexion_id String
+  fecha             DateTime
+  serie             String
+  tema              String
+  texto_clave       String
+  verdad_central    String
+  objetivo          String
+  puntos_json       String   // Array JSON: [{ titulo, citas, descripcion }]
+  creado_por        String?
+  created_at        DateTime @default(now())
+
+  grupo GrupoConexion @relation(fields: [grupo_conexion_id], references: [id], onDelete: Cascade)
+}
+
+model GrupoTrabajo {
+  id          String  @id @default(uuid())
+  iglesia_id  String
+  nombre      String
+  tipo        String // "CUERPO_OFICIAL" | "DEPARTAMENTO" | "MINISTERIO" | "INSTITUCION"
+  descripcion String?
+
+  iglesia      Iglesia               @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  miembros     MiembroGrupoTrabajo[]
+  acuerdos     AcuerdoGrupoTrabajo[]
+  agenda       AgendaGrupoTrabajo[]
+  foro         ForoGrupoTrabajo[]
+  asistencias  AsistenciaReunion[]
+  inventarios  Inventario[]
+  presupuestos Presupuesto[]
+  lideres_modulo LiderModulo[]
+}
+
+model MiembroGrupoTrabajo {
+  id               String @id @default(uuid())
+  grupo_trabajo_id String
+  usuario_id       String
+  puesto           String @default("LIDER") // e.g. "Presidente", "Líder", "Secretario", etc.
+
+  grupo_trabajo GrupoTrabajo @relation(fields: [grupo_trabajo_id], references: [id], onDelete: Cascade)
+  usuario       Usuario      @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+}
+
+model AcuerdoGrupoTrabajo {
+  id                String   @id @default(uuid())
+  grupo_trabajo_id  String
+  titulo            String
+  contenido         String
+  creado_por        String // Nombre del líder que publica
+  fecha_publicacion DateTime @default(now())
+
+  grupo_trabajo GrupoTrabajo @relation(fields: [grupo_trabajo_id], references: [id], onDelete: Cascade)
+}
+
+model AgendaGrupoTrabajo {
+  id               String   @id @default(uuid())
+  grupo_trabajo_id String
+  titulo           String
+  descripcion      String?
+  fecha            DateTime
+  hora             String?
+
+  grupo_trabajo GrupoTrabajo @relation(fields: [grupo_trabajo_id], references: [id], onDelete: Cascade)
+}
+
+model ForoGrupoTrabajo {
+  id               String   @id @default(uuid())
+  grupo_trabajo_id String
+  usuario_id       String
+  comentario       String
+  fecha            DateTime @default(now())
+
+  grupo_trabajo GrupoTrabajo @relation(fields: [grupo_trabajo_id], references: [id], onDelete: Cascade)
+  usuario       Usuario      @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+}
+
+model AcuerdoSociedad {
+  id                String   @id @default(uuid())
+  sociedad_id       String
+  titulo            String
+  contenido         String
+  creado_por        String // Nombre del líder que publica
+  fecha_publicacion DateTime @default(now())
+
+  sociedad Sociedad @relation(fields: [sociedad_id], references: [id], onDelete: Cascade)
+}
+
+model AgendaSociedad {
+  id          String   @id @default(uuid())
+  sociedad_id String
+  titulo      String
+  descripcion String?
+  fecha       DateTime
+  hora        String?
+
+  sociedad Sociedad @relation(fields: [sociedad_id], references: [id], onDelete: Cascade)
+}
+
+model ForoSociedad {
+  id          String   @id @default(uuid())
+  sociedad_id String
+  usuario_id  String
+  comentario  String
+  fecha       DateTime @default(now())
+
+  sociedad Sociedad @relation(fields: [sociedad_id], references: [id], onDelete: Cascade)
+  usuario  Usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+}
+
+model ContactoMensaje {
+  id          String   @id @default(uuid())
+  nombre      String
+  email       String
+  telefono    String
+  mensaje     String
+  sociedad_id String?
+  createdAt   DateTime @default(now())
+
+  sociedad    Sociedad? @relation(fields: [sociedad_id], references: [id], onDelete: Cascade)
+}
+
+model SoporteTicket {
+  id          String   @id @default(uuid())
+  iglesia_id  String
+  asunto      String
+  descripcion String
+  estado      String   @default("ABIERTO") // ABIERTO, EN_PROCESO, RESUELTO, CERRADO
+  prioridad   String   @default("MEDIA") // BAJA, MEDIA, ALTA, URGENTE
+  contactoNom String
+  contactoEml String
+  contactoTel String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  iglesia  Iglesia          @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  mensajes SoporteMensaje[]
+}
+
+model SoporteMensaje {
+  id        String   @id @default(uuid())
+  ticketId  String
+  remitente String // CLIENTE, SOPORTE
+  nombre    String // Nombre de quien escribe (ej: Pastor Carlos, Soporte Técnico)
+  mensaje   String
+  createdAt DateTime @default(now())
+
+  ticket SoporteTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}
+
+model Comunicado {
+  id             String   @id @default(uuid())
+  iglesia_id     String
+  titulo         String
+  contenido      String
+  imagen         String? // Imagen adjunta en base64 o URL
+  destinatario   String   @default("TODOS") // TODOS, SOCIEDAD, GRUPO_CONEXION, LIDERES
+  destinatarioId String? // ID de la sociedad o grupo de conexión específico si aplica
+  esObligatorio  Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  iglesia Iglesia           @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  leidos  ComunicadoLeido[]
+}
+
+model ComunicadoLeido {
+  id           String   @id @default(uuid())
+  comunicadoId String
+  usuarioId    String
+  createdAt    DateTime @default(now())
+
+  comunicado Comunicado @relation(fields: [comunicadoId], references: [id], onDelete: Cascade)
+  usuario    Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([comunicadoId, usuarioId])
+}
+
+// ─── MÓDULO DE FINANZAS ────────────────────────────────────────────
+model TransaccionFinanciera {
+  id             String   @id @default(uuid())
+  iglesia_id     String
+  tipo           String // INGRESO | EGRESO
+  clasificacion  String // DIEZMO, OFRENDA, PRIMICIA, PACTO, DONACION, GASTO, OTRO
+  categoria      String // DIEZMO, OFRENDA_GENERAL, OFRENDA_MISIONERA, DONACION_ESPECIAL, SERVICIOS, SALARIO, ALQUILER, BENEFICENCIA, OTRO
+  descripcion    String?
+  monto          Float
+  fecha          DateTime
+  metodo_pago    String // EFECTIVO, TRANSFERENCIA, TARJETA, CHEQUE, OTRO
+  registrado_por String // Nombre del tesorero/pastor
+  estado         String   @default("PAGADO") // PENDIENTE, PAGADO, ANULADO, REEMBOLSADO
+
+  // Relaciones y clasificaciones adicionales
+  miembro_id    String? // Relación opcional a Persona (Diezmante/Donante)
+  banco_id      String? // Relación opcional a Cuenta Bancaria si es transferencia/cheque
+  caja_chica_id String? // Relación opcional a Caja Chica si fue efectivo menor
+  proyecto_id   String? // Relación opcional si pertenece a un Proyecto (Construcción, Misiones, etc.)
+  concepto_id   String? // Relación a ConceptoFinanciero para clasificación dinámica
+  promesa_fe_id String? // Relación opcional a una Promesa de Fe
+
+  // Auditoría (No se borran registros, solo se anulan)
+  usuario_creo_id String
+  comprobante_url String? // Base64 o URL de imagen de la factura/recibo
+  factura_no      String?
+  proveedor       String?
+  departamento    String?
+  ministerio      String?
+  centro_costo    String?
+
+  cuenta_fondo_id String? // Relación a CuentaFondo (Sub-cuentas de ofrendas, gastos, ministerios)
+
+  // Conciliación Bancaria
+  conciliada          Boolean   @default(false)
+  fecha_conciliacion  DateTime?
+  referencia_bancaria String?
+
+  iglesia      Iglesia             @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  concepto     ConceptoFinanciero? @relation(fields: [concepto_id], references: [id])
+  cuenta_fondo CuentaFondo?        @relation(fields: [cuenta_fondo_id], references: [id])
+  promesa_fe   PromesaFe?          @relation(fields: [promesa_fe_id], references: [id])
+
+  evento_id String?
+  evento    Evento? @relation(fields: [evento_id], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ConceptoFinanciero {
+  id          String   @id @default(uuid())
+  iglesia_id  String
+  tipo        String // INGRESO | GASTO
+  nombre      String // Ej: "Cuotas de Eventos", "Venta de Producto", "Gasolina", etc.
+  descripcion String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  iglesia       Iglesia                 @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  transacciones TransaccionFinanciera[]
+}
+
+model CuentaFondo {
+  id          String   @id @default(uuid())
+  iglesia_id  String
+  nombre      String // Ej: "Ofrenda Pro-Templo", "Fondo de Jóvenes", "Gastos de Mantenimiento"
+  tipo        String // OFRENDA, GASTO, DEPARTAMENTO
+  balance     Float    @default(0.0)
+  descripcion String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  iglesia       Iglesia                 @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  transacciones TransaccionFinanciera[]
+}
+
+model HistorialDiezmo {
+  id             String   @id @default(uuid())
+  iglesia_id     String
+  persona_id     String
+  monto          Float
+  fecha          DateTime
+  metodo_pago    String // EFECTIVO, TRANSFERENCIA, CHEQUE
+  registrado_por String
+  createdAt      DateTime @default(now())
+
+  // Conciliación Bancaria
+  conciliada          Boolean   @default(false)
+  fecha_conciliacion  DateTime?
+  referencia_bancaria String?
+
+  iglesia Iglesia @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  persona Persona @relation(fields: [persona_id], references: [id], onDelete: Cascade)
+}
+
+model NominaEmpleado {
+  id           String    @id @default(uuid())
+  iglesia_id   String
+  persona_id   String    @unique
+  cargo        String
+  salario      Float
+  frecuencia   String // MENSUAL, QUINCENAL, SEMANAL
+  fecha_inicio DateTime?
+  estado       String    @default("ACTIVO") // ACTIVO, INACTIVO
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  iglesia Iglesia @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  persona Persona @relation(fields: [persona_id], references: [id], onDelete: Cascade)
+}
+
+// ─── MÓDULO PASTORAL: PETICIONES DE ORACIÓN ───────────────────────
+model PeticionOracion {
+  id                 String  @id @default(uuid())
+  iglesia_id         String
+  persona_id         String? // opcional si el solicitante ya es miembro registrado
+  nombre_solicitante String // nombre mostrado
+  peticion           String
+  es_confidencial    Boolean @default(false)
+  estado             String  @default("ACTIVA") // ACTIVA, ORANDO, RESPONDIDA
+
+  iglesia   Iglesia  @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── MÓDULO PASTORAL: BITÁCORA DE SEGUIMIENTO ─────────────────────
+model BitacoraPastoral {
+  id         String   @id @default(uuid())
+  iglesia_id String
+  persona_id String // a quien se visitó/llamó
+  lider_id   String // usuario que realizó el seguimiento
+  tipo       String // VISITA, LLAMADA, MENSAJE
+  notas      String
+  fecha      DateTime
+
+  iglesia   Iglesia  @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+// ─── CUENTAS BANCARIAS ──────────────────────────────────────────────
+model CuentaBancaria {
+  id            String @id @default(uuid())
+  iglesia_id    String
+  nombre_banco  String
+  numero_cuenta String
+  tipo_cuenta   String // AHORROS | CORRIENTE
+  balance       Float  @default(0.0)
+
+  iglesia   Iglesia  @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── CAJA CHICA (REGISTROS DIARIOS/MENSUALES Y ARQUEO) ──────────────
+model CajaChica {
+  id             String @id @default(uuid())
+  iglesia_id     String
+  nombre_caja    String @default("Caja Chica General")
+  balance        Float  @default(0.0)
+  limite         Float  @default(200.0)
+  responsable_id String // Relación a Usuario
+  estado         String @default("ABIERTO") // ABIERTO | CERRADO
+
+  iglesia   Iglesia  @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── PRESUPUESTOS ANUALES Y LÍMITES ────────────────────────────────
+model Presupuesto {
+  id              String  @id @default(uuid())
+  iglesia_id      String
+  anio            Int
+  periodo         String? @default("ANUAL") // ANUAL, MENSUAL-01, TRIMESTRAL-Q1, etc.
+  estado          String  @default("ENVIADO") // BORRADOR, ENVIADO, EN_REVISION, APROBADO, RECHAZADO
+  departamento    String?
+  ministerio      String?
+  proyecto_id     String?
+  monto_asignado  Float
+  monto_aprobado  Float?
+  monto_ejecutado Float   @default(0.0)
+  comentarios_finanzas String?
+
+  iglesia          Iglesia           @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  sociedad_id      String?
+  grupo_trabajo_id String?
+  sociedad         Sociedad?         @relation(fields: [sociedad_id], references: [id], onDelete: Cascade)
+  grupo_trabajo    GrupoTrabajo?     @relation(fields: [grupo_trabajo_id], references: [id], onDelete: Cascade)
+  items            PresupuestoItem[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model PresupuestoItem {
+  id              String @id @default(uuid())
+  presupuesto_id  String
+  categoria       String
+  monto_estimado  Float
+  monto_ejecutado Float  @default(0.0)
+
+  presupuesto Presupuesto @relation(fields: [presupuesto_id], references: [id], onDelete: Cascade)
+}
+
+// ─── PROYECTOS FINANCIEROS (CONSTRUCCIÓN, MISIONES, ETC.) ───────────
+model ProyectoFinanciero {
+  id          String  @id @default(uuid())
+  iglesia_id  String
+  nombre      String
+  descripcion String?
+  meta        Float
+  recaudado   Float   @default(0.0)
+  gastado     Float   @default(0.0)
+  estado      String  @default("ACTIVO") // ACTIVO | COMPLETADO | ANULADO
+
+  iglesia   Iglesia  @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── AUDITORÍA COMPLETA Y LOGS FINANCIEROS ──────────────────────────
+model AuditoriaFinanciera {
+  id             String   @id @default(uuid())
+  iglesia_id     String
+  usuario_id     String
+  usuario_nombre String
+  accion         String // CREAR | ANULAR | MODIFICAR
+  tabla_afectada String // TransaccionFinanciera, CuentaBancaria, etc.
+  registro_id    String
+  detalles       String // Cambios guardados como un objeto JSON (antes vs después)
+  ip             String?
+  dispositivo    String?
+  createdAt      DateTime @default(now())
+
+  iglesia Iglesia @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+}
+
+model Notificacion {
+  id         String   @id @default(uuid())
+  usuario_id String
+  titulo     String
+  mensaje    String
+  leido      Boolean  @default(false)
+  tipo       String   @default("INFO") // INFO, ALERTA, ASISTENCIA
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+}
+
+model HistorialPastoral {
+  id         String   @id @default(uuid())
+  iglesia_id String
+  persona_id String
+  titulo     String // ej. "Se casó", "Recibió consejería", "Fue restaurado", "Aceptó a Cristo"
+  detalle    String? // Notas adicionales
+  fecha      DateTime @default(now())
+  categoria  String // "ESPIRITUAL" | "CRECIMIENTO" | "PASTORAL" | "PERSONAL"
+  creado_por String? // Nombre del líder que lo registró o "SISTEMA"
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  iglesia Iglesia @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  persona Persona @relation(fields: [persona_id], references: [id], onDelete: Cascade)
+}
+
+model Etiqueta {
+  id                    String   @id @default(uuid())
+  iglesia_id            String
+  nombre                String
+  color                 String   @default("#ef4444")
+  icono                 String   @default("⚠️")
+  duracion_dias_defecto Int      @default(7)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  iglesia  Iglesia           @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  personas PersonaEtiqueta[]
+}
+
+model PersonaEtiqueta {
+  id          String    @id @default(uuid())
+  persona_id  String
+  etiqueta_id String
+  creado_por  String? // Nombre o correo del líder
+  notas       String? // Notas adicionales
+  fecha_fin   DateTime? // Expiración exacta (fecha_inicio + duracion_dias)
+  activa      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  persona  Persona  @relation(fields: [persona_id], references: [id], onDelete: Cascade)
+  etiqueta Etiqueta @relation(fields: [etiqueta_id], references: [id], onDelete: Cascade)
+}
+
+// Modelo para Inventario de Departamentos/Ministerios
+model Inventario {
+  id               String   @id @default(uuid())
+  iglesia_id       String
+  sociedad_id      String?
+  grupo_trabajo_id String?
+  item             String
+  cantidad         Int
+  estado           String   @default("BUENO") // "BUENO", "REGULAR", "MALO"
+  notas            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  iglesia       Iglesia       @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  sociedad      Sociedad?     @relation(fields: [sociedad_id], references: [id], onDelete: Cascade)
+  grupo_trabajo GrupoTrabajo? @relation(fields: [grupo_trabajo_id], references: [id], onDelete: Cascade)
+}
+
+// ─── GESTOR DE EVENTOS ─────────────────────────────────────────────
+model Evento {
+  id                  String    @id @default(uuid())
+  iglesia_id          String
+  nombre              String
+  descripcion         String?
+  objetivo_general    String?
+  objetivo_especifico String?
+  base_biblica        String?
+  precio              Float     @default(0)
+  presupuesto         Float     @default(0)
+  fecha_inicio        DateTime
+  fecha_fin           DateTime?
+  imagen_url          String?
+
+  resultados_texto String?
+
+  estado String @default("PLANIFICACION") // PLANIFICACION, PROMOCION, ACTIVO, FINALIZADO, CANCELADO
+  tipo   String @default("EVENTO") // EVENTO o CLASE
+
+  target_etapa_id String?
+  target_etapa    EtapaConfig? @relation(fields: [target_etapa_id], references: [id], onDelete: SetNull)
+
+  iglesia Iglesia @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+
+  asistentes    AsistenteEvento[]
+  lideres       LiderEvento[]
+  tareas        TareaEvento[]
+  materiales    MaterialEvento[]
+  transacciones TransaccionFinanciera[]
+  sesiones      SesionEvento[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AsistenteEvento {
+  id             String   @id @default(uuid())
+  evento_id      String
+  persona_id     String?
+  nombre         String? // Nombre si es externo
+  telefono       String?
+  asistio        Boolean  @default(false)
+  fecha_registro DateTime @default(now())
+
+  evento             Evento             @relation(fields: [evento_id], references: [id], onDelete: Cascade)
+  persona            Persona?           @relation(fields: [persona_id], references: [id], onDelete: Cascade)
+  asistencias_sesion AsistenciaSesion[]
+
+  @@unique([evento_id, persona_id])
+}
+
+model SesionEvento {
+  id          String             @id @default(uuid())
+  evento_id   String
+  evento      Evento             @relation(fields: [evento_id], references: [id], onDelete: Cascade)
+  nombre      String // Ej: "Clase 1: Introducción"
+  fecha       DateTime
+  asistencias AsistenciaSesion[]
+}
+
+model AsistenciaSesion {
+  id           String          @id @default(uuid())
+  sesion_id    String
+  sesion       SesionEvento    @relation(fields: [sesion_id], references: [id], onDelete: Cascade)
+  asistente_id String
+  asistente    AsistenteEvento @relation(fields: [asistente_id], references: [id], onDelete: Cascade)
+  asistio      Boolean         @default(false)
+
+  @@unique([sesion_id, asistente_id])
+}
+
+model LiderEvento {
+  id         String @id @default(uuid())
+  evento_id  String
+  usuario_id String
+  rol_evento String
+
+  evento  Evento  @relation(fields: [evento_id], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+}
+
+model TareaEvento {
+  id          String  @id @default(uuid())
+  evento_id   String
+  descripcion String
+  estado      String  @default("PENDIENTE") // PENDIENTE, COMPLETADO
+  asignado_a  String?
+
+  evento Evento @relation(fields: [evento_id], references: [id], onDelete: Cascade)
+}
+
+model MaterialEvento {
+  id           String  @id @default(uuid())
+  evento_id    String
+  item         String
+  cantidad     Int     @default(1)
+  provisto_por String?
+  estado       String  @default("FALTA") // FALTA, CONSEGUIDO
+
+  evento Evento @relation(fields: [evento_id], references: [id], onDelete: Cascade)
+}
+
+model BienInventario {
+  id                String    @id @default(uuid())
+  iglesia_id        String
+  iglesia           Iglesia   @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  nombre            String
+  descripcion       String?
+  categoria         String // Ej: Electrónica, Mobiliario, Instrumentos
+  ubicacion         String? // Dónde se encuentra (Ej: Templo, Oficina)
+  fecha_adquisicion DateTime?
+  valor_estimado    Float?
+  estado            String    @default("ACTIVO") // ACTIVO, AVERIADO, EN_MANTENIMIENTO, DADO_DE_BAJA
+  notas             String?
+
+  mantenimientos RegistroMantenimiento[]
+  prestamos      PrestamoBien[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RegistroMantenimiento {
+  id               String         @id @default(uuid())
+  bien_id          String
+  bien             BienInventario @relation(fields: [bien_id], references: [id], onDelete: Cascade)
+  tipo             String // PREVENTIVO, REPORTE_AVERIA
+  descripcion      String
+  fecha_programada DateTime?
+  fecha_realizada  DateTime?
+  costo              Float?
+  responsable        String?
+  proveedor_nombre   String?
+  proveedor_contacto String?
+  estado             String         @default("PENDIENTE") // PENDIENTE, COMPLETADO, CANCELADO
+  recurrencia        String? // NO_REPETIR, MENSUAL, TRIMESTRAL, SEMESTRAL, ANUAL
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Formulario {
+  id          String  @id @default(uuid())
+  iglesia_id  String
+  titulo      String
+  descripcion String?
+  estado      String  @default("BORRADOR") // BORRADOR, PUBLICADO, CERRADO
+
+  target_rol           String? // Ej: "LIDER"
+  target_grupo_id      String?
+  target_sociedad_id   String?
+  target_evento_id     String?
+  target_etapa_id      String?
+  es_popup_obligatorio Boolean @default(false)
+
+  target_etapa EtapaConfig? @relation(fields: [target_etapa_id], references: [id], onDelete: SetNull)
+
+  preguntas  PreguntaFormulario[]
+  respuestas RespuestaFormulario[]
+  createdAt  DateTime              @default(now())
+
+  iglesia Iglesia @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+}
+
+model PreguntaFormulario {
+  id            String  @id @default(uuid())
+  formulario_id String
+  tipo          String // TEXTO_CORTO, PARRAFO, OPCION_MULTIPLE, CASILLAS
+  pregunta      String
+  opciones      String? // JSON con las opciones si aplica
+  obligatoria   Boolean @default(false)
+  orden         Int     @default(0)
+
+  formulario Formulario @relation(fields: [formulario_id], references: [id], onDelete: Cascade)
+}
+
+model RespuestaFormulario {
+  id            String @id @default(uuid())
+  formulario_id String
+  persona_id    String
+
+  formulario Formulario         @relation(fields: [formulario_id], references: [id], onDelete: Cascade)
+  persona    Persona            @relation(fields: [persona_id], references: [id], onDelete: Cascade)
+  detalles   DetalleRespuesta[]
+  createdAt  DateTime           @default(now())
+
+  @@unique([formulario_id, persona_id]) // Evita que una persona lo llene dos veces
+}
+
+model DetalleRespuesta {
+  id           String @id @default(uuid())
+  respuesta_id String
+  pregunta_id  String
+  valor        String // Respuesta en texto plano o JSON de la opción seleccionada
+
+  respuesta RespuestaFormulario @relation(fields: [respuesta_id], references: [id], onDelete: Cascade)
+}
+
+model ProyectoPromesa {
+  id                 String    @id @default(uuid())
+  iglesia_id         String
+  nombre             String
+  descripcion        String?
+  meta_financiera    Float?
+  promocionar_hub    Boolean   @default(false)
+  imagen_url         String?
+  instrucciones_pago String?
+  fecha_inicio       DateTime
+  fecha_limite       DateTime?
+  estado             String    @default("ACTIVO") // ACTIVO, COMPLETADO, CANCELADO
+
+  iglesia   Iglesia     @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  promesas  PromesaFe[]
+  createdAt DateTime    @default(now())
+}
+
+model PromesaFe {
+  id             String    @id @default(uuid())
+  iglesia_id     String
+  persona_id     String
+  proyecto_id    String
+  monto_promesa  Float
+  monto_aportado Float     @default(0)
+  fecha_inicio   DateTime
+  fecha_limite   DateTime?
+  estado         String    @default("ACTIVA") // ACTIVA, COMPLETADA, CANCELADA
+
+  iglesia       Iglesia                 @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  persona       Persona                 @relation(fields: [persona_id], references: [id], onDelete: Cascade)
+  proyecto      ProyectoPromesa         @relation(fields: [proyecto_id], references: [id], onDelete: Cascade)
+  transacciones TransaccionFinanciera[]
+  createdAt     DateTime                @default(now())
+}
+
+model PrestamoBien {
+  id                        String         @id @default(uuid())
+  bien_id                   String
+  bien                      BienInventario @relation(fields: [bien_id], references: [id], onDelete: Cascade)
+  persona_nombre            String
+  fecha_prestamo            DateTime       @default(now())
+  fecha_devolucion_prevista DateTime?
+  fecha_devolucion_real     DateTime?
+  estado                    String         @default("PRESTADO") // PRESTADO, DEVUELTO
+  notas                     String?
+  createdAt                 DateTime       @default(now())
+  updatedAt                 DateTime       @updatedAt
+}
+
+model SalonEspacio {
+  id          String          @id @default(uuid())
+  iglesia_id  String
+  iglesia     Iglesia         @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  nombre      String
+  capacidad   Int?
+  ubicacion   String?
+  descripcion String?
+  reservas    ReservaEspacio[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model ReservaEspacio {
+  id               String       @id @default(uuid())
+  iglesia_id       String
+  iglesia          Iglesia      @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  salon_id         String
+  salon            SalonEspacio @relation(fields: [salon_id], references: [id], onDelete: Cascade)
+  dia_semana       String?      // Para recurrentes (Lunes, Martes...)
+  fecha_especifica DateTime?    // Para una fecha única
+  hora_inicio      String       // Ej: "09:00"
+  hora_fin         String       // Ej: "11:00"
+  reservado_por    String       // Ministerio, Grupo de Conexión, Departamento
+  proposito        String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
+
+model RecursoBiblioteca {
+  id              String   @id @default(uuid())
+  iglesia_id      String
+  iglesia         Iglesia  @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  titulo          String
+  descripcion     String?
+  categoria       String?  // Ej: "Estudios", "Sermones", "Manuales", "Jóvenes", "Eventos", "General"
+  tipo            String   // "PDF", "VIDEO", "GALERIA"
+  url_recurso     String   // URL directa del PDF, link de YouTube o link de imagen/galería externa
+  url_miniatura   String?  // Imagen de portada u thumbnail opcional
+  creado_por      String?  // Nombre del autor o publicador
+  tags            String?  // Etiquetas separadas por comas
+  descargas_count Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+

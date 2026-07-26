@@ -1,0 +1,17 @@
+{
+  "BASICO": {
+    "limite_personas": 100,
+    "limite_usuarios": 15,
+    "precio_mensual": 15
+  },
+  "PREMIUM": {
+    "limite_personas": 500,
+    "limite_usuarios": 50,
+    "precio_mensual": 30
+  },
+  "PRO": {
+    "limite_personas": 9999,
+    "limite_usuarios": 100,
+    "precio_mensual": 50
+  }
+}

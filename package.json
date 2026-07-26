@@ -3,15 +3,23 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -H 0.0.0.0",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
+    "@prisma/adapter-better-sqlite3": "^7.8.0",
+    "@prisma/adapter-pg": "^7.9.0",
+    "@prisma/client": "^7.8.0",
+    "better-sqlite3": "^12.11.1",
+    "jose": "^6.2.3",
     "next": "16.2.9",
+    "pg": "^8.22.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "recharts": "^3.9.2",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -19,6 +27,10 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "prisma": "^7.8.0",
     "typescript": "^5"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   }
 }
