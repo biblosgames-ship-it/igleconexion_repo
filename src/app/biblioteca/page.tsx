@@ -127,7 +127,7 @@ export default function BibliotecaPage() {
         <div className={styles.headerContent}>
           <div className={styles.titleGroup}>
             <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <img src="/iconos svg/biblioteca.svg" alt="Biblioteca" style={{ width: 36, height: 36, objectFit: 'contain' }} />
+              <img src="/Iconos SVG/biblioteca.svg" alt="Biblioteca" style={{ width: 36, height: 36, objectFit: 'contain' }} />
               Biblioteca Digital de Recursos
             </h1>
             <p className={styles.subtitle}>

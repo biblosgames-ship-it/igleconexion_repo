@@ -16,20 +16,20 @@ export default function SuperAdminPage() {
 
   const allTabs = [
     { id: 12, label: "Dashboard", title: "Reporte y Dashboard Analítico", description: "Estado y crecimiento congregacional a la luz del avance por etapas.", icon: "/Iconos/dashboard.png", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
-    { id: 1, label: "Mi Iglesia", title: "Mi Iglesia y Configuración General", description: "Gestiona los datos, colores, agenda y recursos disponibles para los miembros.", icon: "/iconos svg/Identidad-2.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
-    { id: 2, label: "Sociedades", title: "Estructura de Sociedades y Grupos", description: "Crea las Sociedades principales y subdivídelas en Grupos de Conexión.", icon: "/iconos svg/Sociedad.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
-    { id: 3, label: "Etapas de Crecimiento", title: "Estructura de la Ruta de Crecimiento", description: "Configura las Etapas del camino de crecimiento del miembro y mapea sus procesos.", icon: "/iconos svg/Etapas.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
-    { id: 4, label: "Módulos de Procesos", title: "Catálogo de Módulos y Procesos", description: "Crea los Módulos correspondientes a los departamentos de trabajo y registra las tareas.", icon: "/iconos svg/Proceso.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
-    { id: 5, label: "Liderazgo y Permisos", title: "Consola de Liderazgo y Permisos (RBAC)", description: "Organiza y clasifica a los líderes por áreas, personaliza sus categorías y crea sus directivas.", icon: "/iconos svg/servicio.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
-    { id: 6, label: "Agenda y Eventos", title: "Agenda de Actividades de la Iglesia", description: "Programa actividades semanales regulares y eventos especiales.", icon: "/iconos svg/Agenda.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
-    { id: 7, label: "Miembros", title: "Administración General de Miembros", description: "Busca, edita y gestiona la información y etapas de crecimiento de todos los miembros registrados en la iglesia.", icon: "/iconos svg/Miembros.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
+    { id: 1, label: "Mi Iglesia", title: "Mi Iglesia y Configuración General", description: "Gestiona los datos, colores, agenda y recursos disponibles para los miembros.", icon: "/Iconos SVG/Identidad-2.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
+    { id: 2, label: "Sociedades", title: "Estructura de Sociedades y Grupos", description: "Crea las Sociedades principales y subdivídelas en Grupos de Conexión.", icon: "/Iconos SVG/Sociedad.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
+    { id: 3, label: "Etapas de Crecimiento", title: "Estructura de la Ruta de Crecimiento", description: "Configura las Etapas del camino de crecimiento del miembro y mapea sus procesos.", icon: "/Iconos SVG/Etapas.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
+    { id: 4, label: "Módulos de Procesos", title: "Catálogo de Módulos y Procesos", description: "Crea los Módulos correspondientes a los departamentos de trabajo y registra las tareas.", icon: "/Iconos SVG/Proceso.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
+    { id: 5, label: "Liderazgo y Permisos", title: "Consola de Liderazgo y Permisos (RBAC)", description: "Organiza y clasifica a los líderes por áreas, personaliza sus categorías y crea sus directivas.", icon: "/Iconos SVG/servicio.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
+    { id: 6, label: "Agenda y Eventos", title: "Agenda de Actividades de la Iglesia", description: "Programa actividades semanales regulares y eventos especiales.", icon: "/Iconos SVG/Agenda.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
+    { id: 7, label: "Miembros", title: "Administración General de Miembros", description: "Busca, edita y gestiona la información y etapas de crecimiento de todos los miembros registrados en la iglesia.", icon: "/Iconos SVG/Miembros.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 9, label: "Comunicados", title: "Comunicados Oficiales", description: "Publica anuncios oficiales para toda la iglesia, sociedades específicas o grupos de líderes.", icon: "/Iconos/comunicado.png", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
-    { id: 10, label: "Finanzas", title: "Módulo de Finanzas", description: "Gestión completa de ingresos, egresos, fondos y nómina de la iglesia.", icon: "/iconos svg/finanzas.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
-    { id: 11, label: "Pastoral", title: "Módulo Pastoral", description: "Gestión de peticiones de oración y bitácora de seguimiento pastoral.", icon: "/iconos svg/pastoral.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
+    { id: 10, label: "Finanzas", title: "Módulo de Finanzas", description: "Gestión completa de ingresos, egresos, fondos y nómina de la iglesia.", icon: "/Iconos SVG/finanzas.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
+    { id: 11, label: "Pastoral", title: "Módulo Pastoral", description: "Gestión de peticiones de oración y bitácora de seguimiento pastoral.", icon: "/Iconos SVG/pastoral.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 17, label: "Templo", title: "Administración del Templo y Planta Física", description: "Administra el inventario de bienes, programar mantenimiento, control de préstamos de artículos y reservas de salones.", icon: "/Iconos/Templo.png", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
-    { id: 14, label: "Eventos y Cursos", title: "Gestión de Eventos y Cursos", description: "Administra eventos, cursos de crecimiento y check-in de asistencia.", icon: "/iconos svg/Ebento.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
-    { id: 16, label: "Formularios y Encuestas", title: "Encuestas y Formularios", description: "Crea y gestiona formularios, encuestas y recopila respuestas de los miembros.", icon: "/iconos svg/Formulario.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
-    { id: 8, label: "Soporte Técnico", title: "Soporte Técnico y Mensajería", description: "Chatea directamente con nuestro equipo de soporte técnico para resolver dudas o problemas.", icon: "/iconos svg/soporte.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] }
+    { id: 14, label: "Eventos y Cursos", title: "Gestión de Eventos y Cursos", description: "Administra eventos, cursos de crecimiento y check-in de asistencia.", icon: "/Iconos SVG/Ebento.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
+    { id: 16, label: "Formularios y Encuestas", title: "Encuestas y Formularios", description: "Crea y gestiona formularios, encuestas y recopila respuestas de los miembros.", icon: "/Iconos SVG/Formulario.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
+    { id: 8, label: "Soporte Técnico", title: "Soporte Técnico y Mensajería", description: "Chatea directamente con nuestro equipo de soporte técnico para resolver dudas o problemas.", icon: "/Iconos SVG/soporte.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] }
   ];
 
   const visibleTabs = (() => {
@@ -1854,7 +1854,7 @@ export default function SuperAdminPage() {
               <img src="/Iconos/Iglesia.png" alt="Mi Iglesia" style={{ width: 14, height: 14, objectFit: 'contain' }} /> Ver Mi Iglesia
             </Link>
             <Link href="/perfil" style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569', textDecoration: 'none', background: '#f1f5f9', padding: '0.35rem 0.75rem', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-              <img src="/iconos svg/perfil.svg" alt="Perfil" style={{ width: 14, height: 14, objectFit: 'contain' }} /> Mi Perfil
+              <img src="/Iconos SVG/perfil.svg" alt="Perfil" style={{ width: 14, height: 14, objectFit: 'contain' }} /> Mi Perfil
             </Link>
           </div>
         </header>
@@ -7333,7 +7333,7 @@ export default function SuperAdminPage() {
             onClick={() => setActiveTab(7)}
           >
             <span className={styles.mobileBottomBarIcon}>
-              <img src="/iconos svg/Miembros.svg" alt="Miembros" style={{ width: 26, height: 26, objectFit: 'contain' }} />
+              <img src="/Iconos SVG/Miembros.svg" alt="Miembros" style={{ width: 26, height: 26, objectFit: 'contain' }} />
             </span>
             <span className={styles.mobileBottomBarLabel}>Miembros</span>
           </button>
@@ -7343,7 +7343,7 @@ export default function SuperAdminPage() {
             onClick={() => setActiveTab(10)}
           >
             <span className={styles.mobileBottomBarIcon}>
-              <img src="/iconos svg/finanzas.svg" alt="Finanzas" style={{ width: 26, height: 26, objectFit: 'contain' }} />
+              <img src="/Iconos SVG/finanzas.svg" alt="Finanzas" style={{ width: 26, height: 26, objectFit: 'contain' }} />
             </span>
             <span className={styles.mobileBottomBarLabel}>Finanzas</span>
           </button>
@@ -7353,7 +7353,7 @@ export default function SuperAdminPage() {
             onClick={() => setActiveTab(11)}
           >
             <span className={styles.mobileBottomBarIcon}>
-              <img src="/iconos svg/pastoral.svg" alt="Pastoral" style={{ width: 26, height: 26, objectFit: 'contain' }} />
+              <img src="/Iconos SVG/pastoral.svg" alt="Pastoral" style={{ width: 26, height: 26, objectFit: 'contain' }} />
             </span>
             <span className={styles.mobileBottomBarLabel}>Pastoral</span>
           </button>
