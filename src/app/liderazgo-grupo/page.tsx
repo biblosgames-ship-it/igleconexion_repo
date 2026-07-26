@@ -87,7 +87,7 @@ function LiderazgoGrupoContent() {
       <div className={styles.container} style={{ padding: '3rem', textAlign: 'center' }}>
         <p style={{ color: '#ef4444', fontWeight: 600 }}>Error: No se pudo cargar el espacio de trabajo.</p>
         <Link href="/hub" className={styles.secondaryBtn} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', marginTop: '1rem', textDecoration: 'none' }}>
-          <img src="/Iconos/Iglesia.png" alt="Mi Iglesia" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> Volver a Mi Iglesia
+          <img src="/Iconos SVG/iglesia.svg" alt="Mi Iglesia" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> Volver a Mi Iglesia
         </Link>
       </div>
     );
@@ -235,7 +235,7 @@ function LiderazgoGrupoContent() {
       <header className={styles.header}>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <Link href="/hub" className={styles.backBtn} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-            <img src="/Iconos/Iglesia.png" alt="Mi Iglesia" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> Volver a Mi Iglesia
+            <img src="/Iconos SVG/iglesia.svg" alt="Mi Iglesia" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> Volver a Mi Iglesia
           </Link>
           {isAdmin && (
             <Link href="/admin" className={styles.backBtn} style={{ color: '#0284c7' }}>

@@ -452,7 +452,7 @@ export default function Hub() {
             {logo ? (
               <img src={logo} alt="Logo" style={{ width: '18px', height: '18px', objectFit: 'contain', borderRadius: '50%' }} />
             ) : (
-              <img src="/Iconos/Identidad.png" alt="Quiénes Somos" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
+              <img src="/Iconos SVG/Identidad-2.svg" alt="Quiénes Somos" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
             )}
             <span>Quiénes Somos</span>
           </button>
@@ -466,7 +466,7 @@ export default function Hub() {
               title="Comunicados Oficiales"
               style={{ position: 'relative' }}
             >
-              <img src="/Iconos/comunicado.png" alt="Comunicados" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+              <img src="/Iconos SVG/comunicado.svg" alt="Comunicados" style={{ width: 22, height: 22, objectFit: 'contain' }} />
               {comunicadosList.some(c => !c.leido) && (
                 <span style={{
                   position: 'absolute',
@@ -514,7 +514,7 @@ export default function Hub() {
             {(userRole === "SUPERADMIN" || userRole === "ADMIN_IGLESIA" || userRole === "LIDER") && (
               <Link href={userRole === "SUPERADMIN" ? "/superadmin" : "/admin"} title="Administración">
                 <button className={styles.navIcon} type="button">
-                  <img src="/Iconos/dashboard.png" alt="Administración" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                  <img src="/Iconos SVG/dashboard.svg" alt="Administración" style={{ width: 22, height: 22, objectFit: 'contain' }} />
                 </button>
               </Link>
             )}
@@ -1100,7 +1100,7 @@ export default function Hub() {
           {(userRole === "SUPERADMIN" || userRole === "ADMIN_IGLESIA" || userRole === "LIDER") && (
             <Link href={userRole === "SUPERADMIN" ? "/superadmin" : "/admin"}>
               <button className={styles.btnProfile}>
-                <img src="/Iconos/dashboard.png" alt="Admin" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> Admin
+                <img src="/Iconos SVG/dashboard.svg" alt="Admin" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> Admin
               </button>
             </Link>
           )}

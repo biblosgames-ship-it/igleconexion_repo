@@ -143,7 +143,7 @@ export default function GlobalLogin() {
             <label className={styles.label}>Código de la Iglesia</label>
             <div className={styles.inputWrapper}>
               <span className={styles.inputIcon}>
-                <img src="/Iconos/Iglesia.png" alt="Iglesia" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
+                <img src="/Iconos SVG/iglesia.svg" alt="Iglesia" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
               </span>
               <input 
                 type="text" 
@@ -177,7 +177,7 @@ export default function GlobalLogin() {
             <label className={styles.label}>Contraseña</label>
             <div className={styles.inputWrapper}>
               <span className={styles.inputIcon}>
-                <img src="/Iconos/contrasena.png" alt="Contraseña" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
+                <img src="/Iconos SVG/contrasena.svg" alt="Contraseña" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
               </span>
               <input 
                 type="password" 
