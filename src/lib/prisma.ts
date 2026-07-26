@@ -49,7 +49,7 @@ if (process.env.NODE_ENV !== "production") {
 export const prisma = new Proxy({} as PrismaClient, {
   get(_, prop) {
     const client = getClient();
-    const val = (client as Record<string | symbol, unknown>)[prop];
+    const val = (client as unknown as Record<string | symbol, unknown>)[prop];
     if (typeof val === "function") {
       return val.bind(client);
     }
