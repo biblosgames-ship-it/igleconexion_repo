@@ -195,6 +195,22 @@ export default function Perfil() {
     }
   };
 
+  const handleSwitchRole = async () => {
+    try {
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "switch-role" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        window.location.reload();
+      }
+    } catch (e) {
+      console.error("Error al cambiar de vista", e);
+    }
+  };
+
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaveLoading(true);
@@ -370,6 +386,28 @@ export default function Perfil() {
 
         </div>
         <div className={styles.headerRight}>
+          {user?.canSwitchRole && (
+            <button
+              onClick={handleSwitchRole}
+              style={{
+                background: user?.viewingAs === "MIEMBRO" ? "#f0fdf4" : "#eff6ff",
+                color: user?.viewingAs === "MIEMBRO" ? "#166534" : "#1d4ed8",
+                border: `1px solid ${user?.viewingAs === "MIEMBRO" ? "#bbf7d0" : "#bfdbfe"}`,
+                padding: "0.35rem 0.75rem",
+                borderRadius: "20px",
+                fontWeight: 600,
+                fontSize: "0.8rem",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.35rem",
+                transition: "all 0.2s"
+              }}
+              title={user?.viewingAs === "MIEMBRO" ? "Ver como Admin" : "Ver como Miembro"}
+            >
+              {user?.viewingAs === "MIEMBRO" ? "👤 Miembro" : "👑 Admin"}
+            </button>
+          )}
           <div className={styles.headerTitle}>
             Mi Perfil
           </div>

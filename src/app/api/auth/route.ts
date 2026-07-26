@@ -36,12 +36,13 @@ export async function GET() {
     const cookieStore = await cookies();
     const sessionUserId = cookieStore.get("session_user_id")?.value;
     const activeChurchId = await getActiveChurchId();
+    const viewingAsRole = cookieStore.get("viewing_as_role")?.value;
 
     if (!sessionUserId) {
       return NextResponse.json({ error: "No ha iniciado sesión" }, { status: 401 });
     }
 
-    const user = await prisma.usuario.findUnique({
+    let user = await prisma.usuario.findUnique({
       where: { id: sessionUserId },
       include: {
         persona: {
@@ -90,6 +91,63 @@ export async function GET() {
       }
     }
 
+    // Role switching: if user is SUPERADMIN and wants to view as MIEMBRO
+    if (viewingAsRole === "MIEMBRO" && user.rol === "SUPERADMIN" && user.persona_id) {
+      let miembroUser = await prisma.usuario.findFirst({
+        where: {
+          persona_id: user.persona_id,
+          iglesia_id: user.iglesia_id,
+          rol: "MIEMBRO",
+        },
+        include: {
+          persona: {
+            include: {
+              etapa: true,
+              grupo_conexion: { include: { sociedad: true } },
+              historial_tareas: { where: { completada: true } },
+            },
+          },
+        },
+      });
+
+      if (!miembroUser) {
+        miembroUser = await prisma.usuario.create({
+          data: {
+            iglesia_id: user.iglesia_id,
+            email: user.email,
+            password: user.password,
+            rol: "MIEMBRO",
+            persona_id: user.persona_id,
+            estado: "ACTIVO",
+          },
+          include: {
+            persona: {
+              include: {
+                etapa: true,
+                grupo_conexion: { include: { sociedad: true } },
+                historial_tareas: { where: { completada: true } },
+              },
+            },
+          },
+        });
+      }
+
+      if (miembroUser) {
+        const resp: any = mapUserToResponse(miembroUser);
+        resp.viewingAs = "MIEMBRO";
+        resp.canSwitchRole = true;
+        return NextResponse.json(resp);
+      }
+    }
+
+    // If superadmin is viewing as SUPERADMIN (or default), include switch info
+    if (user.rol === "SUPERADMIN" && user.persona_id) {
+      const resp: any = mapUserToResponse(user);
+      resp.viewingAs = "SUPERADMIN";
+      resp.canSwitchRole = true;
+      return NextResponse.json(resp);
+    }
+
     if (user.rol !== "SUPERADMIN") {
       const church = await prisma.iglesia.findUnique({ where: { id: user.iglesia_id } });
       if (church?.estado === "SUSPENDIDO") {
@@ -127,7 +185,22 @@ export async function POST(request: Request) {
     if (action === "logout") {
       cookieStore.delete("session_user_id");
       cookieStore.delete("active_iglesia_id");
+      cookieStore.delete("viewing_as_role");
       return NextResponse.json({ success: true });
+    }
+
+    // 1c. Cambiar modo de vista (Admin <-> Miembro)
+    if (action === "switch-role") {
+      const { viewingAs } = body;
+      if (viewingAs === "SUPERADMIN" || viewingAs === "MIEMBRO") {
+        cookieStore.set("viewing_as_role", viewingAs, { path: "/", maxAge: 31536000, sameSite: "lax" });
+        return NextResponse.json({ success: true, viewingAs });
+      }
+      // If no viewingAs, toggle current
+      const currentView = cookieStore.get("viewing_as_role")?.value;
+      const newView = currentView === "MIEMBRO" ? "SUPERADMIN" : "MIEMBRO";
+      cookieStore.set("viewing_as_role", newView, { path: "/", maxAge: 31536000, sameSite: "lax" });
+      return NextResponse.json({ success: true, viewingAs: newView });
     }
 
     // 1b. Seleccionar Iglesia Activa para Registro de Nuevos Miembros

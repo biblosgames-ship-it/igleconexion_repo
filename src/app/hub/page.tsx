@@ -43,6 +43,8 @@ export default function Hub() {
   const [userId, setUserId] = useState<string|null>(null);
   const [userPersonaId, setUserPersonaId] = useState<string|null>(null);
   const [userRole, setUserRole] = useState<string|null>(null);
+  const [canSwitchRole, setCanSwitchRole] = useState(false);
+  const [viewingAs, setViewingAs] = useState<string|null>(null);
 
   const [hasPledgedPromo, setHasPledgedPromo] = useState(false);
   const [pendingFormId, setPendingFormId] = useState<string|null>(null);
@@ -94,6 +96,8 @@ export default function Hub() {
         setUserId(dataAuth.id);
         setUserPersonaId(dataAuth.persona_id);
         setUserRole(dataAuth.rol);
+        setCanSwitchRole(dataAuth.canSwitchRole || false);
+        setViewingAs(dataAuth.viewingAs || dataAuth.rol);
 
         // Todas las llamadas en paralelo después del auth
         const [iglesiaRes, evRes, proyRes, formRes] = await Promise.all([
@@ -424,6 +428,22 @@ export default function Hub() {
   const regularEventsSorted = [...regularEvents].sort((a: any, b: any) => {
     return diasOrden.indexOf(a.diaSemana) - diasOrden.indexOf(b.diaSemana);
   });
+
+  const handleSwitchRole = async () => {
+    try {
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "switch-role" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        window.location.reload();
+      }
+    } catch (e) {
+      console.error("Error al cambiar de vista", e);
+    }
+  };
 
 
   return (
@@ -1096,8 +1116,22 @@ export default function Hub() {
           )}
         </div>
 
-        <div className={styles.footerActions} style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', alignItems: 'center' }}>
-          {(userRole === "SUPERADMIN" || userRole === "ADMIN_IGLESIA" || userRole === "LIDER") && (
+        <div className={styles.footerActions} style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          {canSwitchRole && (
+            <button 
+              className={styles.btnProfile}
+              onClick={handleSwitchRole}
+              style={{ 
+                background: viewingAs === "MIEMBRO" ? "#f0fdf4" : "#eff6ff", 
+                color: viewingAs === "MIEMBRO" ? "#166534" : "#1d4ed8",
+                border: `1px solid ${viewingAs === "MIEMBRO" ? "#bbf7d0" : "#bfdbfe"}`,
+              }}
+              title={viewingAs === "MIEMBRO" ? "Vista actual: Miembro. Cambiar a Admin" : "Vista actual: Admin. Cambiar a Miembro"}
+            >
+              {viewingAs === "MIEMBRO" ? "👤 Miembro" : "👑 Admin"}
+            </button>
+          )}
+          {(userRole === "SUPERADMIN" || userRole === "ADMIN_IGLESIA" || userRole === "LIDER") && viewingAs !== "MIEMBRO" && (
             <Link href={userRole === "SUPERADMIN" ? "/superadmin" : "/admin"}>
               <button className={styles.btnProfile}>
                 <img src="/Iconos SVG/dashboard.svg" alt="Admin" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> Admin
