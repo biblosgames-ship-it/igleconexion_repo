@@ -807,7 +807,7 @@ function GrupoContent() {
         </div>
         <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
           <Link href="/perfil" className={styles.backBtn} style={{ color: "var(--text-secondary)", display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-            <img src="/Iconos/ID.png" alt="Perfil" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> {personaNombre || "Mi Perfil"}
+            <img src="/iconos svg/perfil.svg" alt="Perfil" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> {personaNombre || "Mi Perfil"}
           </Link>
         </div>
       </header>
@@ -2615,7 +2615,7 @@ function GrupoContent() {
             </div>
             <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
               <Link href="/perfil" className={styles.primaryBtn} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', fontWeight: 700 }}>
-                <img src="/Iconos/ID.png" alt="Perfil" style={{ width: '18px', height: '18px', objectFit: 'contain' }} /> Ir a Mi Perfil y Actualizar Datos
+                <img src="/iconos svg/perfil.svg" alt="Perfil" style={{ width: '18px', height: '18px', objectFit: 'contain' }} /> Ir a Mi Perfil y Actualizar Datos
               </Link>
               <Link href="/hub" className={styles.secondaryBtn} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem' }}>
                 <img src="/Iconos/Iglesia.png" alt="Mi Iglesia" style={{ width: '18px', height: '18px', objectFit: 'contain' }} /> Volver a Mi Iglesia

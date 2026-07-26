@@ -458,7 +458,7 @@ export default function Hub() {
           </button>
           <nav className={styles.navIcons} style={{ alignItems: 'center' }}>
             <button className={styles.navIcon} onClick={() => setActiveModal("contacto")} title="Contacto y Redes">
-              <img src="/Iconos/contacto.png" alt="Contacto" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+              <img src="/iconos svg/contacto.svg" alt="Contacto" style={{ width: 22, height: 22, objectFit: 'contain' }} />
             </button>
             <button 
               className={styles.navIcon} 
@@ -486,7 +486,7 @@ export default function Hub() {
               title="Notificaciones"
               style={{ position: 'relative' }}
             >
-              <img src="/Iconos/notificaciones.png" alt="Notificaciones" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+              <img src="/iconos svg/notificaciones.svg" alt="Notificaciones" style={{ width: 22, height: 22, objectFit: 'contain' }} />
               {notificacionesList.some(n => !n.leido) && (
                 <span style={{
                   position: 'absolute',
@@ -501,15 +501,15 @@ export default function Hub() {
               )}
             </button>
             <button className={styles.navIcon} onClick={() => setActiveModal("agenda")} title="Agenda y Eventos">
-              <img src="/Iconos/Agenda.png" alt="Agenda" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+              <img src="/iconos svg/Agenda.svg" alt="Agenda" style={{ width: 22, height: 22, objectFit: 'contain' }} />
             </button>
             <Link href="/biblioteca" title="Biblioteca Digital (PDF, Videos, Galerías)">
               <button className={styles.navIcon} type="button">
-                <img src="/Iconos/biblioteca.png" alt="Biblioteca Digital" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                <img src="/iconos svg/biblioteca.svg" alt="Biblioteca Digital" style={{ width: 22, height: 22, objectFit: 'contain' }} />
               </button>
             </Link>
             <button className={styles.navIcon} onClick={() => { setShowOracionModal(true); setOracionEnviado(false); }} title="Petición de Oración">
-              <img src="/Iconos/Peticiones.png" alt="Oración" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+              <img src="/iconos svg/Peticiones.svg" alt="Oración" style={{ width: 22, height: 22, objectFit: 'contain' }} />
             </button>
             {(userRole === "SUPERADMIN" || userRole === "ADMIN_IGLESIA" || userRole === "LIDER") && (
               <Link href={userRole === "SUPERADMIN" ? "/superadmin" : "/admin"} title="Administración">
@@ -520,7 +520,7 @@ export default function Hub() {
             )}
             <Link href="/perfil" title="Mi Perfil">
               <button className={styles.navIcon} type="button">
-                <img src="/Iconos/ID.png" alt="Mi Perfil" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                <img src="/iconos svg/perfil.svg" alt="Mi Perfil" style={{ width: 22, height: 22, objectFit: 'contain' }} />
               </button>
             </Link>
           </nav>
@@ -533,7 +533,7 @@ export default function Hub() {
           <div className={styles.modalContent} onClick={e => e.stopPropagation()} style={{ maxWidth: '480px' }}>
             <div className={styles.modalHeader}>
               <span className={styles.modalTitle} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <img src="/Iconos/Peticiones.png" alt="Oración" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                <img src="/iconos svg/Peticiones.svg" alt="Oración" style={{ width: 22, height: 22, objectFit: 'contain' }} />
                 Petición de Oración
               </span>
               <button className={styles.modalCloseBtn} onClick={() => setShowOracionModal(false)}>✕</button>
@@ -1106,7 +1106,7 @@ export default function Hub() {
           )}
           <Link href="/perfil">
             <button className={styles.btnProfile}>
-              <img src="/Iconos/ID.png" alt="Perfil" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> Mi Perfil
+              <img src="/iconos svg/perfil.svg" alt="Perfil" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> Mi Perfil
             </button>
           </Link>
           <button

@@ -160,7 +160,7 @@ export default function GlobalLogin() {
             <label className={styles.label}>Correo / Usuario</label>
             <div className={styles.inputWrapper}>
               <span className={styles.inputIcon}>
-                <img src="/Iconos/ID.png" alt="Usuario" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
+                <img src="/iconos svg/perfil.svg" alt="Usuario" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
               </span>
               <input 
                 type="email" 
