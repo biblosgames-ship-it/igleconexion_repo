@@ -24,26 +24,53 @@ export async function GET() {
       return NextResponse.json({ error: "Prohibido: Líder sin permisos de menú asignados" }, { status: 403 });
     }
 
-    // 1. Fetch Etapas
-    const etapas = await prisma.etapaConfig.findMany({
-      where: { iglesia_id: defaultIglesiaId },
-      orderBy: { orden_secuencial: "asc" },
-    });
-
-    // 2. Fetch Módulos
-    const modulos = await prisma.moduloConfig.findMany({
-      where: { iglesia_id: defaultIglesiaId },
-      orderBy: { orden: "asc" },
-    });
-
-    // 3. Fetch Tareas / Procesos
-    const dbProcesos = await prisma.tareaConfig.findMany({
-      where: { iglesia_id: defaultIglesiaId },
-      orderBy: { orden: "asc" },
-      include: {
-        subtareas: true,
-      },
-    });
+    // Todas las queries en paralelo
+    const [etapas, modulos, dbProcesos, sociedades, dbGrupos, dbLideres, dbUsuarios, dbGruposTrabajo] = await Promise.all([
+      prisma.etapaConfig.findMany({
+        where: { iglesia_id: defaultIglesiaId },
+        orderBy: { orden_secuencial: "asc" },
+      }),
+      prisma.moduloConfig.findMany({
+        where: { iglesia_id: defaultIglesiaId },
+        orderBy: { orden: "asc" },
+      }),
+      prisma.tareaConfig.findMany({
+        where: { iglesia_id: defaultIglesiaId },
+        orderBy: { orden: "asc" },
+        include: { subtareas: true },
+      }),
+      prisma.sociedad.findMany({
+        where: { iglesia_id: defaultIglesiaId },
+        orderBy: { orden: "asc" },
+      }),
+      prisma.grupoConexion.findMany({
+        where: { sociedad: { iglesia_id: defaultIglesiaId } },
+        include: { sociedad: true },
+      }),
+      prisma.liderModulo.findMany({
+        where: { usuario: { iglesia_id: defaultIglesiaId } },
+        include: { usuario: { include: { persona: true } }, grupo_trabajo: true },
+      }),
+      prisma.usuario.findMany({
+        where: { iglesia_id: defaultIglesiaId },
+        include: {
+          persona: true,
+          modulos_lider: {
+            include: {
+              sociedad: true,
+              grupo_conexion: true,
+              modulo: true,
+              grupo_trabajo: true,
+            },
+          },
+        },
+        orderBy: { email: "asc" },
+      }),
+      prisma.grupoTrabajo.findMany({
+        where: { iglesia_id: defaultIglesiaId },
+        orderBy: { nombre: "asc" },
+      }),
+    ]);
 
     // Mapear al formato esperado por el frontend
     const procesos = dbProcesos.map((p) => ({
@@ -60,24 +87,6 @@ export async function GET() {
       })),
     }));
 
-    // 4. Fetch Sociedades
-    const sociedades = await prisma.sociedad.findMany({
-      where: { iglesia_id: defaultIglesiaId },
-      orderBy: { orden: "asc" },
-    });
-
-    // 5. Fetch Grupos de Conexión
-    const dbGrupos = await prisma.grupoConexion.findMany({
-      where: {
-        sociedad: {
-          iglesia_id: defaultIglesiaId,
-        },
-      },
-      include: {
-        sociedad: true,
-      },
-    });
-
     const grupos = dbGrupos.map((g) => ({
       id: g.id,
       sociedad_id: g.sociedad_id,
@@ -88,23 +97,6 @@ export async function GET() {
       sexo: (g.sexo || g.sociedad.sexo_requerido) === "M" ? "Masculino" : (g.sexo || g.sociedad.sexo_requerido) === "F" ? "Femenino" : "Mixto",
       sexo_raw: g.sexo || "",
     }));
-
-    // 6. Fetch Líderes
-    const dbLideres = await prisma.liderModulo.findMany({
-      where: {
-        usuario: {
-          iglesia_id: defaultIglesiaId,
-        },
-      },
-      include: {
-        usuario: {
-          include: {
-            persona: true,
-          },
-        },
-        grupo_trabajo: true,
-      },
-    });
 
     const lideres = dbLideres.map((l) => {
       const nombre = l.usuario.persona?.nombre || l.usuario.email.split("@")[0];
@@ -118,22 +110,6 @@ export async function GET() {
         grupo_trabajo_id: l.grupo_trabajo_id,
         grupo_trabajo_nombre: l.grupo_trabajo?.nombre || "",
       };
-    });
-
-    const dbUsuarios = await prisma.usuario.findMany({
-      where: { iglesia_id: defaultIglesiaId },
-      include: {
-        persona: true,
-        modulos_lider: {
-          include: {
-            sociedad: true,
-            grupo_conexion: true,
-            modulo: true,
-            grupo_trabajo: true,
-          },
-        },
-      },
-      orderBy: { email: "asc" },
     });
 
     const usuarios = dbUsuarios.map((u) => {
@@ -162,11 +138,6 @@ export async function GET() {
           grupo_trabajo_nombre: ml.grupo_trabajo?.nombre || "",
         })),
       };
-    });
-
-    const dbGruposTrabajo = await prisma.grupoTrabajo.findMany({
-      where: { iglesia_id: defaultIglesiaId },
-      orderBy: { nombre: "asc" }
     });
 
     const gruposTrabajo = dbGruposTrabajo.map(g => ({

@@ -41,19 +41,21 @@ export async function GET(request: Request) {
 
     const pendingForms: any[] = [];
 
+    // Batch query: get all form IDs the user already responded to (fix N+1)
+    const respondedFormIds = user?.persona_id
+      ? new Set(
+          (await prisma.respuestaFormulario.findMany({
+            where: {
+              persona_id: user.persona_id,
+              formulario_id: { in: formsPublicados.map(f => f.id) },
+            },
+            select: { formulario_id: true },
+          })).map(r => r.formulario_id)
+        )
+      : new Set();
+
     for (const form of formsPublicados) {
-      // 1. Check if user already answered (if user has persona)
-      if (user?.persona_id) {
-        const yaRespondio = await prisma.respuestaFormulario.findUnique({
-          where: {
-            formulario_id_persona_id: {
-              formulario_id: form.id,
-              persona_id: user.persona_id
-            }
-          }
-        });
-        if (yaRespondio) continue; // Already answered
-      }
+      if (respondedFormIds.has(form.id)) continue;
 
       // 2. Check Targeting criteria
       let matchesTarget = true;

@@ -90,64 +90,75 @@ export default function Hub() {
           return;
         }
 
-        const res = await fetch("/api/iglesia");
-        const data = await res.json();
-        if (!data.error) {
-          setChurchData(data);
-          setUserId(dataAuth.id);
-          setUserPersonaId(dataAuth.persona_id);
+        setUserId(dataAuth.id);
+        setUserPersonaId(dataAuth.persona_id);
+
+        // Todas las llamadas en paralelo después del auth
+        const [iglesiaRes, evRes, proyRes, formRes] = await Promise.all([
+          fetch("/api/iglesia").catch(() => null),
+          fetch("/api/eventos").catch(() => null),
+          fetch("/api/finanzas/proyectos").catch(() => null),
+          fetch("/api/formularios/pendientes").catch(() => null),
+        ]);
+
+        // Iglesia
+        if (iglesiaRes?.ok) {
+          const data = await iglesiaRes.json();
+          if (!data.error) setChurchData(data);
         }
-        
-        // Cargar eventos para promoción (evaluando etapa si aplica)
-        const evRes = await fetch("/api/eventos");
-        if (evRes.ok) {
+
+        // Eventos
+        if (evRes?.ok) {
           const eventos = await evRes.json();
           const userEtapaId = dataAuth.persona?.etapa_id;
           const promo = eventos.find((e: any) => e.estado === 'PROMOCION' && (!e.target_etapa_id || e.target_etapa_id === userEtapaId));
           if (promo) {
              setPromoEvent(promo);
-             // Verificar si ya está inscrito
              const isRegistered = promo.asistentes?.some((a:any) => a.persona_id === dataAuth.persona_id);
              setIsPromoRegistered(isRegistered);
           }
         }
 
-        // Cargar Proyectos (Promesas de Fe) para promoción
-        try {
-          const proyRes = await fetch("/api/finanzas/proyectos");
-          if (proyRes.ok) {
-            const proyectos = await proyRes.json();
-            const promoP = proyectos.find((p: any) => p.promocionar_hub && p.estado === 'ACTIVO');
-            if (promoP) {
-               setPromoProyecto(promoP);
-               // Verificar si ya hizo una promesa
-               const resProm = await fetch("/api/finanzas/promesas");
+        // Proyectos (Promesas de Fe) para promoción
+        if (proyRes?.ok) {
+          const proyectos = await proyRes.json();
+          const promoP = proyectos.find((p: any) => p.promocionar_hub && p.estado === 'ACTIVO');
+          if (promoP) {
+             setPromoProyecto(promoP);
+             const resProm = await fetch("/api/finanzas/promesas").catch(() => null);
+             if (resProm?.ok) {
                const allProm = await resProm.json();
                const hasPledged = Array.isArray(allProm) && allProm.some((p:any) => p.proyecto_id === promoP.id && p.persona_id === dataAuth.persona_id);
                setHasPledgedPromo(hasPledged);
-            }
+             }
           }
-        } catch(e) {}
+        }
 
-        fetchComunicados();
-        fetchNotificaciones();
-        
-        // Verificar Formularios Pendientes Dirigidos
-        try {
-          const formRes = await fetch("/api/formularios/pendientes");
-          if (formRes.ok) {
-            const formData = await formRes.json();
-            if (formData.pending) {
-               setPendingFormId(formData.pending);
-               setPendingFormObj(formData.pendingForm || null);
-               setPendingFormsList(formData.pendingForms || []);
-
-               if (typeof window !== 'undefined' && !sessionStorage.getItem('dismissed_form_' + formData.pending)) {
-                 setShowFormFloatingModal(true);
-               }
+        // Comunicados y notificaciones en paralelo
+        Promise.all([
+          fetch("/api/comunicados").then(r => r.json()).then(data => {
+            if (!data.error) {
+              setComunicadosList(data);
+              setMandatoryAnnouncements(data.filter((c: any) => c.esObligatorio && !c.leido));
             }
+          }).catch(() => {}),
+          fetch("/api/notificaciones").then(r => r.json()).then(data => {
+            if (!data.error) setNotificacionesList(data);
+          }).catch(() => {}),
+        ]);
+
+        // Formularios pendientes
+        if (formRes?.ok) {
+          const formData = await formRes.json();
+          if (formData.pending) {
+             setPendingFormId(formData.pending);
+             setPendingFormObj(formData.pendingForm || null);
+             setPendingFormsList(formData.pendingForms || []);
+             if (typeof window !== 'undefined' && !sessionStorage.getItem('dismissed_form_' + formData.pending)) {
+               setShowFormFloatingModal(true);
+             }
           }
-        } catch(e) {}
+        }
 
       } catch (err) {
         console.error("Error verifying authentication", err);

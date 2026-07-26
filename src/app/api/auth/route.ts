@@ -33,8 +33,6 @@ async function ensureSuperAdminExists() {
 
 export async function GET() {
   try {
-    await ensureSuperAdminExists();
-
     const cookieStore = await cookies();
     const sessionUserId = cookieStore.get("session_user_id")?.value;
     const activeChurchId = await getActiveChurchId();

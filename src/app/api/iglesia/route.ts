@@ -6,13 +6,12 @@ export async function GET() {
   try {
     const defaultIglesiaId = await getActiveChurchId();
     const userId = await getSessionUserId();
-    const userObj = userId ? await prisma.usuario.findUnique({
-      where: { id: userId },
-    }) : null;
 
-    const iglesia = await prisma.iglesia.findUnique({
-      where: { id: defaultIglesiaId },
-    });
+    // Queries iniciales en paralelo
+    const [userObj, iglesia] = await Promise.all([
+      userId ? prisma.usuario.findUnique({ where: { id: userId } }) : null,
+      prisma.iglesia.findUnique({ where: { id: defaultIglesiaId } }),
+    ]);
 
     if (!iglesia) {
       return NextResponse.json({ error: "Iglesia no encontrada" }, { status: 404 });
@@ -130,24 +129,22 @@ export async function GET() {
       }
     }
 
-    // Fetch stages and processes configured for this church
-    const etapas = await prisma.etapaConfig.findMany({
-      where: { iglesia_id: defaultIglesiaId },
-      orderBy: { orden_secuencial: "asc" },
-    });
-
-    const modulos = await prisma.moduloConfig.findMany({
-      where: { iglesia_id: defaultIglesiaId },
-      orderBy: { orden: "asc" },
-    });
-
-    const dbProcesos = await prisma.tareaConfig.findMany({
-      where: { iglesia_id: defaultIglesiaId },
-      orderBy: { orden: "asc" },
-      include: {
-        subtareas: true,
-      },
-    });
+    // Fetch stages and processes configured for this church (en paralelo)
+    const [etapas, modulos, dbProcesos] = await Promise.all([
+      prisma.etapaConfig.findMany({
+        where: { iglesia_id: defaultIglesiaId },
+        orderBy: { orden_secuencial: "asc" },
+      }),
+      prisma.moduloConfig.findMany({
+        where: { iglesia_id: defaultIglesiaId },
+        orderBy: { orden: "asc" },
+      }),
+      prisma.tareaConfig.findMany({
+        where: { iglesia_id: defaultIglesiaId },
+        orderBy: { orden: "asc" },
+        include: { subtareas: true },
+      }),
+    ]);
 
     const procesos = dbProcesos.map((p) => ({
       id: p.id,
