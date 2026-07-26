@@ -683,6 +683,18 @@ export default function Perfil() {
                     <span className={styles.badgeText} style={{ fontWeight: 'bold' }}>Configurar Iglesia</span>
                   </Link>
                 )}
+                {currentUser.rol === "LIDER" && currentUser.paginas_acceso && (
+                  <Link href="/admin" className={styles.leaderBadge} style={{ borderColor: '#0284c7', color: '#0284c7', background: '#e0f2fe' }} title="Panel de Administración">
+                    <span className={styles.badgeIcon}>⚙️</span>
+                    <span className={styles.badgeText} style={{ fontWeight: 'bold' }}>Panel de Liderazgo</span>
+                  </Link>
+                )}
+                {currentUser.rol === "SUPERADMIN" && (
+                  <Link href="/admin" className={styles.leaderBadge} style={{ borderColor: '#0284c7', color: '#0284c7', background: '#e0f2fe' }} title="Configurar esta Iglesia">
+                    <span className={styles.badgeIcon}>⚙️</span>
+                    <span className={styles.badgeText} style={{ fontWeight: 'bold' }}>Configurar Iglesia</span>
+                  </Link>
+                )}
                 {currentUser.rol === "SUPERADMIN" && (
                   <Link href="/superadmin" className={styles.leaderBadge} style={{ borderColor: '#8b5cf6', color: '#8b5cf6', background: '#f5f3ff' }} title="Consola de Super Administrador">
                     <span className={styles.badgeIcon}>👑</span>
