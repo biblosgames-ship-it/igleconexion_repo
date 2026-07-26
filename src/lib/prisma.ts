@@ -11,10 +11,11 @@ function createPrismaClient() {
   if (dbUrl.startsWith("postgresql://") || dbUrl.startsWith("postgres://")) {
     const pool = new Pool({
       connectionString: dbUrl,
-      max: 1,
+      max: 5,
       idleTimeoutMillis: 10000,
       allowExitOnIdle: true,
       connectionTimeoutMillis: 10000,
+      ssl: { rejectUnauthorized: false },
     });
     const adapter = new PrismaPg(pool);
     return new PrismaClient({
