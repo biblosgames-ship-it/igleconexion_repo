@@ -2,12 +2,25 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const redirectUri = `${appUrl}/api/auth/google/callback`;
 
+  console.log("[GOOGLE AUTH] clientId present:", !!clientId, "length:", clientId?.length);
+  console.log("[GOOGLE AUTH] clientSecret present:", !!clientSecret, "length:", clientSecret?.length);
+  console.log("[GOOGLE AUTH] appUrl:", appUrl);
+  console.log("[GOOGLE AUTH] redirectUri:", redirectUri);
+
   if (!clientId) {
     return NextResponse.json(
-      { error: "Google Client ID is not configured on the server." },
+      { error: "Google Client ID is not configured on the server.", envCheck: { hasClientId: !!clientId, hasClientSecret: !!clientSecret, appUrl } },
+      { status: 500 }
+    );
+  }
+
+  if (!clientSecret) {
+    return NextResponse.json(
+      { error: "Google Client Secret is not configured on the server." },
       { status: 500 }
     );
   }

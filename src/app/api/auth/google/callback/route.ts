@@ -28,8 +28,9 @@ export async function GET(request: Request) {
     const tokenData = await tokenResponse.json();
 
     if (tokenData.error) {
-      console.error("Token exchange error:", tokenData);
-      return NextResponse.redirect(`${appUrl}?error=Error al intercambiar código con Google.`);
+      console.error("[GOOGLE CALLBACK] Token exchange error:", JSON.stringify(tokenData));
+      console.error("[GOOGLE CALLBACK] Params sent: client_id length:", (process.env.GOOGLE_CLIENT_ID || "").length, "redirect_uri:", `${appUrl}/api/auth/google/callback`);
+      return NextResponse.redirect(`${appUrl}?error=Error al intercambiar código con Google: ${tokenData.error_description || tokenData.error}`);
     }
 
     // 2. Obtener información del usuario
