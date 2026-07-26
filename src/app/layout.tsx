@@ -17,8 +17,8 @@ export const metadata: Metadata = {
   description: "Conectando Vidas con el Propósito de Dios",
   manifest: "/manifest.json",
   icons: {
-    icon: "/Igleconexion logo.png",
-    apple: "/Igleconexion logo.png",
+    icon: "/Igleconexion logo 2.png",
+    apple: "/Igleconexion logo 2.png",
   },
 };
 
@@ -41,7 +41,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Igleconexión" />
-        <link rel="apple-touch-icon" href="/Igleconexion logo.png" />
+        <link rel="apple-touch-icon" href="/Igleconexion logo 2.png" />
       </head>
       <body>
         {children}
