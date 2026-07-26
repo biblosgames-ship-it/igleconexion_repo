@@ -123,3 +123,47 @@ export async function GET() {
     return NextResponse.json({ error: error.message });
   }
 }
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { action } = body;
+
+    if (action === "setup-leader") {
+      const superAdmin = await prisma.usuario.findFirst({ where: { rol: "SUPERADMIN" } });
+      if (!superAdmin) return NextResponse.json({ error: "No superadmin" });
+
+      const torrefuerte = await prisma.iglesia.findUnique({ where: { subdominio_o_slug: "torrefuerterd" } });
+      if (!torrefuerte) return NextResponse.json({ error: "No torrefuerterd" });
+
+      const eduDept = await prisma.grupoTrabajo.findFirst({
+        where: { iglesia_id: torrefuerte.id, nombre: "Educacion Cristiana" }
+      });
+      if (!eduDept) return NextResponse.json({ error: "No Educacion Cristiana dept" });
+
+      const existing = await prisma.miembroGrupoTrabajo.findFirst({
+        where: { usuario_id: superAdmin.id, grupo_trabajo_id: eduDept.id }
+      });
+
+      if (!existing) {
+        await prisma.miembroGrupoTrabajo.create({
+          data: {
+            usuario_id: superAdmin.id,
+            grupo_trabajo_id: eduDept.id,
+            puesto: "LIDER"
+          }
+        });
+      }
+
+      if (superAdmin.rol === "MIEMBRO") {
+        await prisma.usuario.update({ where: { id: superAdmin.id }, data: { rol: "LIDER" } });
+      }
+
+      return NextResponse.json({ success: true, message: "Superadmin added to Educacion Cristiana as LIDER" });
+    }
+
+    return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message });
+  }
+}
