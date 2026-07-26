@@ -145,7 +145,10 @@ export default function Perfil() {
             const lidData = await lidRes.json();
             if (!lidData.error && lidData.grupos) {
               const mine = lidData.grupos.filter((g: any) => 
-                g.miembros?.some((m: any) => m.usuario_id === (authData.usuario_id || authData.id))
+                g.miembros?.some((m: any) => 
+                  m.usuario_id === (authData.usuario_id || authData.id) ||
+                  (authData.persona_id && m.usuario?.persona?.id === authData.persona_id)
+                )
               );
               setMyWorkgroups(mine);
             }
@@ -751,7 +754,11 @@ export default function Perfil() {
                 </Link>
 
                 {myWorkgroups.map((group: any) => {
-                  const mb = group.miembros?.find((m: any) => m.usuario_id === currentUser.id);
+                  const mb = group.miembros?.find((m: any) => 
+                    m.usuario_id === currentUser.usuario_id ||
+                    m.usuario_id === currentUser.id ||
+                    (currentUser.persona_id && m.usuario?.persona?.id === currentUser.persona_id)
+                  );
                   const puesto = mb?.puesto || "Líder";
                   
                   let badgeColor = { border: '#10b981', color: '#10b981', bg: '#ecfdf5', icon: '💼' };

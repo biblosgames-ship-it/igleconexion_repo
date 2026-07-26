@@ -150,8 +150,20 @@ export async function GET() {
     }));
 
     // 4. Reuniones y Agenda de Departamentos / Ministerios (GrupoTrabajo)
+    // Also find other usuario records linked to same persona (cross-church membership)
+    const allUsuarioIds = [userId];
+    if (user.persona_id) {
+      const siblingUsers = await prisma.usuario.findMany({
+        where: { persona_id: user.persona_id },
+        select: { id: true },
+      });
+      for (const su of siblingUsers) {
+        if (!allUsuarioIds.includes(su.id)) allUsuarioIds.push(su.id);
+      }
+    }
+
     const misGruposTrabajo = await prisma.miembroGrupoTrabajo.findMany({
-      where: { usuario_id: userId },
+      where: { usuario_id: { in: allUsuarioIds } },
       select: { grupo_trabajo_id: true }
     });
 
