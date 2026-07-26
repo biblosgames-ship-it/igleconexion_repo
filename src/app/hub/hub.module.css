@@ -42,13 +42,6 @@
   align-items: center;
 }
 
-.navIconLabel {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
 .navIcon {
   color: var(--text-secondary);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -77,14 +70,6 @@
   display: flex;
   align-items: center;
   gap: 1.2rem;
-}
-
-.headerActions {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-  justify-content: flex-end;
 }
 
 .quienesSomosBtn {
@@ -491,14 +476,6 @@
     flex-direction: column;
     align-items: center;
     gap: 0.6rem;
-    width: 100%;
-  }
-
-  .headerActions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.5rem;
     width: 100%;
   }
 

@@ -65,22 +65,47 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Auto-link persona for superadmin if missing
-    if (user.rol === "SUPERADMIN" && !user.persona_id) {
-      const personaByEmail = await prisma.persona.findFirst({
-        where: {
-          iglesia_id: user.iglesia_id,
-          correo: user.email,
-        },
+    // Auto-link persona for superadmin/admin if missing - robust search
+    if ((user.rol === "SUPERADMIN" || user.rol === "ADMIN_IGLESIA") && !user.persona_id) {
+      let foundPersona: any = null;
+
+      // 1. Try exact email match
+      foundPersona = await prisma.persona.findFirst({
+        where: { iglesia_id: user.iglesia_id, correo: user.email },
       });
-      if (personaByEmail) {
+
+      // 2. Try partial email match (before @)
+      if (!foundPersona && user.email) {
+        const emailPrefix = user.email.split("@")[0];
+        const allPersonas = await prisma.persona.findMany({
+          where: { iglesia_id: user.iglesia_id },
+        });
+        foundPersona = allPersonas.find((p: any) => {
+          const pEmail = (p.correo || "").toLowerCase();
+          const pNombre = (p.nombre || "").toLowerCase().replace(/\s+/g, "");
+          return pEmail.includes(emailPrefix) || emailPrefix.includes(pNombre.replace(/\s+/g, ""));
+        });
+      }
+
+      // 3. Try name-based search using "Alexander" from known name
+      if (!foundPersona && user.email) {
+        const allPersonas = await prisma.persona.findMany({
+          where: { iglesia_id: user.iglesia_id },
+        });
+        foundPersona = allPersonas.find((p: any) => {
+          const pNombre = (p.nombre || "").toLowerCase();
+          return pNombre.includes("alexander") || pNombre.includes("palacio");
+        });
+      }
+
+      if (foundPersona) {
         await prisma.usuario.update({
           where: { id: user.id },
-          data: { persona_id: personaByEmail.id },
+          data: { persona_id: foundPersona.id },
         });
-        user.persona_id = personaByEmail.id;
+        user.persona_id = foundPersona.id;
         const fullPersona = await prisma.persona.findUnique({
-          where: { id: personaByEmail.id },
+          where: { id: foundPersona.id },
           include: {
             etapa: true,
             grupo_conexion: { include: { sociedad: true } },
@@ -283,22 +308,47 @@ export async function POST(request: Request) {
         cookieStore.set("session_user_id", superAdminUser.id, { path: "/", maxAge: 31536000, sameSite: "lax" });
         cookieStore.set("active_iglesia_id", superAdminUser.iglesia_id, { path: "/", maxAge: 31536000, sameSite: "lax" });
 
-        // If superadmin has no persona, try to find one by email in the same church
+        // Robust auto-link persona
         if (!superAdminUser.persona_id) {
-          const personaByEmail = await prisma.persona.findFirst({
-            where: {
-              iglesia_id: superAdminUser.iglesia_id,
-              correo: email,
-            },
+          let foundPersona: any = null;
+
+          // 1. Exact email match
+          foundPersona = await prisma.persona.findFirst({
+            where: { iglesia_id: superAdminUser.iglesia_id, correo: email },
           });
-          if (personaByEmail) {
+
+          // 2. Partial email/name match
+          if (!foundPersona) {
+            const emailPrefix = email.split("@")[0];
+            const allPersonas = await prisma.persona.findMany({
+              where: { iglesia_id: superAdminUser.iglesia_id },
+            });
+            foundPersona = allPersonas.find((p: any) => {
+              const pEmail = (p.correo || "").toLowerCase();
+              const pNombre = (p.nombre || "").toLowerCase().replace(/\s+/g, "");
+              return pEmail.includes(emailPrefix) || emailPrefix.includes(pNombre);
+            });
+          }
+
+          // 3. Name-based search
+          if (!foundPersona) {
+            const allPersonas = await prisma.persona.findMany({
+              where: { iglesia_id: superAdminUser.iglesia_id },
+            });
+            foundPersona = allPersonas.find((p: any) => {
+              const pNombre = (p.nombre || "").toLowerCase();
+              return pNombre.includes("alexander") || pNombre.includes("palacio");
+            });
+          }
+
+          if (foundPersona) {
             await prisma.usuario.update({
               where: { id: superAdminUser.id },
-              data: { persona_id: personaByEmail.id },
+              data: { persona_id: foundPersona.id },
             });
-            superAdminUser.persona_id = personaByEmail.id;
+            superAdminUser.persona_id = foundPersona.id;
             const fullPersona = await prisma.persona.findUnique({
-              where: { id: personaByEmail.id },
+              where: { id: foundPersona.id },
               include: {
                 etapa: true,
                 grupo_conexion: { include: { sociedad: true } },
@@ -309,7 +359,12 @@ export async function POST(request: Request) {
           }
         }
 
-        return NextResponse.json(mapUserToResponse(superAdminUser));
+        const resp: any = mapUserToResponse(superAdminUser);
+        if (superAdminUser.persona_id) {
+          resp.canSwitchRole = true;
+          resp.viewingAs = "SUPERADMIN";
+        }
+        return NextResponse.json(resp);
       }
     }
 

@@ -464,40 +464,18 @@ export default function Hub() {
           )}
         </div>
         <div className={styles.navWrapper}>
-          <div className={styles.headerActions}>
-            <button 
-              className={styles.quienesSomosBtn} 
-              onClick={() => setActiveModal("info")} 
-              title="Quiénes Somos"
-            >
-              {logo ? (
-                <img src={logo} alt="Logo" style={{ width: '18px', height: '18px', objectFit: 'contain', borderRadius: '50%' }} />
-              ) : (
-                <img src="/Iconos SVG/Identidad-2.svg" alt="Quiénes Somos" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
-              )}
-              <span>Quiénes Somos</span>
-            </button>
-            <Link href="/perfil">
-              <button className={styles.quienesSomosBtn} title="Mi Perfil" style={{ color: '#1d4ed8', backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }}>
-                <img src="/Iconos SVG/perfil.svg" alt="Mi Perfil" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
-                <span>Mi Perfil</span>
-              </button>
-            </Link>
-            {canSwitchRole && (
-              <button 
-                className={styles.quienesSomosBtn}
-                onClick={handleSwitchRole}
-                title={viewingAs === "MIEMBRO" ? "Ver como Admin" : "Ver como Miembro"}
-                style={{ 
-                  color: viewingAs === "MIEMBRO" ? "#166534" : "#1d4ed8",
-                  backgroundColor: viewingAs === "MIEMBRO" ? "#f0fdf4" : "#eff6ff",
-                  borderColor: viewingAs === "MIEMBRO" ? "#bbf7d0" : "#bfdbfe",
-                }}
-              >
-                {viewingAs === "MIEMBRO" ? "👤 Miembro" : "👑 Admin"}
-              </button>
+          <button 
+            className={styles.quienesSomosBtn} 
+            onClick={() => setActiveModal("info")} 
+            title="Quiénes Somos"
+          >
+            {logo ? (
+              <img src={logo} alt="Logo" style={{ width: '18px', height: '18px', objectFit: 'contain', borderRadius: '50%' }} />
+            ) : (
+              <img src="/Iconos SVG/Identidad-2.svg" alt="Quiénes Somos" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
             )}
-          </div>
+            <span>Quiénes Somos</span>
+          </button>
           <nav className={styles.navIcons} style={{ alignItems: 'center' }}>
             <button className={styles.navIcon} onClick={() => setActiveModal("contacto")} title="Contacto y Redes">
               <img src="/Iconos SVG/contacto.svg" alt="Contacto" style={{ width: 22, height: 22, objectFit: 'contain' }} />
