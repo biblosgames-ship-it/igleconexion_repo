@@ -64,6 +64,32 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // Auto-link persona for superadmin if missing
+    if (user.rol === "SUPERADMIN" && !user.persona_id) {
+      const personaByEmail = await prisma.persona.findFirst({
+        where: {
+          iglesia_id: user.iglesia_id,
+          correo: user.email,
+        },
+      });
+      if (personaByEmail) {
+        await prisma.usuario.update({
+          where: { id: user.id },
+          data: { persona_id: personaByEmail.id },
+        });
+        user.persona_id = personaByEmail.id;
+        const fullPersona = await prisma.persona.findUnique({
+          where: { id: personaByEmail.id },
+          include: {
+            etapa: true,
+            grupo_conexion: { include: { sociedad: true } },
+            historial_tareas: { where: { completada: true } },
+          },
+        });
+        (user as any).persona = fullPersona;
+      }
+    }
+
     if (user.rol !== "SUPERADMIN") {
       const church = await prisma.iglesia.findUnique({ where: { id: user.iglesia_id } });
       if (church?.estado === "SUSPENDIDO") {
@@ -163,11 +189,53 @@ export async function POST(request: Request) {
     // A. Verificar si es SuperAdmin global
     if (email === "alexpalacio29@gmail.com" && password === "superpassword") {
       const superAdminUser = await prisma.usuario.findFirst({
-        where: { rol: "SUPERADMIN" }
+        where: { rol: "SUPERADMIN" },
+        include: {
+          persona: {
+            include: {
+              etapa: true,
+              grupo_conexion: {
+                include: {
+                  sociedad: true,
+                },
+              },
+              historial_tareas: {
+                where: { completada: true },
+              },
+            },
+          },
+        },
       });
       if (superAdminUser) {
         cookieStore.set("session_user_id", superAdminUser.id, { path: "/", maxAge: 31536000, sameSite: "lax" });
         cookieStore.set("active_iglesia_id", superAdminUser.iglesia_id, { path: "/", maxAge: 31536000, sameSite: "lax" });
+
+        // If superadmin has no persona, try to find one by email in the same church
+        if (!superAdminUser.persona_id) {
+          const personaByEmail = await prisma.persona.findFirst({
+            where: {
+              iglesia_id: superAdminUser.iglesia_id,
+              correo: email,
+            },
+          });
+          if (personaByEmail) {
+            await prisma.usuario.update({
+              where: { id: superAdminUser.id },
+              data: { persona_id: personaByEmail.id },
+            });
+            superAdminUser.persona_id = personaByEmail.id;
+            const fullPersona = await prisma.persona.findUnique({
+              where: { id: personaByEmail.id },
+              include: {
+                etapa: true,
+                grupo_conexion: { include: { sociedad: true } },
+                historial_tareas: { where: { completada: true } },
+              },
+            });
+            (superAdminUser as any).persona = fullPersona;
+          }
+        }
+
         return NextResponse.json(mapUserToResponse(superAdminUser));
       }
     }

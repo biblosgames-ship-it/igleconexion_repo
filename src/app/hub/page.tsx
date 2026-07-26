@@ -42,6 +42,7 @@ export default function Hub() {
 
   const [userId, setUserId] = useState<string|null>(null);
   const [userPersonaId, setUserPersonaId] = useState<string|null>(null);
+  const [userRole, setUserRole] = useState<string|null>(null);
 
   const [hasPledgedPromo, setHasPledgedPromo] = useState(false);
   const [pendingFormId, setPendingFormId] = useState<string|null>(null);
@@ -92,6 +93,7 @@ export default function Hub() {
 
         setUserId(dataAuth.id);
         setUserPersonaId(dataAuth.persona_id);
+        setUserRole(dataAuth.rol);
 
         // Todas las llamadas en paralelo después del auth
         const [iglesiaRes, evRes, proyRes, formRes] = await Promise.all([
@@ -509,6 +511,13 @@ export default function Hub() {
             <button className={styles.navIcon} onClick={() => { setShowOracionModal(true); setOracionEnviado(false); }} title="Petición de Oración">
               <img src="/Iconos/Peticiones.png" alt="Oración" style={{ width: 22, height: 22, objectFit: 'contain' }} />
             </button>
+            {(userRole === "SUPERADMIN" || userRole === "ADMIN_IGLESIA" || userRole === "LIDER") && (
+              <Link href={userRole === "SUPERADMIN" ? "/superadmin" : "/admin"} title="Administración">
+                <button className={styles.navIcon} type="button">
+                  <img src="/Iconos/dashboard.png" alt="Administración" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                </button>
+              </Link>
+            )}
             <Link href="/perfil" title="Mi Perfil">
               <button className={styles.navIcon} type="button">
                 <img src="/Iconos/ID.png" alt="Mi Perfil" style={{ width: 22, height: 22, objectFit: 'contain' }} />
@@ -1088,6 +1097,13 @@ export default function Hub() {
         </div>
 
         <div className={styles.footerActions} style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', alignItems: 'center' }}>
+          {(userRole === "SUPERADMIN" || userRole === "ADMIN_IGLESIA" || userRole === "LIDER") && (
+            <Link href={userRole === "SUPERADMIN" ? "/superadmin" : "/admin"}>
+              <button className={styles.btnProfile}>
+                <img src="/Iconos/dashboard.png" alt="Admin" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> Admin
+              </button>
+            </Link>
+          )}
           <Link href="/perfil">
             <button className={styles.btnProfile}>
               <img src="/Iconos/ID.png" alt="Perfil" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> Mi Perfil
