@@ -17,6 +17,9 @@ export default function GlobalLogin() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
+      const savedSlug = localStorage.getItem("iglesia_slug");
+      if (savedSlug) setSlug(savedSlug);
+
       const params = new URLSearchParams(window.location.search);
       const err = params.get("error");
       if (err) {
@@ -43,6 +46,7 @@ export default function GlobalLogin() {
       if (data.error) {
         setError(data.error);
       } else {
+        localStorage.setItem("iglesia_slug", slug);
         if (data.rol === "SUPERADMIN") {
           router.push("/superadmin");
         } else if (data.rol === "ADMIN_IGLESIA") {
