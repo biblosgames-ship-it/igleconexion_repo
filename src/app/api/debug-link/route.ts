@@ -60,6 +60,40 @@ export async function GET() {
       });
     }
 
+    // 6. Department memberships for superadmin
+    let saDepartmentMemberships: any[] = [];
+    if (torrefuerte) {
+      saDepartmentMemberships = await prisma.miembroGrupoTrabajo.findMany({
+        where: { usuario_id: superAdmin.id },
+        include: {
+          grupo_trabajo: { select: { id: true, nombre: true, tipo: true } }
+        }
+      });
+    }
+
+    // 7. ALL department memberships in Torre Fuerte
+    let allTfDepartmentMemberships: any[] = [];
+    if (torrefuerte) {
+      allTfDepartmentMemberships = await prisma.miembroGrupoTrabajo.findMany({
+        where: {
+          grupo_trabajo: { iglesia_id: torrefuerte.id }
+        },
+        include: {
+          usuario: { select: { id: true, email: true, rol: true } },
+          grupo_trabajo: { select: { id: true, nombre: true, tipo: true } }
+        }
+      });
+    }
+
+    // 8. ALL grupos de trabajo in Torre Fuerte
+    let tfGruposTrabajo: any[] = [];
+    if (torrefuerte) {
+      tfGruposTrabajo = await prisma.grupoTrabajo.findMany({
+        where: { iglesia_id: torrefuerte.id },
+        select: { id: true, nombre: true, tipo: true }
+      });
+    }
+
     return NextResponse.json({
       superadmin: {
         id: superAdmin.id,
@@ -81,6 +115,9 @@ export async function GET() {
       } : null,
       tfPersonas,
       tfUsuarios,
+      saDepartmentMemberships,
+      allTfDepartmentMemberships,
+      tfGruposTrabajo,
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message });
