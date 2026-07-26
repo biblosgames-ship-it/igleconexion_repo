@@ -22,6 +22,20 @@
   gap: 0.5rem;
 }
 
+.logoName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logoSlogan {
+  font-style: italic;
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-left: 0.25rem;
+}
+
 .navIcons {
   display: flex;
   gap: 0.85rem;
@@ -424,85 +438,131 @@
 @media (max-width: 768px) {
   .header {
     flex-direction: column;
-    gap: 1rem;
-    padding: 1rem;
-    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    align-items: stretch;
   }
 
   .logo {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     text-align: center;
     justify-content: center;
     flex-wrap: wrap;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.3;
+  }
+
+  .logoName {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .logoSlogan {
+    font-size: 0.75rem;
+    display: block;
+    width: 100%;
+    margin-left: 0;
+    margin-top: 0.15rem;
+  }
+
+  .logo img {
+    max-height: 30px;
   }
 
   .navWrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.6rem;
     width: 100%;
   }
 
+  .quienesSomosBtn {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.8rem;
+    width: 100%;
+    justify-content: center;
+  }
+
   .navIcons {
-    gap: 0.6rem;
+    gap: 0.5rem;
     width: 100%;
     justify-content: center;
     flex-wrap: wrap;
   }
 
   .navIcon {
-    font-size: 1.1rem;
-    padding: 0.4rem 0.6rem;
+    width: 36px;
+    height: 36px;
   }
 
   .main {
-    padding: 1rem;
-    gap: 1.5rem;
+    padding: 0.75rem;
+    gap: 1.25rem;
   }
 
   .heroSliderContainer {
-    height: 200px;
+    height: 180px;
   }
 
   .heroTitle {
-    font-size: 1.8rem;
+    font-size: 1.4rem;
   }
 
   .heroSubtitle {
-    font-size: 1rem;
+    font-size: 0.85rem;
+  }
+
+  .heroContent {
+    padding: 1rem;
   }
 
   .registerBanner {
     flex-direction: column;
     text-align: center;
-    gap: 1.25rem;
-    padding: 1.5rem;
+    gap: 1rem;
+    padding: 1rem;
     align-items: stretch;
+  }
+
+  .registerText h3 {
+    font-size: 1.1rem;
+  }
+
+  .registerText p {
+    font-size: 0.9rem;
   }
 
   .btnPrimary {
     text-align: center;
     width: 100%;
+    padding: 0.7rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .sectionTitle {
+    font-size: 0.9rem;
   }
 
   .footer {
     display: flex !important;
     flex-direction: column !important;
-    gap: 1.5rem !important;
+    gap: 1rem !important;
     text-align: center !important;
-    padding: 1.5rem 1.5rem 2.5rem 1.5rem !important;
+    padding: 1rem 1rem 2rem 1rem !important;
   }
 
   .footerCopyright {
     order: 3 !important;
-    font-size: 0.8rem !important;
+    font-size: 0.75rem !important;
   }
 
   .footerSocials {
     order: 1 !important;
     display: flex !important;
-    gap: 1.25rem !important;
+    gap: 1rem !important;
     align-items: center !important;
     justify-content: center !important;
     width: 100% !important;
@@ -515,6 +575,47 @@
     gap: 0.5rem !important;
     align-items: center !important;
     width: 100% !important;
+    flex-wrap: wrap !important;
+  }
+
+  .btnProfile {
+    font-size: 0.75rem !important;
+    padding: 0.35rem 0.7rem !important;
+  }
+
+  .societiesGrid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .societyCard {
+    padding: 1rem;
+  }
+
+  .societyName {
+    font-size: 1rem;
+  }
+
+  .societyIcon {
+    font-size: 1.5rem;
+    padding: 0.6rem;
+  }
+
+  .modalContent {
+    max-width: 95vw;
+    margin: 0.5rem;
+  }
+
+  .modalHeader {
+    padding: 1rem;
+  }
+
+  .modalTitle {
+    font-size: 1rem;
+  }
+
+  .modalBody {
+    padding: 1rem;
   }
 }
 

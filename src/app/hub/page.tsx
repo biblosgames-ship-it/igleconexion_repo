@@ -436,9 +436,9 @@ export default function Hub() {
           ) : (
             <span>⛪</span>
           )}
-          <span>{name}</span>
+          <span className={styles.logoName}>{name}</span>
           {slogan && (
-            <span style={{ fontStyle: 'italic', color: '#64748b', fontSize: '0.9rem', fontWeight: 500, marginLeft: '0.25rem' }}>
+            <span className={styles.logoSlogan}>
               — {slogan}
             </span>
           )}

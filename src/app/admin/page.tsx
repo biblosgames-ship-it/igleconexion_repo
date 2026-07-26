@@ -1835,16 +1835,16 @@ export default function SuperAdminPage() {
             ☰
           </button>
 
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, justifyContent: 'center', marginLeft: '0.75rem' }}>
+          <div className={styles.adminTopNavbarTitleBlock}>
             <h1 className={styles.adminPageTitle} style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.25 }}>
               {visibleTabs.find(t => t.id === activeTab)?.title || visibleTabs.find(t => t.id === activeTab)?.label || "Configuración"}
             </h1>
-            <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0.15rem 0 0 0', lineHeight: 1.3, fontWeight: 500 }}>
+            <p className={styles.adminTopNavbarDesc}>
               {visibleTabs.find(t => t.id === activeTab)?.description}
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <div className={styles.adminTopNavbarActions}>
             {currentUser && currentUser.rol === "LIDER" && (
               <Link href="/lider" style={{ fontSize: '0.8rem', fontWeight: 600, color: '#0369a1', textDecoration: 'none', background: '#e0f2fe', padding: '0.35rem 0.75rem', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
                 👔 Panel de Líder
