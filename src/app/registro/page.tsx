@@ -24,6 +24,7 @@ export default function RegistroNuevoCreyente() {
   const [medioRelacion, setMedioRelacion] = useState("");
   const [fechaConversion, setFechaConversion] = useState("");
   const [esOyente, setEsOyente] = useState(false);
+  const [googlePhoto, setGooglePhoto] = useState("");
 
   // Estados para vinculación familiar
   const [familiarSearch, setFamiliarSearch] = useState("");
@@ -65,6 +66,14 @@ export default function RegistroNuevoCreyente() {
       }
     };
     loadConfig();
+
+    const params = new URLSearchParams(window.location.search);
+    const googleName = params.get("google_name");
+    const googleEmail = params.get("google_email");
+    const googlePhoto = params.get("google_photo");
+    if (googleName) setNombre(googleName);
+    if (googleEmail) setCorreo(googleEmail);
+    if (googlePhoto) setGooglePhoto(googlePhoto);
   }, []);
 
   // Búsqueda de familiares
@@ -197,6 +206,7 @@ export default function RegistroNuevoCreyente() {
       esOyente: esOyente,
       familiarId,
       rolFamiliar,
+      foto_url: googlePhoto || null,
     };
 
     try {
@@ -222,8 +232,13 @@ export default function RegistroNuevoCreyente() {
         });
       }
 
-      // Redireccionar al perfil dinámico
-      router.push("/perfil");
+      // Redireccionar al hub o perfil
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("google_name")) {
+        router.push("/hub");
+      } else {
+        router.push("/perfil");
+      }
     } catch (e) {
       console.error("Error submitting registration form", e);
     }

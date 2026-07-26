@@ -29,6 +29,7 @@ export async function POST(request: Request) {
       esOyente,
       familiarId,
       rolFamiliar,
+      foto_url,
     } = body;
 
     const defaultIglesiaId = await getActiveChurchId();
@@ -208,6 +209,7 @@ export async function POST(request: Request) {
           medio_relacion: medioRelacion || null,
           es_oyente: esOyente === true,
           fecha_conversion: esOyente ? null : parseSafeDate(fechaConversion),
+          foto_url: foto_url || null,
         },
       });
     }
