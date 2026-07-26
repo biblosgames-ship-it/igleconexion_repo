@@ -16,17 +16,22 @@ function createPrismaClient() {
       adapter,
       log: ["error", "warn"],
     });
-  } else {
-    // SQLite only for local development (optional dependency)
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { PrismaBetterSqlite3 } = require("@prisma/adapter-better-sqlite3");
-    const dbPath = path.join(process.cwd(), "dev.db");
-    const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` });
-    return new PrismaClient({
-      adapter,
-      log: ["error", "warn"],
-    });
   }
+
+  if (!dbUrl) {
+    // Build time or missing env: create a client without adapter (no queries should run)
+    return new PrismaClient({ log: ["error", "warn"] });
+  }
+
+  // SQLite only for local development (optional dependency)
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { PrismaBetterSqlite3 } = require("@prisma/adapter-better-sqlite3");
+  const dbPath = path.join(process.cwd(), "dev.db");
+  const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` });
+  return new PrismaClient({
+    adapter,
+    log: ["error", "warn"],
+  });
 }
 
 export const prisma = globalForPrisma.prisma || createPrismaClient();
