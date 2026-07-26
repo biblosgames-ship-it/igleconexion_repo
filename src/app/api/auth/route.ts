@@ -65,36 +65,56 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Auto-link persona for superadmin/admin if missing - robust search
+    // Auto-link persona for superadmin/admin if missing - robust search across ALL churches
     if ((user.rol === "SUPERADMIN" || user.rol === "ADMIN_IGLESIA") && !user.persona_id) {
       let foundPersona: any = null;
+      const searchChurchId = activeChurchId || user.iglesia_id;
 
-      // 1. Try exact email match
+      // 1. Exact email match in active church
       foundPersona = await prisma.persona.findFirst({
-        where: { iglesia_id: user.iglesia_id, correo: user.email },
+        where: { iglesia_id: searchChurchId, correo: user.email },
       });
 
-      // 2. Try partial email match (before @)
+      // 2. Exact email match in ANY church
+      if (!foundPersona) {
+        foundPersona = await prisma.persona.findFirst({
+          where: { correo: user.email },
+        });
+      }
+
+      // 3. Partial email/name match in active church
       if (!foundPersona && user.email) {
         const emailPrefix = user.email.split("@")[0];
         const allPersonas = await prisma.persona.findMany({
-          where: { iglesia_id: user.iglesia_id },
+          where: { iglesia_id: searchChurchId },
         });
         foundPersona = allPersonas.find((p: any) => {
           const pEmail = (p.correo || "").toLowerCase();
           const pNombre = (p.nombre || "").toLowerCase().replace(/\s+/g, "");
-          return pEmail.includes(emailPrefix) || emailPrefix.includes(pNombre.replace(/\s+/g, ""));
+          return pEmail.includes(emailPrefix) || emailPrefix.includes(pNombre);
         });
       }
 
-      // 3. Try name-based search using "Alexander" from known name
+      // 4. Name-based search in active church
       if (!foundPersona && user.email) {
         const allPersonas = await prisma.persona.findMany({
-          where: { iglesia_id: user.iglesia_id },
+          where: { iglesia_id: searchChurchId },
         });
         foundPersona = allPersonas.find((p: any) => {
           const pNombre = (p.nombre || "").toLowerCase();
           return pNombre.includes("alexander") || pNombre.includes("palacio");
+        });
+      }
+
+      // 5. Name-based search across ALL churches
+      if (!foundPersona) {
+        foundPersona = await prisma.persona.findFirst({
+          where: {
+            OR: [
+              { nombre: { contains: "alexander", mode: "insensitive" } },
+              { nombre: { contains: "palacio", mode: "insensitive" } },
+            ],
+          },
         });
       }
 
@@ -113,6 +133,10 @@ export async function GET() {
           },
         });
         (user as any).persona = fullPersona;
+        // If persona is in a different church, update active church
+        if (foundPersona.iglesia_id && foundPersona.iglesia_id !== activeChurchId) {
+          cookieStore.set("active_iglesia_id", foundPersona.iglesia_id, { path: "/", maxAge: 31536000, sameSite: "lax" });
+        }
       }
     }
 
@@ -305,23 +329,41 @@ export async function POST(request: Request) {
         },
       });
       if (superAdminUser) {
-        cookieStore.set("session_user_id", superAdminUser.id, { path: "/", maxAge: 31536000, sameSite: "lax" });
-        cookieStore.set("active_iglesia_id", superAdminUser.iglesia_id, { path: "/", maxAge: 31536000, sameSite: "lax" });
+        // Resolve which church to use: prefer the slug from the login form
+        let activeChurchId = superAdminUser.iglesia_id;
+        if (slug) {
+          const targetChurch = await prisma.iglesia.findUnique({
+            where: { subdominio_o_slug: slug },
+          });
+          if (targetChurch) {
+            activeChurchId = targetChurch.id;
+          }
+        }
 
-        // Robust auto-link persona
+        cookieStore.set("session_user_id", superAdminUser.id, { path: "/", maxAge: 31536000, sameSite: "lax" });
+        cookieStore.set("active_iglesia_id", activeChurchId, { path: "/", maxAge: 31536000, sameSite: "lax" });
+
+        // Robust auto-link persona - search across ALL churches
         if (!superAdminUser.persona_id) {
           let foundPersona: any = null;
 
-          // 1. Exact email match
+          // 1. Exact email match in target church
           foundPersona = await prisma.persona.findFirst({
-            where: { iglesia_id: superAdminUser.iglesia_id, correo: email },
+            where: { iglesia_id: activeChurchId, correo: email },
           });
 
-          // 2. Partial email/name match
+          // 2. Exact email match in ANY church
+          if (!foundPersona) {
+            foundPersona = await prisma.persona.findFirst({
+              where: { correo: email },
+            });
+          }
+
+          // 3. Partial email/name match in target church
           if (!foundPersona) {
             const emailPrefix = email.split("@")[0];
             const allPersonas = await prisma.persona.findMany({
-              where: { iglesia_id: superAdminUser.iglesia_id },
+              where: { iglesia_id: activeChurchId },
             });
             foundPersona = allPersonas.find((p: any) => {
               const pEmail = (p.correo || "").toLowerCase();
@@ -330,14 +372,26 @@ export async function POST(request: Request) {
             });
           }
 
-          // 3. Name-based search
+          // 4. Name-based search in target church
           if (!foundPersona) {
             const allPersonas = await prisma.persona.findMany({
-              where: { iglesia_id: superAdminUser.iglesia_id },
+              where: { iglesia_id: activeChurchId },
             });
             foundPersona = allPersonas.find((p: any) => {
               const pNombre = (p.nombre || "").toLowerCase();
               return pNombre.includes("alexander") || pNombre.includes("palacio");
+            });
+          }
+
+          // 5. Name-based search across ALL churches
+          if (!foundPersona) {
+            foundPersona = await prisma.persona.findFirst({
+              where: {
+                OR: [
+                  { nombre: { contains: "alexander", mode: "insensitive" } },
+                  { nombre: { contains: "palacio", mode: "insensitive" } },
+                ],
+              },
             });
           }
 
@@ -347,6 +401,11 @@ export async function POST(request: Request) {
               data: { persona_id: foundPersona.id },
             });
             superAdminUser.persona_id = foundPersona.id;
+            // If persona is in a different church, use that church
+            if (foundPersona.iglesia_id !== activeChurchId) {
+              activeChurchId = foundPersona.iglesia_id;
+              cookieStore.set("active_iglesia_id", activeChurchId, { path: "/", maxAge: 31536000, sameSite: "lax" });
+            }
             const fullPersona = await prisma.persona.findUnique({
               where: { id: foundPersona.id },
               include: {
@@ -360,6 +419,7 @@ export async function POST(request: Request) {
         }
 
         const resp: any = mapUserToResponse(superAdminUser);
+        resp.iglesia_id = activeChurchId;
         if (superAdminUser.persona_id) {
           resp.canSwitchRole = true;
           resp.viewingAs = "SUPERADMIN";
