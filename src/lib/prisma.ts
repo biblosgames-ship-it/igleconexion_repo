@@ -11,8 +11,7 @@ function createPrismaClient() {
   if (dbUrl.startsWith("postgresql://") || dbUrl.startsWith("postgres://")) {
     const pool = new Pool({
       connectionString: dbUrl,
-      max: 3,
-      min: 0,
+      max: 1,
       idleTimeoutMillis: 10000,
       allowExitOnIdle: true,
       connectionTimeoutMillis: 10000,
