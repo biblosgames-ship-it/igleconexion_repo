@@ -51,7 +51,62 @@ export async function GET(request: Request) {
     });
 
     if (!user) {
-      return NextResponse.redirect(`${appUrl}?error=El correo de Google (${email}) no está registrado en el sistema. Regístrate o contacta a tu administrador.`);
+      const cookieStore2 = await cookies();
+      const activeChurchId = cookieStore2.get("active_iglesia_id")?.value;
+
+      if (!activeChurchId) {
+        return NextResponse.redirect(`${appUrl}?error=El correo de Google (${email}) no está registrado. Ingresa el código de tu iglesia en el login e intenta de nuevo.`);
+      }
+
+      const church = await prisma.iglesia.findUnique({ where: { id: activeChurchId } });
+      if (!church) {
+        return NextResponse.redirect(`${appUrl}?error=No se encontró la iglesia asociada.`);
+      }
+
+      const firstStage = await prisma.etapaConfig.findFirst({
+        where: { iglesia_id: activeChurchId },
+        orderBy: { orden_secuencial: "asc" },
+      });
+
+      let etapaId = firstStage?.id;
+      if (!etapaId) {
+        const newStage = await prisma.etapaConfig.create({
+          data: {
+            iglesia_id: activeChurchId,
+            nombre_etapa: "Etapa 1: Amigos / Oyentes",
+            orden_secuencial: 1,
+          },
+        });
+        etapaId = newStage.id;
+      }
+
+      const displayName = userInfo.name || email.split("@")[0];
+
+      const newPersona = await prisma.persona.create({
+        data: {
+          iglesia_id: activeChurchId,
+          etapa_id: etapaId,
+          nombre: displayName,
+          correo: email,
+          foto_url: userInfo.picture || null,
+          sexo: userInfo.gender === "female" ? "F" : userInfo.gender === "male" ? "M" : null,
+        },
+      });
+
+      const newUser = await prisma.usuario.create({
+        data: {
+          iglesia_id: activeChurchId,
+          email,
+          password: "google-oauth",
+          rol: "MIEMBRO",
+          persona_id: newPersona.id,
+        },
+      });
+
+      cookieStore2.set("session_user_id", newUser.id, { path: "/", maxAge: 31536000 });
+      cookieStore2.set("active_iglesia_id", activeChurchId, { path: "/", maxAge: 31536000 });
+
+      return NextResponse.redirect(`${appUrl}/hub`);
     }
 
     // 4. Validar suspensiones

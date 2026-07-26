@@ -90,8 +90,32 @@ export default function GlobalLogin() {
     }
   };
 
-  const handleGoogleLogin = () => {
-    window.location.href = "/api/auth/google";
+  const handleGoogleLogin = async () => {
+    if (!slug) {
+      setError("Por favor, ingresa primero el Código de la Iglesia para poder continuar.");
+      return;
+    }
+    setError(null);
+    setUrlError(null);
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "set-active-church", slug }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setError(data.error);
+        setLoading(false);
+      } else {
+        window.location.href = "/api/auth/google";
+      }
+    } catch (err) {
+      setError("Error de conexión al servidor.");
+      setLoading(false);
+    }
   };
 
   return (
