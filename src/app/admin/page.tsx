@@ -1067,12 +1067,15 @@ export default function SuperAdminPage() {
   };
 
   // Valores únicos para los selects de filtro
-  const uniqueProfesiones = [...new Set(miembros.map(m => m.profesion || m.profesion_oficio).filter(Boolean))].sort();
-  const uniqueNiveles = [...new Set(miembros.map(m => m.nivel_academico).filter(Boolean))].sort();
+  const uniqueProfesiones = [...new Set(miembros.map(m => m.profesion_oficio).filter(Boolean))].sort();
+  const nivelesAcademicos = ["Básico", "Bachiller", "Técnico", "Universitario", "Postgrado / Maestría"];
+  const uniqueNiveles = nivelesAcademicos.filter(n => miembros.some(m => m.nivel_academico === n));
   const uniqueEstadosCiviles = [...new Set(miembros.map(m => m.estado_civil).filter(Boolean))].sort();
+  const uniqueGruposConexion = [...new Set(miembros.map(m => m.grupo_conexion).filter(Boolean))].sort();
+  const uniqueSociedades = [...new Set(miembros.map(m => m.sociedad).filter(s => s && s !== 'Sociedad General'))].sort();
 
   // Filtros avanzados del listado (Tab 7)
-  const hasActiveFilters = filtersActive || filterSexo || filterEdadMin || filterEdadMax || filterGrupoConexion || filterProfesion || filterNivelAcademico || filterEstadoCivil || filterEtapa;
+  const hasActiveFilters = filtersActive || filterSexo || filterEdadMin || filterEdadMax || filterGrupoConexion || filterProfesion || filterNivelAcademico || filterEstadoCivil || filterEtapa || memberSearchTerm;
 
   const displayMiembros = (() => {
     if (!hasActiveFilters) {
@@ -1086,8 +1089,8 @@ export default function SuperAdminPage() {
         if (filterEdadMin && edad < parseInt(filterEdadMin)) return false;
         if (filterEdadMax && edad > parseInt(filterEdadMax)) return false;
       }
-      if (filterGrupoConexion && m.grupo_conexion !== filterGrupoConexion) return false;
-      if (filterProfesion && (m.profesion || m.profesion_oficio || '') !== filterProfesion) return false;
+      if (filterGrupoConexion && m.grupo_conexion !== filterGrupoConexion && m.sociedad !== filterGrupoConexion) return false;
+      if (filterProfesion && (m.profesion_oficio || '') !== filterProfesion) return false;
       if (filterNivelAcademico && (m.nivel_academico || '') !== filterNivelAcademico) return false;
       if (filterEstadoCivil && (m.estado_civil || '') !== filterEstadoCivil) return false;
       if (filterEtapa && m.etapa_id !== filterEtapa) return false;
@@ -5282,12 +5285,23 @@ export default function SuperAdminPage() {
                     <input type="number" min="0" max="120" placeholder="Ej: 65" value={filterEdadMax} onChange={(e) => setFilterEdadMax(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Grupo de Conexión</label>
+                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Grupo de Conexión / Sociedad</label>
                     <select value={filterGrupoConexion} onChange={(e) => setFilterGrupoConexion(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
                       <option value="">Todos</option>
-                      {[...new Set(miembros.map(m => m.grupo_conexion).filter(Boolean))].sort().map(g => (
-                        <option key={g} value={g}>{g}</option>
-                      ))}
+                      {uniqueSociedades.length > 0 && (
+                        <optgroup label="Sociedades">
+                          {uniqueSociedades.map(s => (
+                            <option key={`soc-${s}`} value={s}>{s}</option>
+                          ))}
+                        </optgroup>
+                      )}
+                      {uniqueGruposConexion.length > 0 && (
+                        <optgroup label="Grupos de Conexión">
+                          {uniqueGruposConexion.map(g => (
+                            <option key={`gc-${g}`} value={g}>{g}</option>
+                          ))}
+                        </optgroup>
+                      )}
                     </select>
                   </div>
                   <div>

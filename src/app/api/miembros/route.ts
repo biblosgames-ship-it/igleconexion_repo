@@ -61,6 +61,9 @@ export async function GET() {
         rol_familiar: m.rol_familiar,
         sexo: m.sexo,
         fecha_nacimiento: m.fecha_nacimiento,
+        profesion_oficio: m.profesion_oficio || null,
+        nivel_academico: m.nivel_academico || null,
+        estado_civil: m.estado_civil || null,
         etiquetas: m.etiquetas.map((pe) => ({
           id: pe.id,
           etiqueta_id: pe.etiqueta_id,
