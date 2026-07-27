@@ -47,6 +47,15 @@ function GrupoContent() {
   // Kanban details modal
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [activeLeaderStageId, setActiveLeaderStageId] = useState<string>("");
+  const [expandedKanbanCards, setExpandedKanbanCards] = useState<Set<string>>(new Set());
+  const [isMobileKanban, setIsMobileKanban] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobileKanban(window.innerWidth <= 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   // Forms states
   const [newCommentText, setNewCommentText] = useState("");
@@ -1686,8 +1695,14 @@ function GrupoContent() {
                   const stageMembersRaw = selectedDirigido.personas?.filter((p: any) => p.etapa_id === activeLeaderStageId) || [];
                   const stageTasks = activeProcesos.filter((p: any) => p.etapa_id === activeLeaderStageId).sort((a: any, b: any) => (a.orden || 0) - (b.orden || 0));
 
-                  // Ordenar miembros de manera inteligente: primero los que tienen tareas pendientes (ordenados por urgencia de fecha límite) y al final los que completaron la etapa.
+                  // Ordenar miembros: primero con alertas/etiquetas, luego tareas vencidas, luego pendientes, luego alfabético
                   const stageMembers = [...stageMembersRaw].sort((a: any, b: any) => {
+                    // 0. Etiquetas/alertas activas van primero
+                    const tagsA = a.etiquetas?.length || 0;
+                    const tagsB = b.etiquetas?.length || 0;
+                    if (tagsA > 0 && tagsB === 0) return -1;
+                    if (tagsA === 0 && tagsB > 0) return 1;
+
                     const completedA = a.historial_tareas?.filter((ht: any) => ht.completada).map((ht: any) => ht.tarea_id) || [];
                     const pendingA = stageTasks.find((t: any) => !completedA.includes(t.id));
                     
@@ -1703,7 +1718,7 @@ function GrupoContent() {
                       return (a.nombre || '').localeCompare(b.nombre || '');
                     }
 
-                    // 3. Si ambos tienen tareas pendientes, ordenar por días restantes (el más vencido/cercano a vencer va primero)
+                    // 3. Si ambos tienen tareas pendientes, ordenar por urgencia de fecha
                     const getDaysLeft = (m: any, task: any) => {
                       const idx = stageTasks.findIndex((t: any) => t.id === task.id);
                       let start = new Date(m.createdAt);
@@ -1759,6 +1774,8 @@ function GrupoContent() {
                         const prog = getMemberProgress(m);
                         const completedIds = m.historial_tareas?.filter((ht: any) => ht.completada).map((ht: any) => ht.tarea_id) || [];
                         const nextPendingTask = stageTasks.find((t: any) => !completedIds.includes(t.id));
+                        const isCardExpanded = expandedKanbanCards.has(m.id);
+                        const hasAlerts = m.etiquetas && m.etiquetas.length > 0;
 
                         let dueDate = null;
                         let alertText = "";
@@ -1766,7 +1783,6 @@ function GrupoContent() {
                         let alertBg = "";
 
                         if (nextPendingTask) {
-                          // Calcular inicio secuencial: si es el primero, es m.createdAt. Si no, es la fecha_completa del anterior.
                           const taskIndex = stageTasks.findIndex((t: any) => t.id === nextPendingTask.id);
                           let startDate = new Date(m.createdAt);
                           
@@ -1807,66 +1823,131 @@ function GrupoContent() {
                           }
                         }
 
+                        const toggleCard = () => {
+                          setExpandedKanbanCards(prev => {
+                            const next = new Set(prev);
+                            if (next.has(m.id)) next.delete(m.id);
+                            else next.add(m.id);
+                            return next;
+                          });
+                        };
+
                         return (
                           <div 
                             key={m.id} 
                             style={{ 
                               display: 'flex', 
-                              flexDirection: 'row', 
-                              alignItems: 'center', 
-                              justifyContent: 'space-between', 
-                              padding: '1rem 1.25rem', 
-                              backgroundColor: '#f8fafc',
-                              border: '1px solid #e2e8f0',
+                              flexDirection: 'column',
+                              backgroundColor: hasAlerts ? '#fffbeb' : '#f8fafc',
+                              border: `1px solid ${hasAlerts ? '#fde68a' : '#e2e8f0'}`,
                               borderRadius: '12px',
-                              gap: '1.25rem', 
-                              flexWrap: 'wrap'
+                              overflow: 'hidden',
+                              transition: 'background-color 0.2s ease'
                             }}
                           >
-                            {/* Member info */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: '1 1 250px' }}>
-                              <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid #cbd5e1', flexShrink: 0 }}>
+                            {/* Collapsed header — always visible */}
+                            <div 
+                              onClick={toggleCard}
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                padding: isMobileKanban ? '0.65rem 0.85rem' : '0.75rem 1rem',
+                                cursor: 'pointer',
+                                gap: isMobileKanban ? '0.6rem' : '0.85rem',
+                                userSelect: 'none'
+                              }}
+                            >
+                              {/* Expand/collapse chevron */}
+                              <span style={{ fontSize: '0.7rem', color: '#94a3b8', transition: 'transform 0.2s ease', transform: isCardExpanded ? 'rotate(90deg)' : 'rotate(0deg)', flexShrink: 0 }}>
+                                ▶
+                              </span>
+                              {/* Photo */}
+                              <div style={{ width: isMobileKanban ? '34px' : '42px', height: isMobileKanban ? '34px' : '42px', minWidth: isMobileKanban ? '34px' : '42px', borderRadius: '50%', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid #cbd5e1', flexShrink: 0 }}>
                                 {m.foto_url ? (
                                   <img src={m.foto_url} alt={m.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
-                                  <span style={{ fontSize: '1.2rem' }}>{m.sexo === "F" ? "👩" : "👤"}</span>
+                                  <span style={{ fontSize: isMobileKanban ? '0.95rem' : '1.2rem' }}>{m.sexo === "F" ? "👩" : "👤"}</span>
                                 )}
                               </div>
-                              <div>
-                                <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                                  {m.nombre}
-                                  <Link
-                                    href={`/perfil/${m.id}`}
-                                    title="Ver Perfil"
-                                    style={{
-                                      textDecoration: 'none',
-                                      fontSize: '0.9rem',
-                                      marginLeft: '0.2rem',
-                                      cursor: 'pointer'
-                                    }}
-                                  >
-                                    👤
-                                  </Link>
-                                  {/* Etiqueta badges activas */}
+                              {/* Name + badges inline */}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontWeight: 700, fontSize: isMobileKanban ? '0.82rem' : '0.92rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'nowrap', overflow: 'hidden' }}>
+                                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.nombre}</span>
+                                  {/* Etiquetas inline in collapsed view */}
                                   {m.etiquetas && m.etiquetas.map((pe: any) => (
                                     <span
                                       key={pe.id}
                                       title={`${pe.etiqueta.nombre}${pe.notas ? ` - "${pe.notas}"` : ''} | Vence: ${pe.fecha_fin ? new Date(pe.fecha_fin).toLocaleDateString() : 'Sin fecha'}`}
                                       style={{
                                         display: 'inline-flex', alignItems: 'center',
-                                        padding: '1px 6px', borderRadius: '9999px',
-                                        fontSize: '0.65rem', fontWeight: 'bold',
+                                        padding: '1px 5px', borderRadius: '9999px',
+                                        fontSize: '0.6rem', fontWeight: 'bold',
                                         background: pe.etiqueta.color + '18',
                                         color: pe.etiqueta.color,
                                         border: `1px solid ${pe.etiqueta.color}`,
-                                        whiteSpace: 'nowrap', cursor: 'help'
+                                        whiteSpace: 'nowrap', cursor: 'help', flexShrink: 0
                                       }}
                                     >
                                       {pe.etiqueta.icono} {pe.etiqueta.nombre}
                                     </span>
                                   ))}
                                 </div>
-                                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                {/* Progress mini-bar + alert text inline */}
+                                {!isMobileKanban && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.15rem' }}>
+                                    <div style={{ width: '60px', height: '4px', background: '#cbd5e1', borderRadius: '2px', overflow: 'hidden', flexShrink: 0 }}>
+                                      <div style={{ height: '100%', width: `${prog.ratio}%`, background: prog.ratio >= 100 ? '#10b981' : '#0284c7', borderRadius: '2px' }} />
+                                    </div>
+                                    <span style={{ fontSize: '0.65rem', color: '#94a3b8', flexShrink: 0 }}>{prog.ratio}%</span>
+                                    {alertText && (
+                                      <span style={{ fontSize: '0.65rem', color: alertColor, backgroundColor: alertBg, padding: '1px 5px', borderRadius: '3px', fontWeight: 600, flexShrink: 0 }}>
+                                        {alertText}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              {/* Mobile: alert count badge */}
+                              {isMobileKanban && hasAlerts && (
+                                <span style={{ fontSize: '0.6rem', background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: '9999px', padding: '1px 6px', fontWeight: 700, flexShrink: 0 }}>
+                                  {m.etiquetas.length}
+                                </span>
+                              )}
+                              {/* Mobile: quick action buttons */}
+                              {isMobileKanban && (
+                                <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0 }}>
+                                  <Link
+                                    href={`/perfil/${m.id}`}
+                                    title="Ver Perfil"
+                                    onClick={(e) => e.stopPropagation()}
+                                    style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '3px 5px', fontSize: '0.7rem', color: '#475569', textDecoration: 'none', display: 'flex', alignItems: 'center' }}
+                                  >
+                                    👤
+                                  </Link>
+                                  {m.telefono && (
+                                    <a
+                                      href={`https://wa.me/${m.telefono.replace(/[^0-9]/g, '')}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      style={{ background: '#25D366', borderRadius: '6px', padding: '3px 5px', fontSize: '0.7rem', color: 'white', textDecoration: 'none', display: 'flex', alignItems: 'center', fontWeight: 700 }}
+                                    >
+                                      💬
+                                    </a>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Expanded detail section */}
+                            {(isCardExpanded || !isMobileKanban) && (
+                              <div style={{ 
+                                padding: isMobileKanban ? '0 0.85rem 0.85rem' : '0 1rem 1rem',
+                                borderTop: '1px solid #e2e8f0',
+                                display: 'flex', flexDirection: 'column', gap: '0.6rem'
+                              }}>
+                                {/* Contact info */}
+                                <div style={{ fontSize: '0.78rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', paddingTop: isMobileKanban ? '0.5rem' : '0' }}>
                                    <span>📞 {m.telefono || 'Sin telf.'}</span>
                                    {m.telefono && (
                                      <a
@@ -1874,16 +1955,10 @@ function GrupoContent() {
                                        target="_blank"
                                        rel="noopener noreferrer"
                                        style={{
-                                         display: 'inline-flex',
-                                         alignItems: 'center',
-                                         gap: '2px',
-                                         backgroundColor: '#25D366',
-                                         color: 'white',
-                                         padding: '1px 7px',
-                                         borderRadius: '10px',
-                                         fontSize: '0.72rem',
-                                         fontWeight: 700,
-                                         textDecoration: 'none',
+                                         display: 'inline-flex', alignItems: 'center', gap: '2px',
+                                         backgroundColor: '#25D366', color: 'white',
+                                         padding: '1px 7px', borderRadius: '10px',
+                                         fontSize: '0.72rem', fontWeight: 700, textDecoration: 'none',
                                          boxShadow: '0 1px 3px rgba(37, 211, 102, 0.3)'
                                        }}
                                        title={`Abrir WhatsApp con ${m.nombre}`}
@@ -1893,111 +1968,83 @@ function GrupoContent() {
                                    )}
                                    {m.correo ? ` | ✉️ ${m.correo}` : ''}
                                  </div>
-                                {/* Alertas button */}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedMember(m);
-                                    setModalTab('alertas');
-                                    setShowTagsInModal(true);
-                                    loadTagsForMember(m.id);
-                                  }}
-                                  style={{
-                                    marginTop: '0.3rem',
-                                    background: (m.etiquetas && m.etiquetas.length > 0) ? '#fef2f2' : '#f8fafc',
-                                    border: `1px solid ${(m.etiquetas && m.etiquetas.length > 0) ? '#fecaca' : '#e2e8f0'}`,
-                                    borderRadius: '5px',
-                                    color: (m.etiquetas && m.etiquetas.length > 0) ? '#ef4444' : '#64748b',
-                                    padding: '2px 8px',
-                                    fontWeight: 'bold',
-                                    fontSize: '0.7rem',
-                                    cursor: 'pointer',
-                                    display: 'inline-flex', alignItems: 'center', gap: '0.2rem'
-                                  }}
-                                >
-                                  🏷️ {(m.etiquetas && m.etiquetas.length > 0) ? `Alertas (${m.etiquetas.length})` : 'Alertas'}
-                                </button>
-                              </div>
-                            </div>
 
-                            {/* Progress ratio */}
-                            <div style={{ display: 'flex', flexDirection: 'column', width: '120px', flexShrink: 0 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#475569', fontWeight: 600, marginBottom: '0.2rem' }}>
-                                <span>Avance</span>
-                                <span>{prog.ratio}%</span>
-                              </div>
-                              <div style={{ height: '5px', background: '#cbd5e1', borderRadius: '3px', overflow: 'hidden' }}>
-                                <div style={{ height: '100%', width: `${prog.ratio}%`, background: '#10b981', borderRadius: '3px' }} />
-                              </div>
-                            </div>
-
-                            {/* Next Process Pending (Sequential) */}
-                            <div style={{ flex: '2 1 280px', display: 'flex', alignItems: 'center' }}>
-                              {nextPendingTask ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', width: '100%' }}>
-                                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: '150px' }}>
-                                    <span style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Siguiente Paso:</span>
-                                    <span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#1e293b' }}>
-                                      👉 {nextPendingTask.nombre_tarea}
-                                    </span>
-                                  </div>
-                                  
-                                  <span style={{ 
-                                    fontSize: '0.72rem', 
-                                    color: alertColor, 
-                                    backgroundColor: alertBg,
-                                    padding: '2px 8px',
-                                    borderRadius: '4px',
-                                    fontWeight: 600
-                                  }}>
-                                    {alertText}
-                                  </span>
-
+                                {/* Alertas + Progress + Task + Actions row */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                                  {/* Alertas button */}
                                   <button
-                                    onClick={() => handleToggleTask(m.id, nextPendingTask.id)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedMember(m);
+                                      setModalTab('alertas');
+                                      setShowTagsInModal(true);
+                                      loadTagsForMember(m.id);
+                                    }}
                                     style={{
-                                      padding: '0.35rem 0.75rem',
-                                      background: '#0284c7',
-                                      color: 'white',
-                                      border: 'none',
-                                      borderRadius: '6px',
-                                      fontSize: '0.75rem',
-                                      fontWeight: 600,
+                                      background: hasAlerts ? '#fef2f2' : '#f8fafc',
+                                      border: `1px solid ${hasAlerts ? '#fecaca' : '#e2e8f0'}`,
+                                      borderRadius: '5px',
+                                      color: hasAlerts ? '#ef4444' : '#64748b',
+                                      padding: '2px 8px',
+                                      fontWeight: 'bold', fontSize: '0.7rem',
                                       cursor: 'pointer',
-                                      marginLeft: 'auto'
+                                      display: 'inline-flex', alignItems: 'center', gap: '0.2rem'
                                     }}
                                   >
-                                    ✓ Completar
+                                    🏷️ {hasAlerts ? `Alertas (${m.etiquetas.length})` : 'Alertas'}
                                   </button>
-                                </div>
-                              ) : (
-                                <span style={{ fontSize: '0.82rem', color: '#166534', backgroundColor: '#dcfce7', padding: '0.25rem 0.75rem', borderRadius: '6px', fontWeight: 600 }}>
-                                  🎉 ¡Etapa Completada!
-                                </span>
-                              )}
-                            </div>
 
-                            {/* Action Buttons */}
-                            <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                              <button
-                                    onClick={() => {
-                                      setModalTab('avance');
-                                      setShowTagsInModal(false);
-                                      setSelectedMember(m);
-                                    }}
+                                  {/* Progress bar */}
+                                  <div style={{ display: 'flex', flexDirection: 'column', width: isMobileKanban ? '80px' : '120px', flexShrink: 0 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#475569', fontWeight: 600, marginBottom: '0.15rem' }}>
+                                      <span>Avance</span>
+                                      <span>{prog.ratio}%</span>
+                                    </div>
+                                    <div style={{ height: '5px', background: '#cbd5e1', borderRadius: '3px', overflow: 'hidden' }}>
+                                      <div style={{ height: '100%', width: `${prog.ratio}%`, background: '#10b981', borderRadius: '3px' }} />
+                                    </div>
+                                  </div>
+
+                                  {/* Next pending task */}
+                                  {nextPendingTask && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: 0, flexWrap: 'wrap' }}>
+                                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: '120px' }}>
+                                        <span style={{ fontSize: '0.68rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Siguiente Paso:</span>
+                                        <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                          👉 {nextPendingTask.nombre_tarea}
+                                        </span>
+                                      </div>
+                                      <span style={{ fontSize: '0.7rem', color: alertColor, backgroundColor: alertBg, padding: '2px 6px', borderRadius: '4px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                        {alertText}
+                                      </span>
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); handleToggleTask(m.id, nextPendingTask.id); }}
+                                        style={{
+                                          padding: '0.3rem 0.65rem', background: '#0284c7', color: 'white',
+                                          border: 'none', borderRadius: '6px', fontSize: '0.72rem',
+                                          fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap'
+                                        }}
+                                      >
+                                        ✓ Completar
+                                      </button>
+                                    </div>
+                                  )}
+                                  {!nextPendingTask && (
+                                    <span style={{ fontSize: '0.82rem', color: '#166534', backgroundColor: '#dcfce7', padding: '0.2rem 0.65rem', borderRadius: '6px', fontWeight: 600 }}>
+                                      🎉 ¡Etapa Completada!
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Action buttons row */}
+                                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                  <button
+                                    onClick={() => { setModalTab('avance'); setShowTagsInModal(false); setSelectedMember(m); }}
                                     style={{
-                                      padding: '0.4rem 0.85rem',
-                                      background: 'white',
-                                      border: '1px solid #cbd5e1',
-                                      borderRadius: '8px',
-                                      fontSize: '0.8rem',
-                                      fontWeight: 600,
-                                      color: '#475569',
-                                      cursor: 'pointer',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: '0.25rem',
-                                      justifyContent: 'center'
+                                      padding: '0.35rem 0.75rem', background: 'white',
+                                      border: '1px solid #cbd5e1', borderRadius: '8px',
+                                      fontSize: '0.78rem', fontWeight: 600, color: '#475569',
+                                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem'
                                     }}
                                   >
                                     🔍 Ver Detalle
@@ -2010,23 +2057,17 @@ function GrupoContent() {
                                       loadPastoralDataForMember(m.id);
                                     }}
                                     style={{
-                                      padding: '0.4rem 0.85rem',
-                                      background: '#fffbeb',
-                                      border: '1px solid #fde68a',
-                                      borderRadius: '8px',
-                                      fontSize: '0.8rem',
-                                      fontWeight: 600,
-                                      color: '#b45309',
-                                      cursor: 'pointer',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: '0.25rem',
-                                      justifyContent: 'center'
+                                      padding: '0.35rem 0.75rem', background: '#fffbeb',
+                                      border: '1px solid #fde68a', borderRadius: '8px',
+                                      fontSize: '0.78rem', fontWeight: 600, color: '#b45309',
+                                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem'
                                     }}
                                   >
                                     🙏 Pastoral
                                   </button>
-                            </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         );
                       })
