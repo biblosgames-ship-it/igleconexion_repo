@@ -963,6 +963,17 @@ export default function SuperAdminPage() {
   // Estados Formulario Asignación Liderazgo (Tab 5)
   const [selectedMemberName, setSelectedMemberName] = useState("");
   const [memberSearchTerm, setMemberSearchTerm] = useState("");
+
+  // Filtros del listado de miembros (Tab 7)
+  const [filterSexo, setFilterSexo] = useState("");
+  const [filterEdadMin, setFilterEdadMin] = useState("");
+  const [filterEdadMax, setFilterEdadMax] = useState("");
+  const [filterGrupoConexion, setFilterGrupoConexion] = useState("");
+  const [filterProfesion, setFilterProfesion] = useState("");
+  const [filterNivelAcademico, setFilterNivelAcademico] = useState("");
+  const [filterEstadoCivil, setFilterEstadoCivil] = useState("");
+  const [filterEtapa, setFilterEtapa] = useState("");
+  const [filtersActive, setFiltersActive] = useState(false);
   const [selectedModuloId, setSelectedModuloId] = useState("all");
   const [selectedModuloIds, setSelectedModuloIds] = useState<string[]>(["all"]);
   const [editingLiderId, setEditingLiderId] = useState<string | null>(null);
@@ -1043,6 +1054,53 @@ export default function SuperAdminPage() {
   const filteredMiembros = miembros.filter(m =>
     m.nombre.toLowerCase().includes(memberSearchTerm.toLowerCase())
   );
+
+  // Helper para calcular edad
+  const calcEdad = (fn: string | null | undefined): number | null => {
+    if (!fn) return null;
+    const today = new Date();
+    const birth = new Date(fn);
+    let age = today.getFullYear() - birth.getFullYear();
+    const m2 = today.getMonth() - birth.getMonth();
+    if (m2 < 0 || (m2 === 0 && today.getDate() < birth.getDate())) age--;
+    return age;
+  };
+
+  // Valores únicos para los selects de filtro
+  const uniqueProfesiones = [...new Set(miembros.map(m => m.profesion || m.profesion_oficio).filter(Boolean))].sort();
+  const uniqueNiveles = [...new Set(miembros.map(m => m.nivel_academico).filter(Boolean))].sort();
+  const uniqueEstadosCiviles = [...new Set(miembros.map(m => m.estado_civil).filter(Boolean))].sort();
+
+  // Filtros avanzados del listado (Tab 7)
+  const hasActiveFilters = filtersActive || filterSexo || filterEdadMin || filterEdadMax || filterGrupoConexion || filterProfesion || filterNivelAcademico || filterEstadoCivil || filterEtapa;
+
+  const displayMiembros = (() => {
+    if (!hasActiveFilters) {
+      return [...miembros].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()).slice(0, 20);
+    }
+    return miembros.filter(m => {
+      if (filterSexo && m.sexo !== filterSexo) return false;
+      if (filterEdadMin || filterEdadMax) {
+        const edad = calcEdad(m.fecha_nacimiento);
+        if (edad === null) return false;
+        if (filterEdadMin && edad < parseInt(filterEdadMin)) return false;
+        if (filterEdadMax && edad > parseInt(filterEdadMax)) return false;
+      }
+      if (filterGrupoConexion && m.grupo_conexion !== filterGrupoConexion) return false;
+      if (filterProfesion && (m.profesion || m.profesion_oficio || '') !== filterProfesion) return false;
+      if (filterNivelAcademico && (m.nivel_academico || '') !== filterNivelAcademico) return false;
+      if (filterEstadoCivil && (m.estado_civil || '') !== filterEstadoCivil) return false;
+      if (filterEtapa && m.etapa_id !== filterEtapa) return false;
+      if (memberSearchTerm) {
+        const s = memberSearchTerm.toLowerCase();
+        const matchName = m.nombre.toLowerCase().includes(s);
+        const matchEmail = (m.correo || '').toLowerCase().includes(s);
+        const matchPhone = (m.telefono || '').includes(s);
+        if (!matchName && !matchEmail && !matchPhone) return false;
+      }
+      return true;
+    });
+  })();
 
   // Auto-cargar selecciones de liderazgo al cambiar el alcance
   useEffect(() => {
@@ -5150,147 +5208,206 @@ export default function SuperAdminPage() {
 
           {/* TAB 7: MIEMBROS */}
           {activeTab === 7 && (
-            <div>
+            <div id="miembros-print-section">
+              <style dangerouslySetInnerHTML={{__html: `
+                @media print {
+                  body { background: white !important; color: black !important; }
+                  body > *:not(#miembros-print-section) { display: none !important; }
+                  #miembros-print-section { position: absolute; left: 0; top: 0; width: 100%; padding: 1.5rem !important; box-shadow: none !important; border: none !important; }
+                  #miembros-print-section .no-print { display: none !important; }
+                  #miembros-filtros-panel { display: none !important; }
+                  #print-header { display: block !important; }
+                  #miembros-listado-print { padding: 0 !important; border: none !important; box-shadow: none !important; }
+                  #miembros-listado-print table { font-size: 0.78rem !important; }
+                  #miembros-listado-print th { border-bottom: 2px solid #000 !important; padding: 0.4rem 0.3rem !important; }
+                  #miembros-listado-print td { padding: 0.35rem 0.3rem !important; border-bottom: 1px solid #ddd !important; }
+                  #miembros-listado-print svg { display: none !important; }
+                  #miembros-listado-print button { display: none !important; }
+                  #miembros-listado-print select { border: none !important; background: none !important; padding: 0 !important; appearance: none !important; -webkit-appearance: none !important; }
+                  #miembros-listado-print a[href^="https://wa.me"] { display: none !important; }
+                  @page { margin: 1cm; size: landscape; }
+                }
+              `}} />
 
-              {/* DESGLOSE DEMOGRÁFICO Y DE ESTRUCTURA */}
-              <div className={styles.configBlock} style={{ background: '#ffffff', border: '1px solid rgba(226, 232, 240, 0.6)', borderRadius: '24px', padding: '1.5rem', marginBottom: '1.5rem', boxShadow: 'var(--shadow-xl)' }}>
-                <h3 style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--color-primary-dark)', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  📊 Demografía y Estructura Organizacional
-                </h3>
-                
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '1.25rem', marginBottom: '1.25rem' }}>
-                  <div style={{ padding: '0.5rem 1rem', background: 'var(--color-primary-light)', borderRadius: '12px', display: 'inline-flex', flexDirection: 'column', minWidth: '130px' }}>
-                    <span style={{ fontSize: '0.62rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-primary)' }}>Total de Miembros</span>
-                    <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-primary-dark)', fontFamily: 'var(--font-mono)' }}>{miembros.length}</span>
+              {/* DESGLOSE DEMOGRÁFICO COMPACTO */}
+              <div className={styles.configBlock} style={{ background: '#ffffff', border: '1px solid rgba(226, 232, 240, 0.6)', borderRadius: '24px', padding: '1rem 1.5rem', marginBottom: '1rem', boxShadow: 'var(--shadow-xl)' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+                  <div style={{ padding: '0.4rem 0.85rem', background: 'var(--color-primary-light)', borderRadius: '10px', display: 'inline-flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', color: 'var(--color-primary)' }}>Total</span>
+                    <span style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--color-primary-dark)', fontFamily: 'var(--font-mono)' }}>{miembros.length}</span>
                   </div>
-
-                  <div style={{ padding: '0.5rem 1rem', background: '#ecfdf5', borderRadius: '12px', display: 'inline-flex', flexDirection: 'column', minWidth: '130px' }}>
-                    <span style={{ fontSize: '0.62rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#10b981' }}>Familias</span>
-                    <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#065f46', fontFamily: 'var(--font-mono)' }}>{new Set(miembros.map(m => m.familia_codigo).filter(Boolean)).size}</span>
+                  <div style={{ padding: '0.4rem 0.85rem', background: '#ecfdf5', borderRadius: '10px', display: 'inline-flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', color: '#10b981' }}>Familias</span>
+                    <span style={{ fontSize: '1.3rem', fontWeight: 900, color: '#065f46', fontFamily: 'var(--font-mono)' }}>{new Set(miembros.map(m => m.familia_codigo).filter(Boolean)).size}</span>
                   </div>
-
-                  <div style={{ padding: '0.5rem 1rem', background: '#fffbeb', borderRadius: '12px', display: 'inline-flex', flexDirection: 'column', minWidth: '130px' }}>
-                    <span style={{ fontSize: '0.62rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#d97706' }}>Sin Vincular</span>
-                    <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#92400e', fontFamily: 'var(--font-mono)' }}>{miembros.filter(m => !m.familia_codigo).length}</span>
+                  <div style={{ padding: '0.4rem 0.85rem', background: '#fffbeb', borderRadius: '10px', display: 'inline-flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', color: '#d97706' }}>Sin Grupo</span>
+                    <span style={{ fontSize: '1.3rem', fontWeight: 900, color: '#92400e', fontFamily: 'var(--font-mono)' }}>{miembros.filter(m => !m.familia_codigo).length}</span>
                   </div>
-                  
-                  {/* Totales por Sociedad */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', flex: 1, justifyContent: 'flex-end' }}>
-                    {(Object.entries(
-                      miembros.reduce((acc, m) => {
-                        const soc = m.sociedad || 'Sociedad General';
-                        acc[soc] = (acc[soc] || 0) + 1;
-                        return acc;
-                      }, {} as Record<string, number>)
-                    ) as [string, number][]).map(([socName, count]) => (
-                      <div key={socName} style={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '12px', padding: '0.4rem 0.75rem', display: 'flex', flexDirection: 'column', minWidth: '110px', background: '#f8fafc' }}>
-                        <span style={{ fontSize: '0.58rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }}>{socName}</span>
-                        <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', fontFamily: 'var(--font-mono)' }}>{count} <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 500 }}>mbs</span></span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Desglose de Grupos por Sociedad */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
                   {(Object.entries(
                     miembros.reduce((acc, m) => {
-                      const soc = m.sociedad || 'Sociedad General';
-                      const grp = m.grupo_conexion || 'Grupo General';
-                      if (!acc[soc]) acc[soc] = {};
-                      if (!acc[soc][grp]) acc[soc][grp] = { count: 0, M: 0, F: 0, ages: [] };
-                      
-                      acc[soc][grp].count += 1;
-                      if (m.sexo === 'M') acc[soc][grp].M += 1;
-                      else if (m.sexo === 'F') acc[soc][grp].F += 1;
-                      
-                      if (m.fecha_nacimiento) {
-                        const age = new Date().getFullYear() - new Date(m.fecha_nacimiento).getFullYear();
-                        acc[soc][grp].ages.push(age);
-                      }
+                      const soc = m.sociedad || 'General';
+                      acc[soc] = (acc[soc] || 0) + 1;
                       return acc;
-                    }, {} as Record<string, Record<string, { count: number; M: number; F: number; ages: number[] }>>)
-                  ) as [string, Record<string, { count: number; M: number; F: number; ages: number[] }>][]).map(([socName, groups]) => {
-                    const socLower = socName.toLowerCase();
-                    const isKidsOrYouth = socLower.includes('niño') || socLower.includes('nino') || socLower.includes('infantil') || socLower.includes('cuna') || socLower.includes('joven') || socLower.includes('juvenil') || socLower.includes('adolescente');
-                    return (
-                      <div key={socName} style={{ border: '1px solid rgba(226, 232, 240, 0.6)', borderRadius: '16px', padding: '1rem', background: '#f8fafc' }}>
-                        <h4 style={{ fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary)', borderBottom: '1px solid rgba(226, 232, 240, 0.8)', paddingBottom: '0.5rem', marginBottom: '0.75rem', letterSpacing: '0.05em' }}>
-                          {socName}
-                        </h4>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                          {(Object.entries(groups) as [string, { count: number; M: number; F: number; ages: number[] }][]).map(([grpName, data]) => {
-                            const avgAge = data.ages.length > 0 ? Math.round(data.ages.reduce((sum: number, a: number) => sum + a, 0) / data.ages.length) : null;
-                            return (
-                              <div key={grpName} style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', padding: '0.4rem 0.6rem', background: '#ffffff', borderRadius: '10px', border: '1px solid rgba(226, 232, 240, 0.4)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e293b' }}>{grpName}</span>
-                                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-primary-dark)', fontFamily: 'var(--font-mono)' }}>{data.count}</span>
-                                </div>
-                                <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.64rem', color: '#64748b', fontWeight: 600 }}>
-                                  {isKidsOrYouth && (
-                                    <>
-                                      <span>🙋‍♂️ {data.M} H</span>
-                                      <span>🙋‍♀️ {data.F} M</span>
-                                      {avgAge && <span>•</span>}
-                                    </>
-                                  )}
-                                  {avgAge && <span>🎂 Prom: {avgAge} años</span>}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
+                    }, {} as Record<string, number>)
+                  ) as [string, number][]).map(([socName, count]) => (
+                    <div key={socName} style={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '10px', padding: '0.35rem 0.7rem', display: 'inline-flex', flexDirection: 'column', background: '#f8fafc' }}>
+                      <span style={{ fontSize: '0.55rem', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100px' }}>{socName}</span>
+                      <span style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', fontFamily: 'var(--font-mono)' }}>{count}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className={styles.configBlock} style={{ background: 'white', padding: '1.5rem' }}>
-                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', alignItems: 'center' }}>
-                  <input 
-                    type="text" 
+              {/* PANEL DE FILTROS */}
+              <div className={styles.configBlock} id="miembros-filtros-panel" style={{ background: '#ffffff', border: '1px solid rgba(226, 232, 240, 0.6)', borderRadius: '24px', padding: '1.25rem 1.5rem', marginBottom: '1rem', boxShadow: 'var(--shadow-xl)' }}>
+                <h3 style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--color-primary-dark)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  🔍 Filtros de Búsqueda
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Sexo</label>
+                    <select value={filterSexo} onChange={(e) => setFilterSexo(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
+                      <option value="">Todos</option>
+                      <option value="M">Masculino</option>
+                      <option value="F">Femenino</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Edad Mín</label>
+                    <input type="number" min="0" max="120" placeholder="Ej: 18" value={filterEdadMin} onChange={(e) => setFilterEdadMin(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Edad Máx</label>
+                    <input type="number" min="0" max="120" placeholder="Ej: 65" value={filterEdadMax} onChange={(e) => setFilterEdadMax(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Grupo de Conexión</label>
+                    <select value={filterGrupoConexion} onChange={(e) => setFilterGrupoConexion(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
+                      <option value="">Todos</option>
+                      {[...new Set(miembros.map(m => m.grupo_conexion).filter(Boolean))].sort().map(g => (
+                        <option key={g} value={g}>{g}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Profesión</label>
+                    <select value={filterProfesion} onChange={(e) => setFilterProfesion(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
+                      <option value="">Todas</option>
+                      {uniqueProfesiones.map(p => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Nivel Académico</label>
+                    <select value={filterNivelAcademico} onChange={(e) => setFilterNivelAcademico(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
+                      <option value="">Todos</option>
+                      {uniqueNiveles.map(n => (
+                        <option key={n} value={n}>{n}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Estado Civil</label>
+                    <select value={filterEstadoCivil} onChange={(e) => setFilterEstadoCivil(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
+                      <option value="">Todos</option>
+                      <option value="Soltero">Soltero/a</option>
+                      <option value="Casado">Casado/a</option>
+                      <option value="Divorciado">Divorciado/a</option>
+                      <option value="Viudo">Viudo/a</option>
+                      <option value="Unión libre">Unión libre</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Etapa</label>
+                    <select value={filterEtapa} onChange={(e) => setFilterEtapa(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
+                      <option value="">Todas</option>
+                      {etapas.map((et: any) => (
+                        <option key={et.id} value={et.id}>{et.nombre_etapa}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <input
+                    type="text"
                     placeholder="🔍 Buscar por nombre, correo o teléfono..."
                     value={memberSearchTerm}
                     onChange={(e) => setMemberSearchTerm(e.target.value)}
-                    style={{ flex: 1, padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                    style={{ flex: 1, minWidth: '200px', padding: '0.5rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
                   />
+                  <button onClick={() => setFiltersActive(true)} style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: 'var(--color-primary)', color: 'white', border: 'none', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    🔍 Filtrar
+                  </button>
+                  <button onClick={() => { setFiltersActive(false); setFilterSexo(""); setFilterEdadMin(""); setFilterEdadMax(""); setFilterGrupoConexion(""); setFilterProfesion(""); setFilterNivelAcademico(""); setFilterEstadoCivil(""); setFilterEtapa(""); setMemberSearchTerm(""); }} style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    ✕ Limpiar
+                  </button>
+                  <button onClick={() => window.print()} style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: '#1e293b', color: 'white', border: 'none', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    🖨️ Imprimir
+                  </button>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, marginLeft: 'auto' }}>
+                    {hasActiveFilters ? `${displayMiembros.length} de ${miembros.length} miembros` : `Últimos ${displayMiembros.length} miembros`}
+                  </span>
+                </div>
+              </div>
+
+              {/* TABLA DE MIEMBROS */}
+              <div className={styles.configBlock} id="miembros-listado-print" style={{ background: 'white', padding: '1.5rem' }}>
+                <div id="print-header" style={{ display: 'none' }}>
+                  <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.25rem 0' }}>Listado de Miembros</h2>
+                  <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 0.5rem 0' }}>Fecha de impresión: {new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                  {hasActiveFilters && (
+                    <p style={{ fontSize: '0.78rem', color: '#475569', margin: '0 0 0.5rem 0', fontStyle: 'italic' }}>
+                      Filtros: {[
+                        filterSexo && `Sexo: ${filterSexo === 'M' ? 'Masculino' : 'Femenino'}`,
+                        (filterEdadMin || filterEdadMax) && `Edad: ${filterEdadMin || '0'}-${filterEdadMax || '∞'}`,
+                        filterGrupoConexion && `Grupo: ${filterGrupoConexion}`,
+                        filterProfesion && `Profesión: ${filterProfesion}`,
+                        filterNivelAcademico && `Nivel: ${filterNivelAcademico}`,
+                        filterEstadoCivil && `Estado civil: ${filterEstadoCivil}`,
+                        filterEtapa && `Etapa: ${etapas.find((e: any) => e.id === filterEtapa)?.nombre_etapa || filterEtapa}`,
+                        memberSearchTerm && `Búsqueda: "${memberSearchTerm}"`,
+                      ].filter(Boolean).join(' | ')}
+                    </p>
+                  )}
                 </div>
 
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                     <thead>
                       <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', color: '#475569' }}>
-                        <th style={{ padding: '0.75rem 0.5rem', width: '25%' }}>Nombre</th>
-                        <th style={{ padding: '0.75rem 0.5rem', width: '30%' }}>Contacto</th>
-                        <th style={{ padding: '0.75rem 0.5rem', width: '20%' }}>Sociedad / Grupo</th>
-                        <th style={{ padding: '0.75rem 0.5rem', width: '15%' }}>Crecimiento</th>
-                        <th style={{ padding: '0.75rem 0.5rem', width: '10%', textAlign: 'center' }}>Acciones</th>
+                        <th style={{ padding: '0.6rem 0.5rem', width: '5%' }}>#</th>
+                        <th style={{ padding: '0.6rem 0.5rem', width: '22%' }}>Nombre</th>
+                        <th style={{ padding: '0.6rem 0.5rem', width: '6%' }}>Sexo</th>
+                        <th style={{ padding: '0.6rem 0.5rem', width: '6%' }}>Edad</th>
+                        <th style={{ padding: '0.6rem 0.5rem', width: '18%' }}>Contacto</th>
+                        <th style={{ padding: '0.6rem 0.5rem', width: '14%' }}>Sociedad / Grupo</th>
+                        <th style={{ padding: '0.6rem 0.5rem', width: '10%' }}>Profesión</th>
+                        <th style={{ padding: '0.6rem 0.5rem', width: '10%' }}>Crecimiento</th>
+                        <th style={{ padding: '0.6rem 0.5rem', width: '9%', textAlign: 'center' }}>Acciones</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {miembros.filter(m => 
-                        m.nombre.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
-                        (m.correo || '').toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
-                        (m.telefono || '').includes(memberSearchTerm)
-                      ).map(m => {
+                      {displayMiembros.map((m, idx) => {
                         const mEtapaId = m.etapa_id || '';
+                        const edad = calcEdad(m.fecha_nacimiento);
                         return (
                           <tr key={m.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '0.75rem 0.5rem', color: '#1e293b' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                            <td style={{ padding: '0.6rem 0.5rem', color: '#94a3b8', fontSize: '0.8rem' }}>{idx + 1}</td>
+                            <td style={{ padding: '0.6rem 0.5rem', color: '#1e293b' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap' }}>
                                 <span style={{ fontWeight: 600 }}>{m.nombre}</span>
                                 {m.etiquetas && m.etiquetas.map((tag: any) => (
-                                  <span 
-                                    key={tag.id} 
-                                    style={{ 
-                                      display: 'inline-flex', 
-                                      alignItems: 'center', 
+                                  <span
+                                    key={tag.id}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
                                       justifyContent: 'center',
-                                      padding: '2px 8px',
+                                      padding: '1px 6px',
                                       borderRadius: '9999px',
-                                      fontSize: '0.72rem',
+                                      fontSize: '0.68rem',
                                       background: tag.color + '1a',
                                       color: tag.color,
                                       border: `1px solid ${tag.color}`,
@@ -5302,60 +5419,37 @@ export default function SuperAdminPage() {
                                   </span>
                                 ))}
                                 {m.familia_codigo && (
-                                  <span style={{ fontSize: '0.75rem', backgroundColor: '#e0e7ff', color: '#4f46e5', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                  <span style={{ fontSize: '0.7rem', backgroundColor: '#e0e7ff', color: '#4f46e5', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
                                     Fam: {m.familia_codigo}
                                   </span>
                                 )}
                               </div>
                             </td>
-                            <td style={{ padding: '0.75rem 0.5rem', color: '#64748b' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', whiteSpace: 'nowrap' }}>
-                                <span>📞 {m.telefono || 'Sin teléfono'}</span>
+                            <td style={{ padding: '0.6rem 0.5rem', color: '#334155', fontSize: '0.85rem' }}>
+                              {m.sexo === 'M' ? '♂ M' : m.sexo === 'F' ? '♀ F' : '-'}
+                            </td>
+                            <td style={{ padding: '0.6rem 0.5rem', color: '#334155', fontSize: '0.85rem' }}>
+                              {edad !== null ? `${edad} años` : '-'}
+                            </td>
+                            <td style={{ padding: '0.6rem 0.5rem', color: '#64748b' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap', whiteSpace: 'nowrap' }}>
+                                <span>📞 {m.telefono || 'S/tel'}</span>
                                 {m.telefono && (
-                                  <a
-                                    href={`https://wa.me/${m.telefono.replace(/[^0-9]/g, '')}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    style={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '3px',
-                                      backgroundColor: '#25D366',
-                                      color: 'white',
-                                      padding: '2px 8px',
-                                      borderRadius: '12px',
-                                      fontSize: '0.72rem',
-                                      fontWeight: 700,
-                                      textDecoration: 'none',
-                                      boxShadow: '0 1px 4px rgba(37, 211, 102, 0.3)'
-                                    }}
-                                    title={`Abrir chat directo de WhatsApp con ${m.nombre}`}
-                                  >
-                                    <span style={{ fontSize: '0.85rem' }}>💬</span> WhatsApp
+                                  <a href={`https://wa.me/${m.telefono.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', backgroundColor: '#25D366', color: 'white', padding: '1px 6px', borderRadius: '10px', fontSize: '0.68rem', fontWeight: 700, textDecoration: 'none' }}>
+                                    💬 WA
                                   </a>
                                 )}
                               </div>
-                              {m.correo && <div style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap', marginTop: '0.2rem' }}>✉️ {m.correo}</div>}
-                              {m.usuario && (
-                                <div style={{ marginTop: '0.25rem' }}>
-                                  <span style={{ 
-                                    fontSize: '0.7rem', 
-                                    padding: '2px 6px', 
-                                    borderRadius: '4px', 
-                                    fontWeight: 'bold', 
-                                    background: m.usuario.estado === 'ACTIVO' ? '#dcfce7' : m.usuario.estado === 'PENDIENTE' ? '#fef3c7' : '#fee2e2', 
-                                    color: m.usuario.estado === 'ACTIVO' ? '#15803d' : m.usuario.estado === 'PENDIENTE' ? '#b45309' : '#ef4444' 
-                                  }}>
-                                    {m.usuario.estado === 'ACTIVO' ? '🟢 Activo' : m.usuario.estado === 'PENDIENTE' ? '🟡 Pendiente' : '🔴 Suspendido'}
-                                  </span>
-                                </div>
-                              )}
+                              {m.correo && <div style={{ fontSize: '0.75rem', marginTop: '0.15rem', whiteSpace: 'nowrap' }}>✉️ {m.correo}</div>}
                             </td>
-                            <td style={{ padding: '0.75rem 0.5rem', color: '#334155' }}>
-                              <div style={{ fontWeight: 600 }}>{m.sociedad || 'Sin Sociedad'}</div>
-                              <div style={{ fontSize: '0.8rem', color: '#64748b' }}>👥 {m.grupo_conexion || 'Sin Grupo'}</div>
+                            <td style={{ padding: '0.6rem 0.5rem', color: '#334155' }}>
+                              <div style={{ fontWeight: 600, fontSize: '0.82rem' }}>{m.sociedad || 'Sin Sociedad'}</div>
+                              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>👥 {m.grupo_conexion || 'Sin Grupo'}</div>
                             </td>
-                            <td style={{ padding: '0.75rem 0.5rem' }}>
+                            <td style={{ padding: '0.6rem 0.5rem', color: '#64748b', fontSize: '0.8rem' }}>
+                              {m.profesion || m.profesion_oficio || '-'}
+                            </td>
+                            <td style={{ padding: '0.6rem 0.5rem' }}>
                               <select
                                 value={mEtapaId}
                                 onChange={async (e) => {
@@ -5365,197 +5459,73 @@ export default function SuperAdminPage() {
                                     const res = await fetch("/api/miembros", {
                                       method: "POST",
                                       headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({
-                                        action: "updateEtapa",
-                                        data: { memberId: m.id, etapaId: nextEtapaId }
-                                      })
+                                      body: JSON.stringify({ action: "updateEtapa", data: { memberId: m.id, etapaId: nextEtapaId } })
                                     });
                                     const resData = await res.json();
                                     if (resData.error) {
                                       alert("Error al actualizar la etapa: " + resData.error);
                                     } else {
-                                      // Recargar miembros
                                       const resM = await fetch("/api/miembros");
                                       const dataM = await resM.json();
-                                      if (!dataM.error && Array.isArray(dataM)) {
-                                        setMiembros(dataM);
-                                      }
+                                      if (!dataM.error && Array.isArray(dataM)) { setMiembros(dataM); }
                                     }
-                                  } catch (err) {
-                                    console.error(err);
-                                    alert("Error al guardar cambios de etapa.");
-                                  }
+                                  } catch (err) { console.error(err); alert("Error al guardar cambios de etapa."); }
                                 }}
-                                style={{
-                                  padding: '0.35rem 0.5rem',
-                                  borderRadius: '6px',
-                                  border: '1px solid #cbd5e1',
-                                  fontSize: '0.82rem',
-                                  fontWeight: 600,
-                                  color: '#334155',
-                                  backgroundColor: '#f8fafc',
-                                  cursor: 'pointer'
-                                }}
+                                style={{ padding: '0.3rem 0.4rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.78rem', fontWeight: 600, color: '#334155', backgroundColor: '#f8fafc', cursor: 'pointer' }}
                               >
                                 {etapas.map((et: any) => (
-                                  <option key={et.id} value={et.id}>
-                                    📍 {et.nombre_etapa.replace(/Etapa\s*/i, '')}
-                                  </option>
+                                  <option key={et.id} value={et.id}>{et.nombre_etapa.replace(/Etapa\s*/i, '')}</option>
                                 ))}
                               </select>
                             </td>
-                            <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center', display: 'flex', gap: '1rem', justifyContent: 'center', alignItems: 'center', flexWrap: 'nowrap' }}>
+                            <td style={{ padding: '0.6rem 0.5rem', textAlign: 'center', display: 'flex', gap: '0.5rem', justifyContent: 'center', alignItems: 'center', flexWrap: 'nowrap' }}>
                               {m.usuario && m.usuario.estado === 'PENDIENTE' && (
                                 <button
                                   onClick={async () => {
                                     if (!confirm(`¿Deseas admitir y activar la cuenta de ${m.nombre}?`)) return;
                                     try {
-                                      const res = await fetch("/api/miembros", {
-                                        method: "POST",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({
-                                          action: "updateUserStatus",
-                                          data: { usuarioId: m.usuario.id, estado: "ACTIVO" }
-                                        })
-                                      });
+                                      const res = await fetch("/api/miembros", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "updateUserStatus", data: { usuarioId: m.usuario.id, estado: "ACTIVO" } }) });
                                       const resData = await res.json();
-                                      if (resData.error) {
-                                        alert("Error al admitir miembro: " + resData.error);
-                                      } else {
-                                        // Recargar miembros
-                                        const resM = await fetch("/api/miembros");
-                                        const dataM = await resM.json();
-                                        if (!dataM.error && Array.isArray(dataM)) {
-                                          setMiembros(dataM);
-                                        }
-                                      }
-                                    } catch (err) {
-                                      console.error(err);
-                                    }
+                                      if (!resData.error) { const resM = await fetch("/api/miembros"); const dataM = await resM.json(); if (!dataM.error && Array.isArray(dataM)) setMiembros(dataM); }
+                                    } catch (err) { console.error(err); }
                                   }}
-                                  style={{
-                                    background: '#dcfce7',
-                                    border: '1px solid #bbf7d0',
-                                    borderRadius: '6px',
-                                    color: '#15803d',
-                                    padding: '0.35rem 0.7rem',
-                                    fontWeight: 'bold',
-                                    cursor: 'pointer',
-                                    fontSize: '0.8rem',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '0.2rem'
-                                  }}
+                                  style={{ background: '#dcfce7', border: '1px solid #bbf7d0', borderRadius: '6px', color: '#15803d', padding: '0.3rem 0.5rem', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.15rem' }}
                                 >
                                   ✔️ Admitir
                                 </button>
                               )}
-                              <Link 
-                                href={`/perfil/${m.id}`}
-                                title="Ver Perfil"
-                                style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  color: '#475569',
-                                  cursor: 'pointer',
-                                  padding: '4px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  transition: 'color 0.2s',
-                                  textDecoration: 'none'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.color = '#0284c7'}
-                                onMouseLeave={(e) => e.currentTarget.style.color = '#475569'}
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                              <Link href={`/perfil/${m.id}`} title="Ver Perfil" style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: '3px', display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                               </Link>
-                              <button
-                                onClick={() => openTimelineForMember(m.id)}
-                                title="Historial"
-                                style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  color: '#475569',
-                                  cursor: 'pointer',
-                                  padding: '4px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  transition: 'color 0.2s',
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-spiritual)'}
-                                onMouseLeave={(e) => e.currentTarget.style.color = '#475569'}
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>
+                              <button onClick={() => openTimelineForMember(m.id)} title="Historial" style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: '3px', display: 'inline-flex', alignItems: 'center' }}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>
                               </button>
-                              <button
-                                onClick={() => loadMemberTags(m)}
-                                title="Alertas y Etiquetas"
-                                style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  color: '#475569',
-                                  cursor: 'pointer',
-                                  padding: '4px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  transition: 'color 0.2s',
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.color = '#eab308'}
-                                onMouseLeave={(e) => e.currentTarget.style.color = '#475569'}
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2H2v10l9.29 9.29c.39.39 1.02.39 1.41 0l7.59-7.59c.39-.39.39-1.02 0-1.41L12 2z"/><path d="M7 7h.01"/></svg>
+                              <button onClick={() => loadMemberTags(m)} title="Alertas y Etiquetas" style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: '3px', display: 'inline-flex', alignItems: 'center' }}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2H2v10l9.29 9.29c.39.39 1.02.39 1.41 0l7.59-7.59c.39-.39.39-1.02 0-1.41L12 2z"/><path d="M7 7h.01"/></svg>
                               </button>
                               <button
                                 onClick={async () => {
                                   if (!confirm(`¿Estás seguro de que deseas eliminar permanentemente a ${m.nombre}?`)) return;
                                   try {
-                                    const res = await fetch("/api/miembros", {
-                                      method: "POST",
-                                      headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({
-                                        action: "deleteMember",
-                                        data: { memberId: m.id }
-                                      })
-                                    });
+                                    const res = await fetch("/api/miembros", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "deleteMember", data: { memberId: m.id } }) });
                                     const resData = await res.json();
-                                    if (resData.error) {
-                                      alert("Error al eliminar miembro: " + resData.error);
-                                    } else {
-                                      // Recargar miembros
-                                      const resM = await fetch("/api/miembros");
-                                      const dataM = await resM.json();
-                                      if (!dataM.error && Array.isArray(dataM)) {
-                                        setMiembros(dataM);
-                                      }
-                                    }
-                                  } catch (err) {
-                                    console.error(err);
-                                  }
+                                    if (!resData.error) { const resM = await fetch("/api/miembros"); const dataM = await resM.json(); if (!dataM.error && Array.isArray(dataM)) setMiembros(dataM); }
+                                  } catch (err) { console.error(err); }
                                 }}
                                 title="Eliminar miembro"
-                                style={{ 
-                                  background: 'none',
-                                  border: 'none',
-                                  color: '#f43f5e',
-                                  cursor: 'pointer',
-                                  padding: '4px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  transition: 'color 0.2s',
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.color = '#e11d48'}
-                                onMouseLeave={(e) => e.currentTarget.style.color = '#f43f5e'}
+                                style={{ background: 'none', border: 'none', color: '#f43f5e', cursor: 'pointer', padding: '3px', display: 'inline-flex', alignItems: 'center' }}
                               >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
                               </button>
                             </td>
                           </tr>
                         );
                       })}
+                      {displayMiembros.length === 0 && (
+                        <tr><td colSpan={9} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
+                          No se encontraron miembros con los filtros seleccionados.
+                        </td></tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
