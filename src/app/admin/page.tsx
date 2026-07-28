@@ -1973,7 +1973,7 @@ export default function SuperAdminPage() {
             className={styles.sidebarLogoutBtn}
             title="Cerrar Sesión / Salir"
           >
-            <span className={styles.sidebarIcon}>🚪</span>
+            <img src="/Iconos SVG/salir.svg" alt="Salir" className={styles.sidebarIcon} style={{ width: "18px", height: "18px", objectFit: "contain" }} />
             {!sidebarCollapsed && <span className={styles.sidebarLabel}>Salir</span>}
           </button>
         </div>
@@ -7433,7 +7433,7 @@ export default function SuperAdminPage() {
                   className={styles.mobileDrawerItem}
                   style={{ color: '#ef4444' }}
                 >
-                  <span style={{ fontSize: '1.25rem' }}>🚪</span>
+                  <img src="/Iconos SVG/salir.svg" alt="Salir" style={{ width: "22px", height: "22px", objectFit: "contain" }} />
                   <span style={{ fontWeight: 600 }}>Salir</span>
                 </button>
               </div>

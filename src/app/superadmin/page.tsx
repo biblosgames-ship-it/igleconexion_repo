@@ -512,7 +512,7 @@ export default function SuperAdminPage() {
         </div>
         <div className={styles.headerActions}>
           <button className={styles.logoutBtn} onClick={handleLogout}>
-            <span>🚪</span> Cerrar Sesión
+            <img src="/Iconos SVG/salir.svg" alt="Salir" style={{ width: "18px", height: "18px", objectFit: "contain", verticalAlign: "middle", marginRight: "0.4rem" }} /> Cerrar Sesión
           </button>
         </div>
       </header>
