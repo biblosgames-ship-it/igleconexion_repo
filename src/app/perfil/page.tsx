@@ -384,7 +384,7 @@ export default function Perfil() {
       <header className={styles.header}>
         <div className={styles.headerLeft}>
           <Link href="/hub" className={styles.backBtn} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-            <img src="/Iconos SVG/iglesia.svg" alt="Mi Iglesia" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> <span className={styles.backBtnText}>Volver a Mi Iglesia</span>
+            <img src="/Iconos SVG/iglesia.png" alt="Mi Iglesia" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> <span className={styles.backBtnText}>Volver a Mi Iglesia</span>
           </Link>
 
         </div>

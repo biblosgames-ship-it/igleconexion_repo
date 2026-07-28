@@ -486,7 +486,7 @@ export default function Hub() {
               title="Comunicados Oficiales"
               style={{ position: 'relative' }}
             >
-              <img src="/Iconos SVG/comunicado.svg" alt="Comunicados" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+              <img src="/Iconos SVG/comunicado.png" alt="Comunicados" style={{ width: 22, height: 22, objectFit: 'contain' }} />
               {comunicadosList.some(c => !c.leido) && (
                 <span style={{
                   position: 'absolute',
@@ -534,7 +534,7 @@ export default function Hub() {
             {(userRole === "SUPERADMIN" || userRole === "ADMIN_IGLESIA" || userRole === "LIDER") && (
               <Link href={userRole === "SUPERADMIN" ? "/superadmin" : "/admin"} title="Configuración">
                 <button className={styles.navIcon} type="button">
-                  <img src="/Iconos SVG/dashboard.svg" alt="Configuración" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                  <img src="/Iconos SVG/dashboard.png" alt="Configuración" style={{ width: 22, height: 22, objectFit: 'contain' }} />
                 </button>
               </Link>
             )}
