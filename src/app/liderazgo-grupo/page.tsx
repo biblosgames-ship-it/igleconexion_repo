@@ -271,47 +271,57 @@ function LiderazgoGrupoContent() {
 
         {/* Grid Principal */}
         <div className={styles.grid}>
-          {/* Columna Izquierda: Pestañas de Interacción */}
-          <div>
-            {/* Listado de Pestañas */}
-            <div className={styles.tabList}>
-              <button 
-                onClick={() => setActiveTab("announcements")}
-                className={`${styles.tabBtn} ${activeTab === "announcements" ? styles.tabBtnActive : ""}`}
-              >
-                📢 Comunicados y Acuerdos
-              </button>
-              <button 
-                onClick={() => setActiveTab("agenda")}
-                className={`${styles.tabBtn} ${activeTab === "agenda" ? styles.tabBtnActive : ""}`}
-              >
-                📅 Agenda y Calendario
-              </button>
-              <button 
-                onClick={() => setActiveTab("forum")}
-                className={`${styles.tabBtn} ${activeTab === "forum" ? styles.tabBtnActive : ""}`}
-              >
-                💬 Foro de Directivos
-              </button>
-              <button 
-                onClick={() => setActiveTab("inventario")} 
-                className={`${styles.subTab} ${activeTab === "inventario" ? styles.subTabActive : ""}`}
-              >
-                📦 Inventario
-              </button>
-              <button
-                onClick={() => setActiveTab("asistencia")}
-                className={`${styles.subTab} ${activeTab === "asistencia" ? styles.subTabActive : ""}`}
-              >
-                📝 Asistencia
-              </button>
-              <button
-                onClick={() => setActiveTab("presupuesto")}
-                className={`${styles.subTab} ${activeTab === "presupuesto" ? styles.subTabActive : ""}`}
-              >
-                💰 Presupuesto
-              </button>
-            </div>
+        {/* Nav Icon Tabs */}
+        <div className={styles.tabList}>
+          <button 
+            onClick={() => setActiveTab("announcements")}
+            className={`${styles.tabBtn} ${activeTab === "announcements" ? styles.tabBtnActive : ""}`}
+            title="Comunicados y Acuerdos"
+          >
+            <span className={styles.tabBtnIcon}><img src="/Iconos SVG/comunicado.png" alt="" /></span>
+            <span className={styles.tabBtnLabel}>Comunicados</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab("agenda")}
+            className={`${styles.tabBtn} ${activeTab === "agenda" ? styles.tabBtnActive : ""}`}
+            title="Agenda y Calendario"
+          >
+            <span className={styles.tabBtnIcon}><img src="/Iconos SVG/Agenda.svg" alt="" /></span>
+            <span className={styles.tabBtnLabel}>Agenda</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab("forum")}
+            className={`${styles.tabBtn} ${activeTab === "forum" ? styles.tabBtnActive : ""}`}
+            title="Foro de Directivos"
+          >
+            <span className={styles.tabBtnIcon}><img src="/Iconos SVG/contacto.svg" alt="" /></span>
+            <span className={styles.tabBtnLabel}>Foro</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab("inventario")} 
+            className={`${styles.tabBtn} ${activeTab === "inventario" ? styles.tabBtnActive : ""}`}
+            title="Inventario"
+          >
+            <span className={styles.tabBtnIcon}><img src="/Iconos SVG/Proceso.svg" alt="" /></span>
+            <span className={styles.tabBtnLabel}>Inventario</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("asistencia")}
+            className={`${styles.tabBtn} ${activeTab === "asistencia" ? styles.tabBtnActive : ""}`}
+            title="Asistencia"
+          >
+            <span className={styles.tabBtnIcon}><img src="/Iconos SVG/Miembros.svg" alt="" /></span>
+            <span className={styles.tabBtnLabel}>Asistencia</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("presupuesto")}
+            className={`${styles.tabBtn} ${activeTab === "presupuesto" ? styles.tabBtnActive : ""}`}
+            title="Presupuesto"
+          >
+            <span className={styles.tabBtnIcon}><img src="/Iconos SVG/finanzas.png" alt="" /></span>
+            <span className={styles.tabBtnLabel}>Presupuesto</span>
+          </button>
+        </div>
 
             {/* CONTENIDO PESTAÑA: COMUNICADOS Y ACUERDOS */}
             {activeTab === "announcements" && (
@@ -537,9 +547,8 @@ function LiderazgoGrupoContent() {
             {activeTab === "presupuesto" && grupo && (
               <PresupuestoModulo entidadId={grupo.id} entidadTipo="GRUPO_TRABAJO" />
             )}
-          </div>
 
-          {/* Columna Derecha: Directivos */}
+          {/* Directivos */}
           <div className={styles.card} style={{ height: 'fit-content' }}>
             <div className={styles.cardHeader}>
               <h2 className={styles.cardTitle}>👑 Directivos Activos</h2>

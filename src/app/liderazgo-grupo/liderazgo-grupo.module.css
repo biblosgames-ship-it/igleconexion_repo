@@ -65,15 +65,9 @@
 }
 
 .grid {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 2rem;
-}
-
-@media (max-width: 968px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 @media (max-width: 600px) {
@@ -120,29 +114,105 @@
   margin: 0;
 }
 
+/* --- Nav Icons Tab Menu --- */
 .tabList {
   display: flex;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
   margin-bottom: 1.5rem;
+  justify-content: center;
+  padding: 1.25rem;
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  padding-bottom: 2rem;
+  position: relative;
 }
 
 .tabBtn {
-  border: none;
-  background: white;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: #f1f5f9;
+  border: 1px solid rgba(226, 232, 240, 0.6);
   color: #475569;
-  padding: 0.6rem 1.25rem;
-  border-radius: 8px;
+  padding: 0;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
   font-weight: 600;
   cursor: pointer;
-  border: 1px solid #e2e8f0;
-  transition: all 0.2s;
-  font-size: 0.85rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  justify-content: center;
+  position: relative;
+  font-size: 0;
+}
+
+.tabBtn:hover {
+  color: var(--color-primary, #0284c7);
+  background-color: #e0f2fe;
+  transform: translateY(-3px);
+  box-shadow: 0 4px 6px rgba(2, 132, 199, 0.15);
 }
 
 .tabBtnActive {
-  background: #0284c7;
-  color: white;
-  border-color: #0284c7;
+  background: #0284c7 !important;
+  color: white !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3) !important;
+  transform: translateY(-2px);
+}
+
+.tabBtnActive:hover {
+  background: #0369a1 !important;
+  color: white !important;
+}
+
+.tabBtnIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tabBtnIcon img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  filter: none;
+}
+
+.tabBtnActive .tabBtnIcon img {
+  filter: brightness(0) invert(1);
+}
+
+.tabBtnLabel {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.62rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+.tabBtnActive .tabBtnLabel {
+  color: #0284c7;
+}
+
+/* Sub-tabs (smaller variant) */
+.subTab {
+  composes: tabBtn;
+}
+
+.subTabActive {
+  composes: tabBtnActive;
 }
 
 .primaryBtn {
