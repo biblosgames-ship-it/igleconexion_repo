@@ -272,39 +272,67 @@
   font-size: 1.1rem;
 }
 
-/* --- Accesos Rápidos de Liderazgo (Badges) --- */
+/* --- Accesos Rápidos de Liderazgo (Nav Icons estilo Hub) --- */
 .leaderBadges {
   display: flex;
-  gap: 0.75rem;
-  margin-top: 1.25rem;
   flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  justify-content: center;
+  padding-bottom: 1.5rem;
 }
 
 .leaderBadge {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   gap: 0.4rem;
-  background-color: var(--bg-card);
-  border: 1px solid var(--accent-blue);
-  color: var(--accent-blue);
-  padding: 0.4rem 0.8rem;
-  border-radius: 9999px;
-  font-size: 0.85rem;
-  font-weight: 600;
+  background-color: #f1f5f9;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  color: var(--text-secondary);
+  padding: 0;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
   text-decoration: none;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(2, 132, 199, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
 }
 
 .leaderBadge:hover {
-  background-color: var(--accent-blue);
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(2, 132, 199, 0.2);
+  color: var(--color-primary);
+  background-color: var(--color-primary-light);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
 }
 
 .badgeIcon {
-  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.badgeIcon img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.badgeText {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.62rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  pointer-events: none;
 }
 
 .footer {
@@ -405,6 +433,18 @@
   .leaderBadges {
     justify-content: center;
     width: 100%;
+    gap: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .leaderBadge {
+    width: 52px;
+    height: 52px;
+  }
+
+  .badgeText {
+    font-size: 0.58rem;
+    bottom: -18px;
   }
 
   .avatar {

@@ -703,41 +703,41 @@ export default function Perfil() {
                 )}
               </div>
 
-              {/* Accesos de Liderazgo simulados */}
-              <div className={styles.leaderBadges}>
+              {/* Accesos Rápidos Nav Style */}
+              <div className={styles.leaderBadges} style={{ paddingBottom: '1rem' }}>
                 {currentUser.rol === "ADMIN_IGLESIA" && (
-                  <Link href="/admin" className={styles.leaderBadge} style={{ borderColor: '#0284c7', color: '#0284c7', background: '#e0f2fe' }} title="Módulo de Configuración de la Iglesia">
-                    <span className={styles.badgeIcon}>⚙️</span>
-                    <span className={styles.badgeText} style={{ fontWeight: 'bold' }}>Configurar Iglesia</span>
+                  <Link href="/admin" className={styles.leaderBadge} title="Configurar Iglesia">
+                    <span className={styles.badgeIcon}><img src="/Iconos SVG/dashboard.png" alt="" /></span>
+                    <span className={styles.badgeText}>Admin Iglesia</span>
                   </Link>
                 )}
                 {currentUser.rol === "LIDER" && currentUser.paginas_acceso && (
-                  <Link href="/admin" className={styles.leaderBadge} style={{ borderColor: '#0284c7', color: '#0284c7', background: '#e0f2fe' }} title="Panel de Administración">
-                    <span className={styles.badgeIcon}>⚙️</span>
-                    <span className={styles.badgeText} style={{ fontWeight: 'bold' }}>Panel de Liderazgo</span>
+                  <Link href="/admin" className={styles.leaderBadge} title="Panel de Administración">
+                    <span className={styles.badgeIcon}><img src="/Iconos SVG/dashboard.png" alt="" /></span>
+                    <span className={styles.badgeText}>Liderazgo</span>
                   </Link>
                 )}
                 {currentUser.rol === "SUPERADMIN" && (
-                  <Link href="/admin" className={styles.leaderBadge} style={{ borderColor: '#0284c7', color: '#0284c7', background: '#e0f2fe' }} title="Configurar esta Iglesia">
-                    <span className={styles.badgeIcon}>⚙️</span>
-                    <span className={styles.badgeText} style={{ fontWeight: 'bold' }}>Configurar Iglesia</span>
+                  <Link href="/admin" className={styles.leaderBadge} title="Configurar esta Iglesia">
+                    <span className={styles.badgeIcon}><img src="/Iconos SVG/dashboard.png" alt="" /></span>
+                    <span className={styles.badgeText}>Config Iglesia</span>
                   </Link>
                 )}
                 {currentUser.rol === "SUPERADMIN" && (
-                  <Link href="/superadmin" className={styles.leaderBadge} style={{ borderColor: '#8b5cf6', color: '#8b5cf6', background: '#f5f3ff' }} title="Consola de Super Administrador">
-                    <span className={styles.badgeIcon}>👑</span>
-                    <span className={styles.badgeText} style={{ fontWeight: 'bold' }}>Consola SaaS</span>
+                  <Link href="/superadmin" className={styles.leaderBadge} title="Consola de Super Administrador">
+                    <span className={styles.badgeIcon}><img src="/Iconos SVG/Identidad-2.svg" alt="" /></span>
+                    <span className={styles.badgeText}>Superadmin</span>
                   </Link>
                 )}
                 {(currentUser.rol === "LIDER" || currentUser.rol === "ADMIN_IGLESIA" || currentUser.rol === "SUPERADMIN") && (
-                  <Link href="/sociedad" className={styles.leaderBadge} style={{ borderColor: '#f59e0b', color: '#f59e0b', background: '#fffbeb' }} title="Panorama de Sociedades y Grupos">
-                    <span className={styles.badgeIcon}>📊</span>
-                    <span className={styles.badgeText} style={{ fontWeight: 'bold' }}>Panorama de Sociedades</span>
+                  <Link href="/sociedad" className={styles.leaderBadge} title="Panorama de Sociedades y Grupos">
+                    <span className={styles.badgeIcon}><img src="/Iconos SVG/Sociedad.svg" alt="" /></span>
+                    <span className={styles.badgeText}>Sociedades</span>
                   </Link>
                 )}
-                <Link href="/grupo" className={styles.leaderBadge} style={{ borderColor: '#10b981', color: '#10b981', background: '#ecfdf5' }} title="Mi Grupo de Conexión">
-                  <span className={styles.badgeIcon}>👥</span>
-                  <span className={styles.badgeText} style={{ fontWeight: 'bold' }}>Mi Grupo de Conexión</span>
+                <Link href="/grupo" className={styles.leaderBadge} title="Mi Grupo de Conexión">
+                  <span className={styles.badgeIcon}><img src="/Iconos SVG/Miembros.svg" alt="" /></span>
+                  <span className={styles.badgeText}>Mi Grupo</span>
                 </Link>
 
                 {myWorkgroups.map((group: any) => {
@@ -748,30 +748,25 @@ export default function Perfil() {
                   );
                   const puesto = mb?.puesto || "Líder";
                   
-                  let badgeColor = { border: '#10b981', color: '#10b981', bg: '#ecfdf5', icon: '💼' };
-                  if (group.tipo === "CUERPO_OFICIAL") {
-                    badgeColor = { border: '#db2777', color: '#db2777', bg: '#fdf2f8', icon: '👑' };
-                  } else if (group.tipo === "MINISTERIO") {
-                    badgeColor = { border: '#f59e0b', color: '#f59e0b', bg: '#fffbeb', icon: '🎸' };
-                  } else if (group.tipo === "INSTITUCION") {
-                    badgeColor = { border: '#64748b', color: '#64748b', bg: '#f8fafc', icon: '⛪' };
-                  }
+                  let iconSrc = '/Iconos SVG/servicio.svg';
+                  if (group.tipo === "CUERPO_OFICIAL") iconSrc = '/Iconos SVG/Identidad-2.svg';
+                  else if (group.tipo === "MINISTERIO") iconSrc = '/Iconos SVG/pastoral.svg';
+                  else if (group.tipo === "INSTITUCION") iconSrc = '/Iconos SVG/iglesia.png';
 
                   return (
                     <Link 
                       key={group.id}
                       href={`/liderazgo-grupo?id=${group.id}`} 
                       className={styles.leaderBadge} 
-                      style={{ borderColor: badgeColor.border, color: badgeColor.color, background: badgeColor.bg }}
                       title={`${group.nombre} - ${puesto}`}
                     >
-                      <span className={styles.badgeIcon}>{badgeColor.icon}</span>
-                      <span className={styles.badgeText} style={{ fontWeight: 'bold' }}>{group.nombre} ({puesto})</span>
+                      <span className={styles.badgeIcon}><img src={iconSrc} alt="" /></span>
+                      <span className={styles.badgeText}>{group.nombre}</span>
                     </Link>
                   );
                 })}
 
-                {/* Botones de Acceso Directo a Cursos y Eventos Inscritos */}
+                {/* Acceso a Cursos y Eventos Inscritos */}
                 {actividades.eventosInscritos.map((ev: any) => {
                   const isCurso = ev.tipo === 'CLASE' || ev.tipo === 'CURSO' || ev.tipo === 'TALLER';
                   return (
@@ -779,33 +774,24 @@ export default function Perfil() {
                       key={ev.evento_id}
                       onClick={() => setSelectedEventoModal(ev)}
                       className={styles.leaderBadge}
-                      style={{
-                        borderColor: isCurso ? '#8b5cf6' : '#0284c7',
-                        color: isCurso ? '#7c3aed' : '#0284c7',
-                        background: isCurso ? '#f5f3ff' : '#e0f2fe',
-                        cursor: 'pointer'
-                      }}
                       title={`${isCurso ? 'Curso' : 'Evento'}: ${ev.nombre}`}
                     >
-                      <span className={styles.badgeIcon}>{isCurso ? '📚' : '🎉'}</span>
-                      <span className={styles.badgeText} style={{ fontWeight: 'bold' }}>
-                        {isCurso ? 'Curso' : 'Evento'}: {ev.nombre}
-                      </span>
+                      <span className={styles.badgeIcon}><img src={isCurso ? '/Iconos SVG/Formulario.svg' : '/Iconos SVG/Ebento.svg'} alt="" /></span>
+                      <span className={styles.badgeText}>{ev.nombre}</span>
                     </button>
                   );
                 })}
 
-                {/* Botones de Acceso Directo a Promesas de Fe Activas */}
+                {/* Acceso a Promesas de Fe Activas */}
                 {actividades.promesasFe.filter((pf: any) => pf.estado === 'ACTIVA').map((pf: any) => (
                   <button
                     key={pf.id}
                     onClick={() => setSelectedPromesaModal(pf)}
                     className={styles.leaderBadge}
-                    style={{ borderColor: '#16a34a', color: '#16a34a', background: '#f0fdf4', cursor: 'pointer' }}
                     title={`Promesa de Fe: ${pf.proyecto_nombre}`}
                   >
-                    <span className={styles.badgeIcon}>🤝</span>
-                    <span className={styles.badgeText} style={{ fontWeight: 'bold' }}>Promesa: {pf.proyecto_nombre} ({pf.progreso_porcentaje}%)</span>
+                    <span className={styles.badgeIcon}><img src="/Iconos SVG/Peticiones.svg" alt="" /></span>
+                    <span className={styles.badgeText}>{pf.proyecto_nombre}</span>
                   </button>
                 ))}
               </div>
