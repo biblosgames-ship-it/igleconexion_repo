@@ -751,7 +751,7 @@ export default function Perfil() {
                   let iconSrc = '/Iconos SVG/servicio.svg';
                   if (group.tipo === "CUERPO_OFICIAL") iconSrc = '/Iconos SVG/Identidad-2.svg';
                   else if (group.tipo === "MINISTERIO") iconSrc = '/Iconos SVG/pastoral.svg';
-                  else if (group.tipo === "INSTITUCION") iconSrc = '/Iconos SVG/Educacion Cristiana.svg';
+                  else if (group.tipo === "INSTITUCION") iconSrc = '/Iconos SVG/biblioteca.svg';
 
                   return (
                     <Link 
@@ -781,23 +781,91 @@ export default function Perfil() {
                     </button>
                   );
                 })}
-
-                {/* Acceso a Promesas de Fe Activas */}
-                {actividades.promesasFe.filter((pf: any) => pf.estado === 'ACTIVA').map((pf: any) => (
-                  <button
-                    key={pf.id}
-                    onClick={() => setSelectedPromesaModal(pf)}
-                    className={styles.leaderBadge}
-                    title={`Promesa de Fe: ${pf.proyecto_nombre}`}
-                  >
-                    <span className={styles.badgeIcon}><img src="/Iconos SVG/Peticiones.svg" alt="" /></span>
-                    <span className={styles.badgeText}>{pf.proyecto_nombre}</span>
-                  </button>
-                ))}
               </div>
             </div>
           )}
         </section>
+
+        {/* Promesas de Fe Pendientes - Banner */}
+        {actividades.promesasFe.filter((pf: any) => pf.estado === 'ACTIVA').length > 0 && (
+          <section style={{
+            background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+            border: '1px solid #f59e0b',
+            borderRadius: '16px',
+            padding: '1.25rem 1.5rem',
+            boxShadow: '0 2px 8px rgba(245, 158, 11, 0.15)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
+              <img src="/Iconos SVG/Peticiones.svg" alt="" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
+              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#92400e' }}>Promesas de Fe Activas</h3>
+              <span style={{
+                fontSize: '0.65rem',
+                fontWeight: 700,
+                background: '#f59e0b',
+                color: 'white',
+                padding: '2px 8px',
+                borderRadius: '99px',
+              }}>
+                {actividades.promesasFe.filter((pf: any) => pf.estado === 'ACTIVA').length} pendiente{actividades.promesasFe.filter((pf: any) => pf.estado === 'ACTIVA').length > 1 ? 's' : ''}
+              </span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {actividades.promesasFe.filter((pf: any) => pf.estado === 'ACTIVA').map((pf: any) => (
+                <button
+                  key={pf.id}
+                  onClick={() => setSelectedPromesaModal(pf)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '1rem',
+                    background: 'white',
+                    border: '1px solid #fbbf24',
+                    borderRadius: '12px',
+                    padding: '0.85rem 1rem',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.2s',
+                    width: '100%',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(245,158,11,0.2)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#1e293b', marginBottom: '0.25rem' }}>
+                      {pf.proyecto_nombre}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#92400e', fontWeight: 600 }}>
+                      {pf.descripcion ? pf.descripcion.substring(0, 80) + (pf.descripcion.length > 80 ? '...' : '') : 'Sin descripción'}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.15rem', minWidth: '60px' }}>
+                    <div style={{
+                      width: '100%',
+                      height: '6px',
+                      background: '#fef3c7',
+                      borderRadius: '99px',
+                      overflow: 'hidden',
+                    }}>
+                      <div style={{
+                        width: `${pf.progreso_porcentaje || 0}%`,
+                        height: '100%',
+                        background: 'linear-gradient(90deg, #f59e0b, #d97706)',
+                        borderRadius: '99px',
+                        transition: 'width 0.5s ease',
+                      }} />
+                    </div>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#d97706' }}>
+                      {pf.progreso_porcentaje || 0}%
+                    </span>
+                  </div>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" style={{ flexShrink: 0 }}>
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Ruta de Crecimiento (Timeline Dinámico) */}
         <section className={styles.timelineCard}>
