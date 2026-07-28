@@ -11,6 +11,7 @@
   padding: 1rem 2rem;
   background-color: var(--bg-secondary);
   box-shadow: var(--shadow-sm);
+  position: relative;
 }
 
 .logo {
@@ -66,10 +67,37 @@
   box-shadow: var(--shadow-md);
 }
 
+.navIconLabel {
+  display: none;
+}
+
 .navWrapper {
   display: flex;
   align-items: center;
   gap: 1.2rem;
+}
+
+.hamburgerBtn {
+  display: none;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.45rem;
+  cursor: pointer;
+  color: #334155;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.hamburgerBtn:hover {
+  background: #f1f5f9;
+}
+
+.navOpen {
+  /* desktop: no special behavior */
 }
 
 .quienesSomosBtn {
@@ -437,63 +465,138 @@
 
 @media (max-width: 768px) {
   .header {
-    flex-direction: column;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    align-items: stretch;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    align-items: center;
   }
 
   .logo {
-    font-size: 1.1rem;
+    font-size: 1rem;
     text-align: center;
     justify-content: center;
+    flex: 1;
+    min-width: 0;
     flex-wrap: wrap;
     word-break: break-word;
     overflow-wrap: break-word;
     line-height: 1.3;
+    background: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   }
 
   .logoName {
     white-space: normal;
     overflow: visible;
     text-overflow: clip;
+    font-size: 0.95rem;
   }
 
   .logoSlogan {
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     display: block;
     width: 100%;
     margin-left: 0;
-    margin-top: 0.15rem;
+    margin-top: 0.1rem;
   }
 
   .logo img {
-    max-height: 30px;
+    max-height: 28px;
+  }
+
+  .hamburgerBtn {
+    display: flex;
   }
 
   .navWrapper {
-    display: flex;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #e2e8f0;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    border-radius: 0 0 16px 16px;
     flex-direction: column;
-    align-items: center;
-    gap: 0.6rem;
-    width: 100%;
+    align-items: stretch;
+    gap: 0;
+    padding: 0.5rem 0;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.3s ease, opacity 0.25s ease, padding 0.3s ease;
+    z-index: 100;
+  }
+
+  .navOpen {
+    max-height: 80vh;
+    opacity: 1;
+    overflow-y: auto;
+    padding: 0.75rem 1rem;
   }
 
   .quienesSomosBtn {
-    font-size: 0.72rem;
-    padding: 0.35rem 0.7rem;
+    font-size: 0.8rem;
+    padding: 0.6rem 0.8rem;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    width: 100%;
+    justify-content: center;
   }
 
   .navIcons {
-    gap: 0.5rem;
+    gap: 0.4rem;
     width: 100%;
-    justify-content: center;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    align-items: stretch;
   }
 
   .navIcon {
-    width: 36px;
-    height: 36px;
+    width: 100%;
+    height: auto;
+    padding: 0.7rem 0.4rem;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    justify-content: center;
+    font-size: 0.65rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    box-shadow: none;
+    color: #334155;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .navIcon:hover {
+    background: #eef2ff;
+    transform: none;
+    box-shadow: none;
+    color: var(--color-primary);
+  }
+
+  .navIcon img {
+    width: 24px;
+    height: 24px;
+  }
+
+  .navIconLabel {
+    display: block;
+    font-size: 0.6rem;
+    color: #64748b;
+    line-height: 1.1;
+  }
+
+  .navIcons a {
+    display: contents;
   }
 
   .main {

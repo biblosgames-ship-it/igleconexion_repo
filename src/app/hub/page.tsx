@@ -45,6 +45,7 @@ export default function Hub() {
   const [userRole, setUserRole] = useState<string|null>(null);
   const [canSwitchRole, setCanSwitchRole] = useState(false);
   const [viewingAs, setViewingAs] = useState<string|null>(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const [hasPledgedPromo, setHasPledgedPromo] = useState(false);
   const [pendingFormId, setPendingFormId] = useState<string|null>(null);
@@ -463,10 +464,25 @@ export default function Hub() {
             </span>
           )}
         </div>
-        <div className={styles.navWrapper}>
-          <button 
-            className={styles.quienesSomosBtn} 
-            onClick={() => setActiveModal("info")} 
+        <button
+          className={styles.hamburgerBtn}
+          onClick={() => setMobileNavOpen(!mobileNavOpen)}
+          aria-label="Menú"
+        >
+          {mobileNavOpen ? (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="6" y1="6" x2="18" y2="18" /><line x1="6" y1="18" x2="18" y2="6" />
+            </svg>
+          ) : (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          )}
+        </button>
+        <div className={`${styles.navWrapper} ${mobileNavOpen ? styles.navOpen : ''}`}>
+          <button
+            className={styles.quienesSomosBtn}
+            onClick={() => { setActiveModal("info"); setMobileNavOpen(false); }}
             title="Quiénes Somos"
           >
             {logo ? (
@@ -477,12 +493,13 @@ export default function Hub() {
             <span>Quiénes Somos</span>
           </button>
           <nav className={styles.navIcons} style={{ alignItems: 'center' }}>
-            <button className={styles.navIcon} onClick={() => setActiveModal("contacto")} title="Contacto y Redes">
+            <button className={styles.navIcon} onClick={() => { setActiveModal("contacto"); setMobileNavOpen(false); }} title="Contacto y Redes">
               <img src="/Iconos SVG/contacto.svg" alt="Contacto" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+              <span className={styles.navIconLabel}>Contacto</span>
             </button>
-            <button 
-              className={styles.navIcon} 
-              onClick={() => setActiveModal("comunicados")} 
+            <button
+              className={styles.navIcon}
+              onClick={() => { setActiveModal("comunicados"); setMobileNavOpen(false); }}
               title="Comunicados Oficiales"
               style={{ position: 'relative' }}
             >
@@ -490,8 +507,8 @@ export default function Hub() {
               {comunicadosList.some(c => !c.leido) && (
                 <span style={{
                   position: 'absolute',
-                  top: '-2px',
-                  right: '-2px',
+                  top: '4px',
+                  right: '8px',
                   width: '10px',
                   height: '10px',
                   backgroundColor: '#ef4444',
@@ -499,10 +516,11 @@ export default function Hub() {
                   border: '2px solid white'
                 }} />
               )}
+              <span className={styles.navIconLabel}>Comunicados</span>
             </button>
-            <button 
-              className={styles.navIcon} 
-              onClick={() => setActiveModal("notifications")} 
+            <button
+              className={styles.navIcon}
+              onClick={() => { setActiveModal("notifications"); setMobileNavOpen(false); }}
               title="Notificaciones"
               style={{ position: 'relative' }}
             >
@@ -510,8 +528,8 @@ export default function Hub() {
               {notificacionesList.some(n => !n.leido) && (
                 <span style={{
                   position: 'absolute',
-                  top: '-2px',
-                  right: '-2px',
+                  top: '4px',
+                  right: '8px',
                   width: '10px',
                   height: '10px',
                   backgroundColor: '#ef4444',
@@ -519,28 +537,34 @@ export default function Hub() {
                   border: '2px solid white'
                 }} />
               )}
+              <span className={styles.navIconLabel}>Notif.</span>
             </button>
-            <button className={styles.navIcon} onClick={() => setActiveModal("agenda")} title="Agenda y Eventos">
+            <button className={styles.navIcon} onClick={() => { setActiveModal("agenda"); setMobileNavOpen(false); }} title="Agenda y Eventos">
               <img src="/Iconos SVG/Agenda.svg" alt="Agenda" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+              <span className={styles.navIconLabel}>Agenda</span>
             </button>
             <Link href="/biblioteca" title="Biblioteca Digital (PDF, Videos, Galerías)">
-              <button className={styles.navIcon} type="button">
+              <button className={styles.navIcon} type="button" onClick={() => setMobileNavOpen(false)}>
                 <img src="/Iconos SVG/biblioteca.svg" alt="Biblioteca Digital" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                <span className={styles.navIconLabel}>Biblioteca</span>
               </button>
             </Link>
-            <button className={styles.navIcon} onClick={() => { setShowOracionModal(true); setOracionEnviado(false); }} title="Petición de Oración">
+            <button className={styles.navIcon} onClick={() => { setShowOracionModal(true); setOracionEnviado(false); setMobileNavOpen(false); }} title="Petición de Oración">
               <img src="/Iconos SVG/Peticiones.svg" alt="Oración" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+              <span className={styles.navIconLabel}>Oración</span>
             </button>
             {(userRole === "SUPERADMIN" || userRole === "ADMIN_IGLESIA" || userRole === "LIDER") && (
               <Link href={userRole === "SUPERADMIN" ? "/superadmin" : "/admin"} title="Configuración">
-                <button className={styles.navIcon} type="button">
+                <button className={styles.navIcon} type="button" onClick={() => setMobileNavOpen(false)}>
                   <img src="/Iconos SVG/dashboard.png" alt="Configuración" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                  <span className={styles.navIconLabel}>Config</span>
                 </button>
               </Link>
             )}
             <Link href="/perfil" title="Mi Perfil">
-              <button className={styles.navIcon} type="button">
+              <button className={styles.navIcon} type="button" onClick={() => setMobileNavOpen(false)}>
                 <img src="/Iconos SVG/perfil.svg" alt="Mi Perfil" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                <span className={styles.navIconLabel}>Perfil</span>
               </button>
             </Link>
           </nav>
