@@ -1140,6 +1140,66 @@ export default function SuperAdminPage() {
     });
   })();
 
+  const generatePDF = () => {
+    const printSection = document.getElementById('miembros-print-section');
+    if (!printSection) return;
+    const printHeader = document.getElementById('print-header');
+    if (printHeader) printHeader.style.display = 'block';
+    const win = window.open('', '_blank', 'width=1100,height=700');
+    if (!win) { alert('Permitir ventanas emergentes para generar el PDF.'); return; }
+    win.document.write(`
+      <!DOCTYPE html>
+      <html><head>
+      <title>Listado de Miembros - IgleConexión</title>
+      <style>
+        @page { margin: 1.2cm; size: landscape; }
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: #1e293b; margin: 0; padding: 0; }
+        .header { text-align: center; margin-bottom: 1rem; border-bottom: 2px solid #0f172a; padding-bottom: 0.75rem; }
+        .header h1 { font-size: 1.3rem; font-weight: 800; margin: 0; }
+        .header p { font-size: 0.8rem; color: #64748b; margin: 0.2rem 0 0 0; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+        th { background: #f8fafc; border-bottom: 2px solid #0f172a; padding: 0.4rem 0.35rem; text-align: left; font-weight: 700; font-size: 0.65rem; text-transform: uppercase; color: #475569; }
+        td { padding: 0.35rem 0.35rem; border-bottom: 1px solid #e2e8f0; }
+        tr:nth-child(even) { background: #f8fafc; }
+        .footer { text-align: center; margin-top: 1rem; font-size: 0.7rem; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 0.5rem; }
+        @media print { @page { size: landscape; margin: 1cm; } }
+      </style>
+      </head><body>
+      <div class="header">
+        <h1>Listado de Miembros</h1>
+        <p>Fecha: ${new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })} | Total: ${displayMiembros.length} miembros${hasActiveFilters ? ' (filtrado)' : ''}</p>
+      </div>
+      <table>
+        <thead><tr>
+          <th>#</th><th>Nombre</th><th>Cédula</th><th>Sexo</th><th>Edad</th><th>Teléfono</th><th>Correo</th><th>Grupo de Conexión</th><th>Sociedad</th><th>Etapa</th><th>Profesión</th><th>N. Académico</th><th>Estado Civil</th>
+        </tr></thead>
+        <tbody>
+          ${displayMiembros.map((m, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td><strong>${m.nombre}</strong></td>
+              <td>${m.cedula || '—'}</td>
+              <td>${m.sexo === 'M' ? 'M' : m.sexo === 'F' ? 'F' : '—'}</td>
+              <td>${calcEdad(m.fecha_nacimiento) || '—'}</td>
+              <td>${m.telefono || '—'}</td>
+              <td>${m.correo || '—'}</td>
+              <td>${m.grupo_conexion || '—'}</td>
+              <td>${m.sociedad || '—'}</td>
+              <td>${m.etapa_nombre || '—'}</td>
+              <td>${m.profesion_oficio || '—'}</td>
+              <td>${m.nivel_academico || '—'}</td>
+              <td>${m.estado_civil || '—'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div class="footer">Generado por IgleConexión — ${new Date().toLocaleDateString('es-ES')}</div>
+      <script>window.onload = function() { window.print(); }</script>
+      </body></html>
+    `);
+    win.document.close();
+  };
+
   // Auto-cargar selecciones de liderazgo al cambiar el alcance
   useEffect(() => {
     if (sociedades.length > 0 && !selectedSocId) {
@@ -5253,7 +5313,6 @@ export default function SuperAdminPage() {
                   body > *:not(#miembros-print-section) { display: none !important; }
                   #miembros-print-section { position: absolute; left: 0; top: 0; width: 100%; padding: 1.5rem !important; box-shadow: none !important; border: none !important; }
                   #miembros-print-section .no-print { display: none !important; }
-                  #miembros-filtros-panel { display: none !important; }
                   #print-header { display: block !important; }
                   #miembros-listado-print { padding: 0 !important; border: none !important; box-shadow: none !important; }
                   #miembros-listado-print table { font-size: 0.78rem !important; }
@@ -5318,6 +5377,11 @@ export default function SuperAdminPage() {
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                     Filtros de Búsqueda
+                    {hasActiveFilters && (
+                      <span style={{ fontSize: '0.7rem', fontWeight: 700, background: 'var(--color-primary)', color: 'white', padding: '2px 8px', borderRadius: '99px', marginLeft: '0.3rem' }}>
+                        Activos
+                      </span>
+                    )}
                   </span>
                   <span style={{
                     display: 'inline-flex',
@@ -5335,7 +5399,7 @@ export default function SuperAdminPage() {
                 </button>
                 {showFiltersPanel && (
                   <div style={{ padding: '0 1.5rem 1.25rem 1.5rem', borderTop: '1px solid #f1f5f9' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem', marginTop: '1rem', marginBottom: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem', marginTop: '1rem' }}>
                       <div>
                         <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Sexo</label>
                         <select value={filterSexo} onChange={(e) => setFilterSexo(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
@@ -5411,7 +5475,7 @@ export default function SuperAdminPage() {
                         </select>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.75rem' }}>
                       <input
                         type="text"
                         placeholder="🔍 Buscar por nombre, correo o teléfono..."
@@ -5419,21 +5483,29 @@ export default function SuperAdminPage() {
                         onChange={(e) => setMemberSearchTerm(e.target.value)}
                         style={{ flex: 1, minWidth: '200px', padding: '0.5rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
                       />
-                      <button onClick={() => setFiltersActive(true)} style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: 'var(--color-primary)', color: 'white', border: 'none', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      <button onClick={() => { setFiltersActive(true); setShowFiltersPanel(false); }} style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: 'var(--color-primary)', color: 'white', border: 'none', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                         🔍 Filtrar
                       </button>
                       <button onClick={() => { setFiltersActive(false); setFilterSexo(""); setFilterEdadMin(""); setFilterEdadMax(""); setFilterGrupoConexion(""); setFilterProfesion(""); setFilterNivelAcademico(""); setFilterEstadoCivil(""); setFilterEtapa(""); setMemberSearchTerm(""); }} style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                         ✕ Limpiar
                       </button>
-                      <button onClick={() => window.print()} style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: '#1e293b', color: 'white', border: 'none', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                        🖨️ Imprimir
-                      </button>
-                      <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, marginLeft: 'auto' }}>
-                        {hasActiveFilters ? `${displayMiembros.length} de ${miembros.length} miembros` : `Últimos ${displayMiembros.length} miembros`}
-                      </span>
                     </div>
                   </div>
                 )}
+                {/* BARRA DE ACCIONES - SIEMPRE VISIBLE */}
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', padding: showFiltersPanel ? '0 1.5rem 1rem' : '0 1.5rem 1rem', borderTop: showFiltersPanel ? 'none' : '1px solid #f1f5f9' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
+                    {hasActiveFilters ? `${displayMiembros.length} de ${miembros.length} miembros` : `Mostrando ${displayMiembros.length} miembros`}
+                  </span>
+                  <span style={{ marginLeft: 'auto', display: 'flex', gap: '0.4rem' }}>
+                    <button onClick={() => window.print()} style={{ padding: '0.45rem 0.9rem', borderRadius: '8px', background: '#1e293b', color: 'white', border: 'none', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      🖨️ Imprimir
+                    </button>
+                    <button onClick={generatePDF} style={{ padding: '0.45rem 0.9rem', borderRadius: '8px', background: '#dc2626', color: 'white', border: 'none', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      📄 PDF
+                    </button>
+                  </span>
+                </div>
               </div>
 
               {/* TABLA DE MIEMBROS */}
