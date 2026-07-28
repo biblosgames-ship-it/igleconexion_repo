@@ -998,7 +998,58 @@ export default function Perfil() {
             )}
           </div>
         </section>
-      </main>
+
+        {/* Promesas de Fe - Pendientes Semanales (compacto) */}
+        {actividades.promesasFe.filter((pf: any) => pf.estado === 'ACTIVA').length > 0 && (
+          <section style={{
+            background: '#fffbeb',
+            border: '1px solid #fde68a',
+            borderRadius: '12px',
+            padding: '0.75rem 1rem',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem' }}>
+              <img src="/Iconos SVG/Peticiones.svg" alt="" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
+              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#92400e' }}>Promesas de Fe</span>
+              <span style={{ fontSize: '0.58rem', fontWeight: 700, background: '#f59e0b', color: 'white', padding: '1px 6px', borderRadius: '99px' }}>
+                {actividades.promesasFe.filter((pf: any) => pf.estado === 'ACTIVA').length}
+              </span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              {actividades.promesasFe.filter((pf: any) => pf.estado === 'ACTIVA').map((pf: any) => (
+                <button
+                  key={pf.id}
+                  onClick={() => setSelectedPromesaModal(pf)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.6rem',
+                    background: 'white',
+                    border: '1px solid #fbbf24',
+                    borderRadius: '8px',
+                    padding: '0.45rem 0.65rem',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    width: '100%',
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#1e293b' }}>
+                      {pf.proyecto_nombre}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: '50px' }}>
+                    <div style={{ width: '40px', height: '4px', background: '#fef3c7', borderRadius: '99px', overflow: 'hidden' }}>
+                      <div style={{ width: `${pf.progreso_porcentaje || 0}%`, height: '100%', background: '#f59e0b', borderRadius: '99px' }} />
+                    </div>
+                    <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#d97706' }}>{pf.progreso_porcentaje || 0}%</span>
+                  </div>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+        </main>
 
       {/* MODAL DE DETALLES DEL EVENTO */}
       {selectedEventoModal && (
@@ -1046,58 +1097,6 @@ export default function Perfil() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Promesas de Fe - Pendientes Semanales (compacto) */}
-      {actividades.promesasFe.filter((pf: any) => pf.estado === 'ACTIVA').length > 0 && (
-        <section style={{
-          background: '#fffbeb',
-          border: '1px solid #fde68a',
-          borderRadius: '12px',
-          padding: '0.75rem 1rem',
-          marginBottom: '1rem',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem' }}>
-            <img src="/Iconos SVG/Peticiones.svg" alt="" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
-            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#92400e' }}>Promesas de Fe</span>
-            <span style={{ fontSize: '0.58rem', fontWeight: 700, background: '#f59e0b', color: 'white', padding: '1px 6px', borderRadius: '99px' }}>
-              {actividades.promesasFe.filter((pf: any) => pf.estado === 'ACTIVA').length}
-            </span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            {actividades.promesasFe.filter((pf: any) => pf.estado === 'ACTIVA').map((pf: any) => (
-              <button
-                key={pf.id}
-                onClick={() => setSelectedPromesaModal(pf)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.6rem',
-                  background: 'white',
-                  border: '1px solid #fbbf24',
-                  borderRadius: '8px',
-                  padding: '0.45rem 0.65rem',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  width: '100%',
-                }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#1e293b' }}>
-                    {pf.proyecto_nombre}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: '50px' }}>
-                  <div style={{ width: '40px', height: '4px', background: '#fef3c7', borderRadius: '99px', overflow: 'hidden' }}>
-                    <div style={{ width: `${pf.progreso_porcentaje || 0}%`, height: '100%', background: '#f59e0b', borderRadius: '99px' }} />
-                  </div>
-                  <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#d97706' }}>{pf.progreso_porcentaje || 0}%</span>
-                </div>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
-              </button>
-            ))}
-          </div>
-        </section>
       )}
 
       <footer className={styles.footer}>
