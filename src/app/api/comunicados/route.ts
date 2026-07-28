@@ -12,13 +12,16 @@ export async function GET() {
 
     const user = await prisma.usuario.findUnique({
       where: { id: sessionUserId },
-      include: {
+      select: {
+        id: true,
+        iglesia_id: true,
+        rol: true,
         persona: {
-          include: {
-            grupo_conexion: true
+          select: {
+            grupo_conexion: { select: { id: true, sociedad_id: true } }
           }
         },
-        modulos_lider: true
+        modulos_lider: { select: { sociedad_id: true, grupo_conexion_id: true } }
       }
     });
 
@@ -61,7 +64,7 @@ export async function GET() {
       // 4. Specific Connection Group
       if (c.destinatario === "GRUPO_CONEXION") {
         // Check if member of the group
-        const isMember = user.persona?.grupo_conexion_id === c.destinatarioId;
+        const isMember = user.persona?.grupo_conexion?.id === c.destinatarioId;
         // Check if leader of the group
         const isLeader = user.modulos_lider.some((ml) => ml.grupo_conexion_id === c.destinatarioId);
         return isMember || isLeader || ["SUPERADMIN", "ADMIN_IGLESIA"].includes(user.rol);

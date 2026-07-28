@@ -21,11 +21,16 @@ export async function GET(request: Request) {
 
     const user = await prisma.usuario.findUnique({
       where: { id: usuarioId },
-      include: {
+      select: {
+        id: true,
+        iglesia_id: true,
+        rol: true,
+        persona_id: true,
         persona: {
-          include: {
-            grupo_conexion: true,
-            asistenteEventos: true
+          select: {
+            etapa_id: true,
+            grupo_conexion: { select: { id: true, sociedad_id: true } },
+            asistenteEventos: { select: { evento_id: true } }
           }
         }
       }
@@ -64,7 +69,7 @@ export async function GET(request: Request) {
         matchesTarget = false;
       }
       
-      if (form.target_grupo_id && form.target_grupo_id !== user?.persona?.grupo_conexion_id) {
+      if (form.target_grupo_id && form.target_grupo_id !== user?.persona?.grupo_conexion?.id) {
         matchesTarget = false;
       }
 

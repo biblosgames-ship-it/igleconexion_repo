@@ -10,7 +10,7 @@ async function resolveAuthorizedUser(iglesiaId: string) {
 
   const usuario = await prisma.usuario.findUnique({
     where: { id: userId },
-    include: { persona: true },
+    select: { rol: true, iglesia_id: true },
   });
 
   if (!usuario) return null;
@@ -33,13 +33,6 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const periodo = searchParams.get('periodo');
-
-    // Traer cuentas para armar el balance general
-    const cuentas = await prisma.cuentaFondo.findMany({
-      where: { iglesia_id: iglesiaId }
-    });
-
-    const balanceCuentas = cuentas.reduce((acc, c) => acc + c.balance, 0);
 
     // Calcular fechas inicio y fin según el periodo
     let start = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
@@ -66,38 +59,30 @@ export async function GET(request: Request) {
       }
     }
 
-    const transaccionesPeriodo = await prisma.transaccionFinanciera.findMany({
-      where: {
-        iglesia_id: iglesiaId,
-        fecha: { gte: start, lt: end },
-        estado: 'PAGADO'
-      },
-      include: { cuenta_fondo: { select: { nombre: true, tipo: true } } }
-    });
+    // Queries en paralelo
+    const [cuentas, transaccionesPeriodo, diezmosPeriodo, transaccionesRecientes, iglesia] = await Promise.all([
+      prisma.cuentaFondo.findMany({ where: { iglesia_id: iglesiaId } }),
+      prisma.transaccionFinanciera.findMany({
+        where: { iglesia_id: iglesiaId, fecha: { gte: start, lt: end }, estado: 'PAGADO' },
+        include: { cuenta_fondo: { select: { nombre: true, tipo: true } } }
+      }),
+      prisma.historialDiezmo.findMany({ where: { iglesia_id: iglesiaId, fecha: { gte: start, lt: end } } }),
+      prisma.transaccionFinanciera.findMany({
+        where: { iglesia_id: iglesiaId },
+        orderBy: { fecha: 'desc' },
+        take: 10,
+        include: { cuenta_fondo: { select: { nombre: true } } }
+      }),
+      prisma.iglesia.findUnique({
+        where: { id: iglesiaId },
+        select: { nombre_iglesia: true, contacto_direccion: true, contacto_telefono: true, logo_url: true }
+      }),
+    ]);
 
-    const diezmosPeriodo = await prisma.historialDiezmo.findMany({
-      where: {
-        iglesia_id: iglesiaId,
-        fecha: { gte: start, lt: end }
-      }
-    });
-
+    const balanceCuentas = cuentas.reduce((acc, c) => acc + c.balance, 0);
     const ingresosPeriodo = transaccionesPeriodo.filter(t => t.tipo === 'INGRESO').reduce((a, b) => a + b.monto, 0);
     const egresosPeriodo = transaccionesPeriodo.filter(t => t.tipo === 'EGRESO').reduce((a, b) => a + b.monto, 0);
     const totalDiezmosPeriodo = diezmosPeriodo.reduce((a, b) => a + b.monto, 0);
-
-    const transaccionesRecientes = await prisma.transaccionFinanciera.findMany({
-      where: { iglesia_id: iglesiaId },
-      orderBy: { fecha: 'desc' },
-      take: 10,
-      include: { cuenta_fondo: { select: { nombre: true } } }
-    });
-
-    // Iglesia info para el recibo
-    const iglesia = await prisma.iglesia.findUnique({
-      where: { id: iglesiaId },
-      select: { nombre_iglesia: true, contacto_direccion: true, contacto_telefono: true, logo_url: true }
-    });
 
     return NextResponse.json({
       iglesia,

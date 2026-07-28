@@ -7,10 +7,35 @@ export async function GET() {
     const defaultIglesiaId = await getActiveChurchId();
     const userId = await getSessionUserId();
 
-    // Queries iniciales en paralelo
-    const [userObj, iglesia] = await Promise.all([
-      userId ? prisma.usuario.findUnique({ where: { id: userId } }) : null,
+    // Todas las queries base en paralelo (sin dependencias entre sí)
+    const [userObj, iglesia, sociedadesRaw, etapas, modulos, dbProcesos] = await Promise.all([
+      userId ? prisma.usuario.findUnique({ where: { id: userId }, select: { rol: true } }) : null,
       prisma.iglesia.findUnique({ where: { id: defaultIglesiaId } }),
+      prisma.sociedad.findMany({
+        where: { iglesia_id: defaultIglesiaId },
+        orderBy: { orden: "asc" },
+        include: {
+          grupos_conexion: true,
+          agenda: { orderBy: { fecha: "asc" } },
+          lideres_modulo: {
+            where: { alcance_tipo: "SOCIEDAD" },
+            include: { usuario: { include: { persona: true } } }
+          }
+        },
+      }),
+      prisma.etapaConfig.findMany({
+        where: { iglesia_id: defaultIglesiaId },
+        orderBy: { orden_secuencial: "asc" },
+      }),
+      prisma.moduloConfig.findMany({
+        where: { iglesia_id: defaultIglesiaId },
+        orderBy: { orden: "asc" },
+      }),
+      prisma.tareaConfig.findMany({
+        where: { iglesia_id: defaultIglesiaId },
+        orderBy: { orden: "asc" },
+        include: { subtareas: true },
+      }),
     ]);
 
     if (!iglesia) {
@@ -34,28 +59,6 @@ export async function GET() {
       ]
     };
     const opciones_registro = iglesia.opciones_registro ? JSON.parse(iglesia.opciones_registro) : defaultOpcionesRegistro;
-
-    // Fetch societies and groups with agenda and directiva leaders
-    const sociedadesRaw = await prisma.sociedad.findMany({
-      where: { iglesia_id: defaultIglesiaId },
-      orderBy: { orden: "asc" },
-      include: {
-        grupos_conexion: true,
-        agenda: {
-          orderBy: { fecha: "asc" }
-        },
-        lideres_modulo: {
-          where: { alcance_tipo: "SOCIEDAD" },
-          include: {
-            usuario: {
-              include: {
-                persona: true
-              }
-            }
-          }
-        }
-      },
-    });
 
     let sociedades = sociedadesRaw.map(soc => {
       const directivaMapeada = soc.lideres_modulo.map(d => {
@@ -91,7 +94,7 @@ export async function GET() {
     });
 
     // Filter societies and connection groups if leader
-    if (userObj && userObj.rol === "LIDER") {
+    if (userObj && userObj.rol === "LIDER" && userId) {
       const liderRegistros = await prisma.liderModulo.findMany({
         where: { usuario_id: userId },
       });
@@ -128,23 +131,6 @@ export async function GET() {
         });
       }
     }
-
-    // Fetch stages and processes configured for this church (en paralelo)
-    const [etapas, modulos, dbProcesos] = await Promise.all([
-      prisma.etapaConfig.findMany({
-        where: { iglesia_id: defaultIglesiaId },
-        orderBy: { orden_secuencial: "asc" },
-      }),
-      prisma.moduloConfig.findMany({
-        where: { iglesia_id: defaultIglesiaId },
-        orderBy: { orden: "asc" },
-      }),
-      prisma.tareaConfig.findMany({
-        where: { iglesia_id: defaultIglesiaId },
-        orderBy: { orden: "asc" },
-        include: { subtareas: true },
-      }),
-    ]);
 
     const procesos = dbProcesos.map((p) => ({
       id: p.id,

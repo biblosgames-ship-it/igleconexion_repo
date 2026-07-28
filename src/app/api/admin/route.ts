@@ -14,6 +14,7 @@ export async function GET() {
 
     const userObj = await prisma.usuario.findUnique({
       where: { id: userId },
+      select: { rol: true, paginas_acceso: true },
     });
 
     if (!userObj || (userObj.rol !== "ADMIN_IGLESIA" && userObj.rol !== "SUPERADMIN" && userObj.rol !== "LIDER")) {
@@ -172,6 +173,7 @@ export async function POST(request: Request) {
 
     const userObj = await prisma.usuario.findUnique({
       where: { id: userId },
+      select: { rol: true, paginas_acceso: true },
     });
 
     if (!userObj || (userObj.rol !== "ADMIN_IGLESIA" && userObj.rol !== "SUPERADMIN" && userObj.rol !== "LIDER")) {

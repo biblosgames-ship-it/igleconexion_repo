@@ -44,17 +44,35 @@ export async function GET() {
 
     let user = await prisma.usuario.findUnique({
       where: { id: sessionUserId },
-      include: {
+      select: {
+        id: true,
+        iglesia_id: true,
+        email: true,
+        password: true,
+        rol: true,
+        estado: true,
+        persona_id: true,
+        paginas_acceso: true,
         persona: {
-          include: {
-            etapa: true,
+          select: {
+            id: true,
+            nombre: true,
+            telefono: true,
+            fecha_nacimiento: true,
+            sexo: true,
+            foto_url: true,
+            correo: true,
+            etapa_id: true,
+            etapa: { select: { nombre_etapa: true } },
             grupo_conexion: {
-              include: {
-                sociedad: true,
+              select: {
+                nombre_grupo: true,
+                sociedad: { select: { nombre_sociedad: true } },
               },
             },
             historial_tareas: {
               where: { completada: true },
+              select: { tarea_id: true },
             },
           },
         },
@@ -87,6 +105,7 @@ export async function GET() {
         const emailPrefix = user.email.split("@")[0];
         const allPersonas = await prisma.persona.findMany({
           where: { iglesia_id: searchChurchId },
+          select: { id: true, nombre: true, correo: true, iglesia_id: true },
         });
         foundPersona = allPersonas.find((p: any) => {
           const pEmail = (p.correo || "").toLowerCase();
@@ -99,6 +118,7 @@ export async function GET() {
       if (!foundPersona && user.email) {
         const allPersonas = await prisma.persona.findMany({
           where: { iglesia_id: searchChurchId },
+          select: { id: true, nombre: true, correo: true, iglesia_id: true },
         });
         foundPersona = allPersonas.find((p: any) => {
           const pNombre = (p.nombre || "").toLowerCase();
@@ -126,10 +146,12 @@ export async function GET() {
         user.persona_id = foundPersona.id;
         const fullPersona = await prisma.persona.findUnique({
           where: { id: foundPersona.id },
-          include: {
-            etapa: true,
-            grupo_conexion: { include: { sociedad: true } },
-            historial_tareas: { where: { completada: true } },
+          select: {
+            id: true, nombre: true, telefono: true, fecha_nacimiento: true,
+            sexo: true, foto_url: true, correo: true, etapa_id: true,
+            etapa: { select: { nombre_etapa: true } },
+            grupo_conexion: { select: { nombre_grupo: true, sociedad: { select: { nombre_sociedad: true } } } },
+            historial_tareas: { where: { completada: true }, select: { tarea_id: true } },
           },
         });
         (user as any).persona = fullPersona;
@@ -148,12 +170,36 @@ export async function GET() {
           iglesia_id: user.iglesia_id,
           rol: "MIEMBRO",
         },
-        include: {
+        select: {
+          id: true,
+          iglesia_id: true,
+          email: true,
+          password: true,
+          rol: true,
+          estado: true,
+          persona_id: true,
+          paginas_acceso: true,
           persona: {
-            include: {
-              etapa: true,
-              grupo_conexion: { include: { sociedad: true } },
-              historial_tareas: { where: { completada: true } },
+            select: {
+              id: true,
+              nombre: true,
+              telefono: true,
+              fecha_nacimiento: true,
+              sexo: true,
+              foto_url: true,
+              correo: true,
+              etapa_id: true,
+              etapa: { select: { nombre_etapa: true } },
+              grupo_conexion: {
+                select: {
+                  nombre_grupo: true,
+                  sociedad: { select: { nombre_sociedad: true } },
+                },
+              },
+              historial_tareas: {
+                where: { completada: true },
+                select: { tarea_id: true },
+              },
             },
           },
         },
@@ -169,12 +215,36 @@ export async function GET() {
             persona_id: user.persona_id,
             estado: "ACTIVO",
           },
-          include: {
+          select: {
+            id: true,
+            iglesia_id: true,
+            email: true,
+            password: true,
+            rol: true,
+            estado: true,
+            persona_id: true,
+            paginas_acceso: true,
             persona: {
-              include: {
-                etapa: true,
-                grupo_conexion: { include: { sociedad: true } },
-                historial_tareas: { where: { completada: true } },
+              select: {
+                id: true,
+                nombre: true,
+                telefono: true,
+                fecha_nacimiento: true,
+                sexo: true,
+                foto_url: true,
+                correo: true,
+                etapa_id: true,
+                etapa: { select: { nombre_etapa: true } },
+                grupo_conexion: {
+                  select: {
+                    nombre_grupo: true,
+                    sociedad: { select: { nombre_sociedad: true } },
+                  },
+                },
+                historial_tareas: {
+                  where: { completada: true },
+                  select: { tarea_id: true },
+                },
               },
             },
           },
@@ -271,13 +341,25 @@ export async function POST(request: Request) {
     if (userId) {
       let usuario = await prisma.usuario.findFirst({
         where: { persona_id: userId },
-        include: { persona: { include: { etapa: true, grupo_conexion: { include: { sociedad: true } } } } }
+        select: {
+          id: true, iglesia_id: true, email: true, password: true, rol: true,
+          estado: true, persona_id: true, paginas_acceso: true,
+          persona: {
+            select: {
+              id: true, nombre: true, telefono: true, fecha_nacimiento: true,
+              sexo: true, foto_url: true, correo: true, etapa_id: true,
+              etapa: { select: { nombre_etapa: true } },
+              grupo_conexion: { select: { nombre_grupo: true, sociedad: { select: { nombre_sociedad: true } } } },
+              historial_tareas: { where: { completada: true }, select: { tarea_id: true } },
+            }
+          }
+        }
       });
 
       if (!usuario) {
         const persona = await prisma.persona.findUnique({
           where: { id: userId },
-          include: { etapa: true, grupo_conexion: { include: { sociedad: true } } }
+          select: { id: true, iglesia_id: true, correo: true, nombre: true }
         });
 
         if (persona) {
@@ -289,7 +371,19 @@ export async function POST(request: Request) {
               rol: "MIEMBRO",
               persona_id: persona.id
             },
-            include: { persona: { include: { etapa: true, grupo_conexion: { include: { sociedad: true } } } } }
+            select: {
+              id: true, iglesia_id: true, email: true, password: true, rol: true,
+              estado: true, persona_id: true, paginas_acceso: true,
+              persona: {
+                select: {
+                  id: true, nombre: true, telefono: true, fecha_nacimiento: true,
+                  sexo: true, foto_url: true, correo: true, etapa_id: true,
+                  etapa: { select: { nombre_etapa: true } },
+                  grupo_conexion: { select: { nombre_grupo: true, sociedad: { select: { nombre_sociedad: true } } } },
+                  historial_tareas: { where: { completada: true }, select: { tarea_id: true } },
+                }
+              }
+            }
           });
         }
       }
@@ -312,17 +406,35 @@ export async function POST(request: Request) {
     if (email === "alexpalacio29@gmail.com" && password === "superpassword") {
       const superAdminUser = await prisma.usuario.findFirst({
         where: { rol: "SUPERADMIN" },
-        include: {
+        select: {
+          id: true,
+          iglesia_id: true,
+          email: true,
+          password: true,
+          rol: true,
+          estado: true,
+          persona_id: true,
+          paginas_acceso: true,
           persona: {
-            include: {
-              etapa: true,
+            select: {
+              id: true,
+              nombre: true,
+              telefono: true,
+              fecha_nacimiento: true,
+              sexo: true,
+              foto_url: true,
+              correo: true,
+              etapa_id: true,
+              etapa: { select: { nombre_etapa: true } },
               grupo_conexion: {
-                include: {
-                  sociedad: true,
+                select: {
+                  nombre_grupo: true,
+                  sociedad: { select: { nombre_sociedad: true } },
                 },
               },
               historial_tareas: {
                 where: { completada: true },
+                select: { tarea_id: true },
               },
             },
           },
@@ -364,6 +476,7 @@ export async function POST(request: Request) {
             const emailPrefix = email.split("@")[0];
             const allPersonas = await prisma.persona.findMany({
               where: { iglesia_id: activeChurchId },
+              select: { id: true, nombre: true, correo: true, iglesia_id: true },
             });
             foundPersona = allPersonas.find((p: any) => {
               const pEmail = (p.correo || "").toLowerCase();
@@ -376,6 +489,7 @@ export async function POST(request: Request) {
           if (!foundPersona) {
             const allPersonas = await prisma.persona.findMany({
               where: { iglesia_id: activeChurchId },
+              select: { id: true, nombre: true, correo: true, iglesia_id: true },
             });
             foundPersona = allPersonas.find((p: any) => {
               const pNombre = (p.nombre || "").toLowerCase();
@@ -408,10 +522,12 @@ export async function POST(request: Request) {
             }
             const fullPersona = await prisma.persona.findUnique({
               where: { id: foundPersona.id },
-              include: {
-                etapa: true,
-                grupo_conexion: { include: { sociedad: true } },
-                historial_tareas: { where: { completada: true } },
+              select: {
+                id: true, nombre: true, telefono: true, fecha_nacimiento: true,
+                sexo: true, foto_url: true, correo: true, etapa_id: true,
+                etapa: { select: { nombre_etapa: true } },
+                grupo_conexion: { select: { nombre_grupo: true, sociedad: { select: { nombre_sociedad: true } } } },
+                historial_tareas: { where: { completada: true }, select: { tarea_id: true } },
               },
             });
             (superAdminUser as any).persona = fullPersona;
@@ -448,18 +564,36 @@ export async function POST(request: Request) {
         email: email,
         password: password
       },
-      include: {
+      select: {
+        id: true,
+        iglesia_id: true,
+        email: true,
+        password: true,
+        rol: true,
+        estado: true,
+        persona_id: true,
+        paginas_acceso: true,
         persona: {
-          include: {
-            etapa: true,
+          select: {
+            id: true,
+            nombre: true,
+            telefono: true,
+            fecha_nacimiento: true,
+            sexo: true,
+            foto_url: true,
+            correo: true,
+            etapa_id: true,
+            etapa: { select: { nombre_etapa: true } },
             grupo_conexion: {
-              include: {
-                sociedad: true
-              }
+              select: {
+                nombre_grupo: true,
+                sociedad: { select: { nombre_sociedad: true } },
+              },
             },
             historial_tareas: {
-              where: { completada: true }
-            }
+              where: { completada: true },
+              select: { tarea_id: true },
+            },
           }
         }
       }
@@ -638,18 +772,36 @@ export async function PUT(request: Request) {
 
     const fullUser = await prisma.usuario.findUnique({
       where: { id: user.id },
-      include: {
+      select: {
+        id: true,
+        iglesia_id: true,
+        email: true,
+        password: true,
+        rol: true,
+        estado: true,
+        persona_id: true,
+        paginas_acceso: true,
         persona: {
-          include: {
-            etapa: true,
+          select: {
+            id: true,
+            nombre: true,
+            telefono: true,
+            fecha_nacimiento: true,
+            sexo: true,
+            foto_url: true,
+            correo: true,
+            etapa_id: true,
+            etapa: { select: { nombre_etapa: true } },
             grupo_conexion: {
-              include: {
-                sociedad: true
-              }
+              select: {
+                nombre_grupo: true,
+                sociedad: { select: { nombre_sociedad: true } },
+              },
             },
             historial_tareas: {
-              where: { completada: true }
-            }
+              where: { completada: true },
+              select: { tarea_id: true },
+            },
           }
         }
       }

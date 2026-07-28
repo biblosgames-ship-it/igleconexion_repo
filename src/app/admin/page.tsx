@@ -250,8 +250,15 @@ export default function SuperAdminPage() {
       setLideres(data.lideres);
       setUsuarios(data.usuarios || []);
 
-      try {
-        const resLid = await fetch("/api/liderazgo");
+      // Todas las demás llamadas en paralelo
+      const [resLid, resM, resIgl, authRes] = await Promise.all([
+        fetch("/api/liderazgo").catch(() => null),
+        fetch("/api/miembros").catch(() => null),
+        fetch("/api/iglesia").catch(() => null),
+        fetch("/api/auth").catch(() => null),
+      ]);
+
+      if (resLid?.ok) {
         const dataLid = await resLid.json();
         if (!dataLid.error) {
           setLiderazgoGrupos(dataLid.grupos || []);
@@ -268,52 +275,53 @@ export default function SuperAdminPage() {
             setUsuarios(dataLid.usuarios);
           }
         }
-      } catch (e) {
-        console.error("Error al cargar datos de liderazgo", e);
       }
 
-      const resM = await fetch("/api/miembros");
-      const dataM = await resM.json();
-      if (!dataM.error && Array.isArray(dataM)) {
-        setMiembros(dataM);
+      if (resM?.ok) {
+        const dataM = await resM.json();
+        if (!dataM.error && Array.isArray(dataM)) {
+          setMiembros(dataM);
+        }
       }
 
-      const resIgl = await fetch("/api/iglesia");
-      const dataIgl = await resIgl.json();
-      if (!dataIgl.error) {
-        setChurchName(dataIgl.nombre_iglesia || "");
-        setChurchSlogan(dataIgl.slogan || "");
-        setChurchLogoUrl(dataIgl.logo_url || "");
-        setChurchColor(dataIgl.color_principal || "#0284c7");
-        setChurchDescription(dataIgl.descripcion || "");
-        setChurchQuienesSomos(dataIgl.quienes_somos || "");
-        setChurchMision(dataIgl.mision || "");
-        setChurchVision(dataIgl.vision || "");
-        setChurchValores(dataIgl.valores || "");
-        setChurchHistoria(dataIgl.historia || "");
-        setChurchPhone(dataIgl.contacto_telefono || "");
-        setChurchEmail(dataIgl.contacto_email || "");
-        setChurchAddress(dataIgl.contacto_direccion || "");
-        setChurchGoogleMaps(dataIgl.link_google_maps || "");
-        setChurchWaze(dataIgl.link_waze || "");
-        setChurchSocials(dataIgl.redes_sociales || { facebook: "", instagram: "", youtube: "" });
-        setChurchEvents(dataIgl.eventos || []);
-        setChurchResources(dataIgl.recursos || []);
-        setChurchPlan(dataIgl.plan || "BASICO");
-        setLimitePersonas(dataIgl.limite_personas ?? 50);
-        setLimiteUsuarios(dataIgl.limite_usuarios ?? 5);
-        setPrecioMensual(dataIgl.precio_mensual ?? 29.99);
-        setFechaVencimiento(dataIgl.fecha_vencimiento ?? null);
-        setEstadoPago(dataIgl.estado_pago || "PAGADO");
-        setChurchSliderImages(dataIgl.imagenes_slider || []);
-        if (dataIgl.tema_anual) {
-          setTemaAnual(dataIgl.tema_anual);
+      if (resIgl?.ok) {
+        const dataIgl = await resIgl.json();
+        if (!dataIgl.error) {
+          setChurchName(dataIgl.nombre_iglesia || "");
+          setChurchSlogan(dataIgl.slogan || "");
+          setChurchLogoUrl(dataIgl.logo_url || "");
+          setChurchColor(dataIgl.color_principal || "#0284c7");
+          setChurchDescription(dataIgl.descripcion || "");
+          setChurchQuienesSomos(dataIgl.quienes_somos || "");
+          setChurchMision(dataIgl.mision || "");
+          setChurchVision(dataIgl.vision || "");
+          setChurchValores(dataIgl.valores || "");
+          setChurchHistoria(dataIgl.historia || "");
+          setChurchPhone(dataIgl.contacto_telefono || "");
+          setChurchEmail(dataIgl.contacto_email || "");
+          setChurchAddress(dataIgl.contacto_direccion || "");
+          setChurchGoogleMaps(dataIgl.link_google_maps || "");
+          setChurchWaze(dataIgl.link_waze || "");
+          setChurchSocials(dataIgl.redes_sociales || { facebook: "", instagram: "", youtube: "" });
+          setChurchEvents(dataIgl.eventos || []);
+          setChurchResources(dataIgl.recursos || []);
+          setChurchPlan(dataIgl.plan || "BASICO");
+          setLimitePersonas(dataIgl.limite_personas ?? 50);
+          setLimiteUsuarios(dataIgl.limite_usuarios ?? 5);
+          setPrecioMensual(dataIgl.precio_mensual ?? 29.99);
+          setFechaVencimiento(dataIgl.fecha_vencimiento ?? null);
+          setEstadoPago(dataIgl.estado_pago || "PAGADO");
+          setChurchSliderImages(dataIgl.imagenes_slider || []);
+          if (dataIgl.tema_anual) {
+            setTemaAnual(dataIgl.tema_anual);
+          }
+          if (dataIgl.opciones_registro) {
+            setChurchOpcionesRegistro(dataIgl.opciones_registro);
+          }
         }
-        if (dataIgl.opciones_registro) {
-          setChurchOpcionesRegistro(dataIgl.opciones_registro);
-        }
-        
-        const authRes = await fetch("/api/auth");
+      }
+
+      if (authRes?.ok) {
         const authData = await authRes.json();
         if (!authData.error) {
           setCurrentUser(authData);

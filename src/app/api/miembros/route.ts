@@ -8,19 +8,36 @@ export async function GET() {
 
     const dbMiembros = await prisma.persona.findMany({
       where: { iglesia_id: defaultIglesiaId },
-      include: {
-        etapa: true,
-        usuario: true,
+      select: {
+        id: true,
+        nombre: true,
+        telefono: true,
+        correo: true,
+        fecha_conversion: true,
+        createdAt: true,
+        sexo: true,
+        fecha_nacimiento: true,
+        profesion_oficio: true,
+        nivel_academico: true,
+        estado_civil: true,
+        familia_codigo: true,
+        rol_familiar: true,
+        etapa_id: true,
+        etapa: { select: { nombre_etapa: true } },
+        usuario: { select: { id: true, email: true, estado: true } },
         grupo_conexion: {
-          include: {
-            sociedad: true,
+          select: {
+            nombre_grupo: true,
+            sociedad: { select: { nombre_sociedad: true } },
           },
         },
         historial_tareas: {
           where: { completada: true },
+          select: { tarea_id: true },
         },
         historial_subtareas: {
           where: { completada: true },
+          select: { subtarea_id: true },
         },
         etiquetas: {
           where: {
@@ -30,15 +47,19 @@ export async function GET() {
               { fecha_fin: { gt: new Date() } }
             ]
           },
-          include: {
-            etiqueta: true
+          select: {
+            id: true,
+            etiqueta_id: true,
+            notas: true,
+            fecha_fin: true,
+            creado_por: true,
+            etiqueta: { select: { nombre: true, color: true, icono: true } }
           }
         }
       },
     });
 
     const miembros = dbMiembros.map((m) => {
-      // Calcular días transcurridos basados en la fecha de creación
       const msDiff = Date.now() - new Date(m.createdAt).getTime();
       const diasTranscurridos = Math.max(0, Math.floor(msDiff / (1000 * 60 * 60 * 24)));
 

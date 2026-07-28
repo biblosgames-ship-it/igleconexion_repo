@@ -6,75 +6,69 @@ export async function GET() {
   try {
     const defaultIglesiaId = await getActiveChurchId();
     
-    // 1. Obtener la iglesia y sus etiquetas personalizables
-    const iglesia = await prisma.iglesia.findUnique({
-      where: { id: defaultIglesiaId },
-      select: {
-        label_cuerpo_oficial: true,
-        label_sociedades: true,
-        label_grupos_conexion: true,
-        label_departamentos: true,
-        label_ministerios: true,
-        label_instituciones: true,
-      }
-    });
+    // Todas las queries en paralelo
+    const [iglesia, grupos, usuariosRaw] = await Promise.all([
+      prisma.iglesia.findUnique({
+        where: { id: defaultIglesiaId },
+        select: {
+          label_cuerpo_oficial: true,
+          label_sociedades: true,
+          label_grupos_conexion: true,
+          label_departamentos: true,
+          label_ministerios: true,
+          label_instituciones: true,
+        }
+      }),
+      prisma.grupoTrabajo.findMany({
+        where: { iglesia_id: defaultIglesiaId },
+        include: {
+          miembros: {
+            include: {
+              usuario: {
+                include: { persona: true }
+              }
+            }
+          },
+          acuerdos: {
+            orderBy: { fecha_publicacion: "desc" }
+          },
+          agenda: {
+            orderBy: { fecha: "asc" }
+          },
+          foro: {
+            include: {
+              usuario: {
+                include: { persona: true }
+              }
+            },
+            orderBy: { fecha: "desc" }
+          }
+        }
+      }),
+      prisma.usuario.findMany({
+        where: { iglesia_id: defaultIglesiaId },
+        include: {
+          persona: true,
+          modulos_lider: {
+            include: {
+              modulo: true,
+              sociedad: true,
+              grupo_conexion: true,
+              grupo_trabajo: true,
+            }
+          },
+          grupo_trabajos: {
+            include: {
+              grupo_trabajo: true
+            }
+          }
+        }
+      }),
+    ]);
 
     if (!iglesia) {
       return NextResponse.json({ error: "Iglesia no encontrada" }, { status: 404 });
     }
-
-    // 2. Obtener todos los Grupos de Trabajo (Cuerpo Oficial, Departamentos, etc.)
-    const grupos = await prisma.grupoTrabajo.findMany({
-      where: { iglesia_id: defaultIglesiaId },
-      include: {
-        miembros: {
-          include: {
-            usuario: {
-              include: {
-                persona: true
-              }
-            }
-          }
-        },
-        acuerdos: {
-          orderBy: { fecha_publicacion: "desc" }
-        },
-        agenda: {
-          orderBy: { fecha: "asc" }
-        },
-        foro: {
-          include: {
-            usuario: {
-              include: {
-                persona: true
-              }
-            }
-          },
-          orderBy: { fecha: "desc" }
-        }
-      }
-    });
-
-    // 3. Obtener todos los usuarios de la iglesia para la configuración
-    const usuariosRaw = await prisma.usuario.findMany({
-      where: { iglesia_id: defaultIglesiaId },
-      include: {
-        persona: true,
-        modulos_lider: {
-          include: {
-            modulo: true,
-            sociedad: true,
-            grupo_conexion: true,
-            grupo_trabajo: true,
-          }
-        },
-        grupo_trabajos: {
-          include: {
-            grupo_trabajo: true
-          }
-        }
-      }
-    });
 
     // Enriquecer la respuesta estructurada de directivas
     const usuarios = usuariosRaw.map(u => ({
