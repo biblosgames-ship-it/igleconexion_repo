@@ -8,11 +8,27 @@ import TemploModule from "./TemploModule";
 import GestorFormulariosModule from "./GestorFormulariosModule";
 
 export default function SuperAdminPage() {
-  const [activeTab, setActiveTab] = useState(12); // Mostramos la tab 12 (Dashboard) por defecto
+  const [activeTab, setActiveTab] = useState(12); // Default; restored from recentTabs in useEffect
   
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [recentTabs, setRecentTabs] = useState<number[]>(() => {
+    if (typeof window !== 'undefined') {
+      try { return JSON.parse(localStorage.getItem('admin_recent_tabs') || '[]'); } catch { return []; }
+    }
+    return [];
+  });
+
+  const trackTabVisit = (tabId: number) => {
+    setActiveTab(tabId);
+    setRecentTabs(prev => {
+      const filtered = prev.filter(id => id !== tabId);
+      const next = [tabId, ...filtered].slice(0, 6);
+      try { localStorage.setItem('admin_recent_tabs', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
 
   const allTabs = [
     { id: 12, label: "Dashboard", title: "Reporte y Dashboard Analítico", description: "Estado y crecimiento congregacional a la luz del avance por etapas.", icon: "/Iconos SVG/dashboard.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
@@ -54,6 +70,16 @@ export default function SuperAdminPage() {
       }
     }
   }, [currentUser, visibleTabs, activeTab]);
+
+  // Restore last visited tab from recentTabs
+  useEffect(() => {
+    if (recentTabs.length > 0 && visibleTabs.length > 0) {
+      const lastRecent = recentTabs.find(id => visibleTabs.some(t => t.id === id));
+      if (lastRecent && activeTab === 12) {
+        setActiveTab(lastRecent);
+      }
+    }
+  }, [visibleTabs]);
 
   useEffect(() => {
     if (activeTab === 15) {
@@ -1847,7 +1873,7 @@ export default function SuperAdminPage() {
             <button
               key={tab.id}
               className={`${styles.sidebarItem} ${activeTab === tab.id ? styles.sidebarItemActive : ''}`}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => trackTabVisit(tab.id)}
               title={tab.label}
             >
               <span className={styles.sidebarIcon}>
@@ -7270,7 +7296,7 @@ export default function SuperAdminPage() {
                     type="button"
                     className={`${styles.mobileDrawerItem} ${activeTab === tab.id ? styles.mobileDrawerItemActive : ''}`}
                     onClick={() => {
-                      setActiveTab(tab.id);
+                      trackTabVisit(tab.id);
                       setMobileMenuOpen(false);
                     }}
                   >
@@ -7299,56 +7325,48 @@ export default function SuperAdminPage() {
           </div>
         )}
 
-        {/* 4. MOBILE BOTTOM NAVIGATION BAR */}
+        {/* 4. MOBILE BOTTOM NAVIGATION BAR (Dynamic - recent tabs) */}
         <nav className={styles.mobileBottomBar}>
-          <button 
-            type="button"
-            className={`${styles.mobileBottomBarItem} ${activeTab === 12 ? styles.mobileBottomBarItemActive : ''}`}
-            onClick={() => setActiveTab(12)}
-          >
-            <span className={styles.mobileBottomBarIcon}>
-              <img src="/Iconos SVG/dashboard.svg" alt="Dashboard" style={{ width: 26, height: 26, objectFit: 'contain' }} />
-            </span>
-            <span className={styles.mobileBottomBarLabel}>Dashboard</span>
-          </button>
-          <button 
-            type="button"
-            className={`${styles.mobileBottomBarItem} ${activeTab === 7 ? styles.mobileBottomBarItemActive : ''}`}
-            onClick={() => setActiveTab(7)}
-          >
-            <span className={styles.mobileBottomBarIcon}>
-              <img src="/Iconos SVG/Miembros.svg" alt="Miembros" style={{ width: 26, height: 26, objectFit: 'contain' }} />
-            </span>
-            <span className={styles.mobileBottomBarLabel}>Miembros</span>
-          </button>
-          <button 
-            type="button"
-            className={`${styles.mobileBottomBarItem} ${activeTab === 10 ? styles.mobileBottomBarItemActive : ''}`}
-            onClick={() => setActiveTab(10)}
-          >
-            <span className={styles.mobileBottomBarIcon}>
-              <img src="/Iconos SVG/finanzas.svg" alt="Finanzas" style={{ width: 26, height: 26, objectFit: 'contain' }} />
-            </span>
-            <span className={styles.mobileBottomBarLabel}>Finanzas</span>
-          </button>
-          <button 
-            type="button"
-            className={`${styles.mobileBottomBarItem} ${activeTab === 11 ? styles.mobileBottomBarItemActive : ''}`}
-            onClick={() => setActiveTab(11)}
-          >
-            <span className={styles.mobileBottomBarIcon}>
-              <img src="/Iconos SVG/pastoral.svg" alt="Pastoral" style={{ width: 26, height: 26, objectFit: 'contain' }} />
-            </span>
-            <span className={styles.mobileBottomBarLabel}>Pastoral</span>
-          </button>
-          <button 
-            type="button"
-            className={styles.mobileBottomBarItem}
-            onClick={() => setMobileMenuOpen(true)}
-          >
-            <span className={styles.mobileBottomBarIcon}>☰</span>
-            <span className={styles.mobileBottomBarLabel}>Más</span>
-          </button>
+          {(() => {
+            const maxVisible = 4;
+            const recentVisible = recentTabs
+              .filter(id => id !== activeTab && visibleTabs.some(t => t.id === id))
+              .slice(0, maxVisible);
+            const remaining = maxVisible - recentVisible.length;
+            const fallbackTabs = visibleTabs
+              .filter(t => !recentVisible.includes(t.id) && t.id !== activeTab)
+              .slice(0, remaining);
+            const bottomTabs = [...recentVisible.map(id => visibleTabs.find(t => t.id === id)!), ...fallbackTabs].filter(Boolean).slice(0, maxVisible);
+            const hasMore = visibleTabs.length > maxVisible;
+
+            return (
+              <>
+                {bottomTabs.map(tab => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    className={`${styles.mobileBottomBarItem} ${activeTab === tab.id ? styles.mobileBottomBarItemActive : ''}`}
+                    onClick={() => trackTabVisit(tab.id)}
+                  >
+                    <span className={styles.mobileBottomBarIcon}>
+                      <img src={tab.icon} alt={tab.label} style={{ width: 26, height: 26, objectFit: 'contain' }} />
+                    </span>
+                    <span className={styles.mobileBottomBarLabel}>{tab.label}</span>
+                  </button>
+                ))}
+                {hasMore && (
+                  <button
+                    type="button"
+                    className={styles.mobileBottomBarItem}
+                    onClick={() => setMobileMenuOpen(true)}
+                  >
+                    <span className={styles.mobileBottomBarIcon}>☰</span>
+                    <span className={styles.mobileBottomBarLabel}>Más</span>
+                  </button>
+                )}
+              </>
+            );
+          })()}
         </nav>
 
       </div>

@@ -532,9 +532,10 @@ export default function Hub() {
               <img src="/Iconos SVG/Peticiones.svg" alt="Oración" style={{ width: 22, height: 22, objectFit: 'contain' }} />
             </button>
             {(userRole === "SUPERADMIN" || userRole === "ADMIN_IGLESIA" || userRole === "LIDER") && (
-              <Link href={userRole === "SUPERADMIN" ? "/superadmin" : "/admin"} title="Administración">
-                <button className={styles.navIcon} type="button">
-                  <img src="/Iconos SVG/dashboard.svg" alt="Administración" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+              <Link href={userRole === "SUPERADMIN" ? "/superadmin" : "/admin"} title="Panel de Administración" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', textDecoration: 'none' }}>
+                <button className={styles.navIcon} type="button" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.35rem 0.75rem', borderRadius: '20px', background: 'rgba(2, 132, 199, 0.1)', border: '1px solid rgba(2, 132, 199, 0.3)', color: '#0284c7', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}>
+                  <img src="/Iconos SVG/dashboard.svg" alt="Configuración" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+                  <span className={styles.navLabel}>Configuración</span>
                 </button>
               </Link>
             )}
