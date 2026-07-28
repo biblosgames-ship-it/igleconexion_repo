@@ -1008,6 +1008,7 @@ export default function SuperAdminPage() {
   const [filterEstadoCivil, setFilterEstadoCivil] = useState("");
   const [filterEtapa, setFilterEtapa] = useState("");
   const [filtersActive, setFiltersActive] = useState(false);
+  const [showFiltersPanel, setShowFiltersPanel] = useState(false);
   const [selectedModuloId, setSelectedModuloId] = useState("all");
   const [selectedModuloIds, setSelectedModuloIds] = useState<string[]>(["all"]);
   const [editingLiderId, setEditingLiderId] = useState<string | null>(null);
@@ -5297,107 +5298,142 @@ export default function SuperAdminPage() {
               </div>
 
               {/* PANEL DE FILTROS */}
-              <div className={styles.configBlock} id="miembros-filtros-panel" style={{ background: '#ffffff', border: '1px solid rgba(226, 232, 240, 0.6)', borderRadius: '24px', padding: '1.25rem 1.5rem', marginBottom: '1rem', boxShadow: 'var(--shadow-xl)' }}>
-                <h3 style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--color-primary-dark)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  🔍 Filtros de Búsqueda
-                </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Sexo</label>
-                    <select value={filterSexo} onChange={(e) => setFilterSexo(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
-                      <option value="">Todos</option>
-                      <option value="M">Masculino</option>
-                      <option value="F">Femenino</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Edad Mín</label>
-                    <input type="number" min="0" max="120" placeholder="Ej: 18" value={filterEdadMin} onChange={(e) => setFilterEdadMin(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Edad Máx</label>
-                    <input type="number" min="0" max="120" placeholder="Ej: 65" value={filterEdadMax} onChange={(e) => setFilterEdadMax(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Grupo de Conexión / Sociedad</label>
-                    <select value={filterGrupoConexion} onChange={(e) => setFilterGrupoConexion(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
-                      <option value="">Todos</option>
-                      {uniqueSociedades.length > 0 && (
-                        <optgroup label="Sociedades">
-                          {uniqueSociedades.map(s => (
-                            <option key={`soc-${s}`} value={s}>{s}</option>
-                          ))}
-                        </optgroup>
-                      )}
-                      {uniqueGruposConexion.length > 0 && (
-                        <optgroup label="Grupos de Conexión">
-                          {uniqueGruposConexion.map(g => (
-                            <option key={`gc-${g}`} value={g}>{g}</option>
-                          ))}
-                        </optgroup>
-                      )}
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Profesión</label>
-                    <select value={filterProfesion} onChange={(e) => setFilterProfesion(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
-                      <option value="">Todas</option>
-                      {uniqueProfesiones.map(p => (
-                        <option key={p} value={p}>{p}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Nivel Académico</label>
-                    <select value={filterNivelAcademico} onChange={(e) => setFilterNivelAcademico(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
-                      <option value="">Todos</option>
-                      {uniqueNiveles.map(n => (
-                        <option key={n} value={n}>{n}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Estado Civil</label>
-                    <select value={filterEstadoCivil} onChange={(e) => setFilterEstadoCivil(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
-                      <option value="">Todos</option>
-                      <option value="Soltero">Soltero/a</option>
-                      <option value="Casado">Casado/a</option>
-                      <option value="Divorciado">Divorciado/a</option>
-                      <option value="Viudo">Viudo/a</option>
-                      <option value="Unión libre">Unión libre</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Etapa</label>
-                    <select value={filterEtapa} onChange={(e) => setFilterEtapa(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
-                      <option value="">Todas</option>
-                      {etapas.map((et: any) => (
-                        <option key={et.id} value={et.id}>{et.nombre_etapa}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <input
-                    type="text"
-                    placeholder="🔍 Buscar por nombre, correo o teléfono..."
-                    value={memberSearchTerm}
-                    onChange={(e) => setMemberSearchTerm(e.target.value)}
-                    style={{ flex: 1, minWidth: '200px', padding: '0.5rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                  />
-                  <button onClick={() => setFiltersActive(true)} style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: 'var(--color-primary)', color: 'white', border: 'none', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                    🔍 Filtrar
-                  </button>
-                  <button onClick={() => { setFiltersActive(false); setFilterSexo(""); setFilterEdadMin(""); setFilterEdadMax(""); setFilterGrupoConexion(""); setFilterProfesion(""); setFilterNivelAcademico(""); setFilterEstadoCivil(""); setFilterEtapa(""); setMemberSearchTerm(""); }} style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                    ✕ Limpiar
-                  </button>
-                  <button onClick={() => window.print()} style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: '#1e293b', color: 'white', border: 'none', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                    🖨️ Imprimir
-                  </button>
-                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, marginLeft: 'auto' }}>
-                    {hasActiveFilters ? `${displayMiembros.length} de ${miembros.length} miembros` : `Últimos ${displayMiembros.length} miembros`}
+              <div className={styles.configBlock} style={{ background: '#ffffff', border: '1px solid rgba(226, 232, 240, 0.6)', borderRadius: '24px', marginBottom: '1rem', boxShadow: 'var(--shadow-xl)', overflow: 'hidden' }}>
+                <button
+                  onClick={() => setShowFiltersPanel(!showFiltersPanel)}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '1rem 1.5rem',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: 800,
+                    fontSize: '0.95rem',
+                    color: 'var(--color-primary-dark)',
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Filtros de Búsqueda
                   </span>
-                </div>
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '8px',
+                    background: '#f1f5f9',
+                    transition: 'transform 0.25s ease',
+                    transform: showFiltersPanel ? 'rotate(180deg)' : 'rotate(0deg)',
+                  }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                  </span>
+                </button>
+                {showFiltersPanel && (
+                  <div style={{ padding: '0 1.5rem 1.25rem 1.5rem', borderTop: '1px solid #f1f5f9' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem', marginTop: '1rem', marginBottom: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Sexo</label>
+                        <select value={filterSexo} onChange={(e) => setFilterSexo(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
+                          <option value="">Todos</option>
+                          <option value="M">Masculino</option>
+                          <option value="F">Femenino</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Edad Mín</label>
+                        <input type="number" min="0" max="120" placeholder="Ej: 18" value={filterEdadMin} onChange={(e) => setFilterEdadMin(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Edad Máx</label>
+                        <input type="number" min="0" max="120" placeholder="Ej: 65" value={filterEdadMax} onChange={(e) => setFilterEdadMax(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Grupo de Conexión / Sociedad</label>
+                        <select value={filterGrupoConexion} onChange={(e) => setFilterGrupoConexion(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
+                          <option value="">Todos</option>
+                          {uniqueSociedades.length > 0 && (
+                            <optgroup label="Sociedades">
+                              {uniqueSociedades.map(s => (
+                                <option key={`soc-${s}`} value={s}>{s}</option>
+                              ))}
+                            </optgroup>
+                          )}
+                          {uniqueGruposConexion.length > 0 && (
+                            <optgroup label="Grupos de Conexión">
+                              {uniqueGruposConexion.map(g => (
+                                <option key={`gc-${g}`} value={g}>{g}</option>
+                              ))}
+                            </optgroup>
+                          )}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Profesión</label>
+                        <select value={filterProfesion} onChange={(e) => setFilterProfesion(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
+                          <option value="">Todas</option>
+                          {uniqueProfesiones.map(p => (
+                            <option key={p} value={p}>{p}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Nivel Académico</label>
+                        <select value={filterNivelAcademico} onChange={(e) => setFilterNivelAcademico(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
+                          <option value="">Todos</option>
+                          {uniqueNiveles.map(n => (
+                            <option key={n} value={n}>{n}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Estado Civil</label>
+                        <select value={filterEstadoCivil} onChange={(e) => setFilterEstadoCivil(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
+                          <option value="">Todos</option>
+                          <option value="Soltero">Soltero/a</option>
+                          <option value="Casado">Casado/a</option>
+                          <option value="Divorciado">Divorciado/a</option>
+                          <option value="Viudo">Viudo/a</option>
+                          <option value="Unión libre">Unión libre</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Etapa</label>
+                        <select value={filterEtapa} onChange={(e) => setFilterEtapa(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
+                          <option value="">Todas</option>
+                          {etapas.map((et: any) => (
+                            <option key={et.id} value={et.id}>{et.nombre_etapa}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <input
+                        type="text"
+                        placeholder="🔍 Buscar por nombre, correo o teléfono..."
+                        value={memberSearchTerm}
+                        onChange={(e) => setMemberSearchTerm(e.target.value)}
+                        style={{ flex: 1, minWidth: '200px', padding: '0.5rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                      />
+                      <button onClick={() => setFiltersActive(true)} style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: 'var(--color-primary)', color: 'white', border: 'none', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        🔍 Filtrar
+                      </button>
+                      <button onClick={() => { setFiltersActive(false); setFilterSexo(""); setFilterEdadMin(""); setFilterEdadMax(""); setFilterGrupoConexion(""); setFilterProfesion(""); setFilterNivelAcademico(""); setFilterEstadoCivil(""); setFilterEtapa(""); setMemberSearchTerm(""); }} style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        ✕ Limpiar
+                      </button>
+                      <button onClick={() => window.print()} style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: '#1e293b', color: 'white', border: 'none', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        🖨️ Imprimir
+                      </button>
+                      <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, marginLeft: 'auto' }}>
+                        {hasActiveFilters ? `${displayMiembros.length} de ${miembros.length} miembros` : `Últimos ${displayMiembros.length} miembros`}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* TABLA DE MIEMBROS */}
