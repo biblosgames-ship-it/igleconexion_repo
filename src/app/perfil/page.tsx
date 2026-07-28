@@ -725,7 +725,7 @@ export default function Perfil() {
                 )}
                 {currentUser.rol === "SUPERADMIN" && (
                   <Link href="/superadmin" className={styles.leaderBadge} title="Consola de Super Administrador">
-                    <span className={styles.badgeIcon}><img src="/Iconos SVG/Identidad-2.svg" alt="" /></span>
+                    <span className={styles.badgeIcon}><img src="/Iconos SVG/superadmin.svg" alt="" /></span>
                     <span className={styles.badgeText}>Superadmin</span>
                   </Link>
                 )}
@@ -736,7 +736,7 @@ export default function Perfil() {
                   </Link>
                 )}
                 <Link href="/grupo" className={styles.leaderBadge} title="Mi Grupo de Conexión">
-                  <span className={styles.badgeIcon}><img src="/Iconos SVG/Miembros.svg" alt="" /></span>
+                  <span className={styles.badgeIcon}><img src="/Iconos SVG/Grupo de conexion.svg" alt="" /></span>
                   <span className={styles.badgeText}>Mi Grupo</span>
                 </Link>
 
@@ -751,7 +751,7 @@ export default function Perfil() {
                   let iconSrc = '/Iconos SVG/servicio.svg';
                   if (group.tipo === "CUERPO_OFICIAL") iconSrc = '/Iconos SVG/Identidad-2.svg';
                   else if (group.tipo === "MINISTERIO") iconSrc = '/Iconos SVG/pastoral.svg';
-                  else if (group.tipo === "INSTITUCION") iconSrc = '/Iconos SVG/iglesia.png';
+                  else if (group.tipo === "INSTITUCION") iconSrc = '/Iconos SVG/Educacion Cristiana.svg';
 
                   return (
                     <Link 

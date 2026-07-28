@@ -276,7 +276,7 @@
 .leaderBadges {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 1.5rem;
   margin-top: 1.25rem;
   justify-content: center;
   padding-bottom: 1.5rem;
@@ -323,16 +323,19 @@
 
 .badgeText {
   position: absolute;
-  bottom: -20px;
+  bottom: -22px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   font-weight: 700;
   white-space: nowrap;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.02em;
   pointer-events: none;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .footer {
