@@ -39,8 +39,8 @@ export async function POST(request: Request) {
 
     // 3. Autenticar estableciendo cookies
     const cookieStore = await cookies();
-    cookieStore.set("session_user_id", user.id, { path: "/", maxAge: 31536000 });
-    cookieStore.set("active_iglesia_id", user.iglesia_id, { path: "/", maxAge: 31536000 });
+    cookieStore.set("session_user_id", user.id, { path: "/", maxAge: 31536000, httpOnly: true, secure: true });
+    cookieStore.set("active_iglesia_id", user.iglesia_id, { path: "/", maxAge: 31536000, httpOnly: true, secure: true });
 
     // 4. Determinar ruta de redirección
     let redirect = "/hub";

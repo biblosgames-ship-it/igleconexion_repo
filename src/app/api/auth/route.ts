@@ -135,7 +135,7 @@ export async function GET() {
         (user as any).persona = fullPersona;
         // If persona is in a different church, update active church
         if (foundPersona.iglesia_id && foundPersona.iglesia_id !== activeChurchId) {
-          cookieStore.set("active_iglesia_id", foundPersona.iglesia_id, { path: "/", maxAge: 31536000, sameSite: "lax" });
+          cookieStore.set("active_iglesia_id", foundPersona.iglesia_id, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
         }
       }
     }
@@ -242,13 +242,13 @@ export async function POST(request: Request) {
     if (action === "switch-role") {
       const { viewingAs } = body;
       if (viewingAs === "SUPERADMIN" || viewingAs === "MIEMBRO") {
-        cookieStore.set("viewing_as_role", viewingAs, { path: "/", maxAge: 31536000, sameSite: "lax" });
+        cookieStore.set("viewing_as_role", viewingAs, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
         return NextResponse.json({ success: true, viewingAs });
       }
       // If no viewingAs, toggle current
       const currentView = cookieStore.get("viewing_as_role")?.value;
       const newView = currentView === "MIEMBRO" ? "SUPERADMIN" : "MIEMBRO";
-      cookieStore.set("viewing_as_role", newView, { path: "/", maxAge: 31536000, sameSite: "lax" });
+      cookieStore.set("viewing_as_role", newView, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
       return NextResponse.json({ success: true, viewingAs: newView });
     }
 
@@ -263,7 +263,7 @@ export async function POST(request: Request) {
       if (!iglesia) {
         return NextResponse.json({ error: "No se encontró ninguna iglesia registrada con ese código." }, { status: 404 });
       }
-      cookieStore.set("active_iglesia_id", iglesia.id, { path: "/", maxAge: 31536000, sameSite: "lax" });
+      cookieStore.set("active_iglesia_id", iglesia.id, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
       return NextResponse.json({ success: true, iglesiaId: iglesia.id });
     }
 
@@ -295,8 +295,8 @@ export async function POST(request: Request) {
       }
 
       if (usuario) {
-        cookieStore.set("session_user_id", usuario.id, { path: "/", maxAge: 31536000, sameSite: "lax" });
-        cookieStore.set("active_iglesia_id", usuario.iglesia_id, { path: "/", maxAge: 31536000, sameSite: "lax" });
+        cookieStore.set("session_user_id", usuario.id, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
+        cookieStore.set("active_iglesia_id", usuario.iglesia_id, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
         return NextResponse.json(mapUserToResponse(usuario));
       }
 
@@ -340,8 +340,8 @@ export async function POST(request: Request) {
           }
         }
 
-        cookieStore.set("session_user_id", superAdminUser.id, { path: "/", maxAge: 31536000, sameSite: "lax" });
-        cookieStore.set("active_iglesia_id", activeChurchId, { path: "/", maxAge: 31536000, sameSite: "lax" });
+        cookieStore.set("session_user_id", superAdminUser.id, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
+        cookieStore.set("active_iglesia_id", activeChurchId, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
 
         // Robust auto-link persona - search across ALL churches
         if (!superAdminUser.persona_id) {
@@ -404,7 +404,7 @@ export async function POST(request: Request) {
             // If persona is in a different church, use that church
             if (foundPersona.iglesia_id !== activeChurchId) {
               activeChurchId = foundPersona.iglesia_id;
-              cookieStore.set("active_iglesia_id", activeChurchId, { path: "/", maxAge: 31536000, sameSite: "lax" });
+              cookieStore.set("active_iglesia_id", activeChurchId, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
             }
             const fullPersona = await prisma.persona.findUnique({
               where: { id: foundPersona.id },
@@ -486,8 +486,8 @@ export async function POST(request: Request) {
     }
 
     // Guardar cookies de sesión y redirigir
-    cookieStore.set("session_user_id", user.id, { path: "/", maxAge: 31536000, sameSite: "lax" });
-    cookieStore.set("active_iglesia_id", user.iglesia_id, { path: "/", maxAge: 31536000, sameSite: "lax" });
+    cookieStore.set("session_user_id", user.id, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
+    cookieStore.set("active_iglesia_id", user.iglesia_id, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
 
     return NextResponse.json(mapUserToResponse(user));
 
