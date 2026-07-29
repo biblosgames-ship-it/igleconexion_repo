@@ -187,6 +187,7 @@ export async function POST(request: Request) {
 
     const {
       nombre_iglesia,
+      subdominio_o_slug,
       slogan,
       logo_url,
       color_principal,
@@ -209,10 +210,25 @@ export async function POST(request: Request) {
       opciones_registro,
     } = body;
 
+    let cleanSlug = undefined;
+    if (subdominio_o_slug) {
+      cleanSlug = subdominio_o_slug.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+      const existingSlug = await prisma.iglesia.findFirst({
+        where: {
+          subdominio_o_slug: cleanSlug,
+          NOT: { id: defaultIglesiaId }
+        }
+      });
+      if (existingSlug) {
+        return NextResponse.json({ error: `El código de iglesia '${cleanSlug}' ya está en uso por otra congregación.` }, { status: 400 });
+      }
+    }
+
     const updatedIglesia = await prisma.iglesia.update({
       where: { id: defaultIglesiaId },
       data: {
         nombre_iglesia,
+        ...(cleanSlug ? { subdominio_o_slug: cleanSlug } : {}),
         slogan,
         logo_url,
         color_principal: color_principal || "#0284c7",

@@ -208,6 +208,7 @@ export default function SuperAdminPage() {
 
   // Estados de Configuración de Iglesia
   const [churchName, setChurchName] = useState("");
+  const [churchSlug, setChurchSlug] = useState("");
   const [churchSlogan, setChurchSlogan] = useState("");
   const [churchLogoUrl, setChurchLogoUrl] = useState("");
   const [churchColor, setChurchColor] = useState("#0284c7");
@@ -369,6 +370,7 @@ export default function SuperAdminPage() {
         const dataIgl = await resIgl.json();
         if (!dataIgl.error) {
           setChurchName(dataIgl.nombre_iglesia || "");
+          setChurchSlug(dataIgl.subdominio_o_slug || "");
           setChurchSlogan(dataIgl.slogan || "");
           setChurchLogoUrl(dataIgl.logo_url || "");
           setChurchColor(dataIgl.color_principal || "#0284c7");
@@ -969,6 +971,7 @@ export default function SuperAdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nombre_iglesia: churchName,
+          subdominio_o_slug: churchSlug,
           slogan: churchSlogan,
           logo_url: churchLogoUrl,
           color_principal: churchColor,
@@ -2112,7 +2115,7 @@ export default function SuperAdminPage() {
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 700, borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem', marginBottom: '1rem', color: '#1e293b' }}>
                   ⛪ Identidad de la Iglesia
                 </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.25rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
                   <div>
                     <label style={{ display: 'block', fontWeight: 600, fontSize: '0.85rem', marginBottom: '0.4rem', color: '#475569' }}>Nombre de la Iglesia</label>
                     <input 
@@ -2122,6 +2125,21 @@ export default function SuperAdminPage() {
                       style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1' }} 
                       placeholder="Ej: Iglesia Conexión de Vida"
                     />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 600, fontSize: '0.85rem', marginBottom: '0.4rem', color: '#475569' }}>
+                      🔑 Código de la Iglesia (Slug)
+                    </label>
+                    <input 
+                      type="text" 
+                      value={churchSlug} 
+                      onChange={(e) => setChurchSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))} 
+                      style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontFamily: 'monospace', fontWeight: 700, color: '#0284c7', backgroundColor: '#f0f9ff' }} 
+                      placeholder="Ej: torrefuerte"
+                    />
+                    <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block', marginTop: '0.2rem' }}>
+                      Código de acceso usado al iniciar sesión.
+                    </span>
                   </div>
                   <div>
                     <label style={{ display: 'block', fontWeight: 600, fontSize: '0.85rem', marginBottom: '0.4rem', color: '#475569' }}>Slogan o Lema</label>
