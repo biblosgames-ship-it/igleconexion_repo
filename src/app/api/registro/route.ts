@@ -14,6 +14,7 @@ export async function POST(request: Request) {
       fechaNacimiento,
       sexo,
       correo,
+      password,
       estadoCivil,
       tieneHijos,
       nivelAcademico,
@@ -225,7 +226,7 @@ export async function POST(request: Request) {
           data: {
             iglesia_id: defaultIglesiaId,
             email: correo,
-            password: "password123", // Contraseña genérica
+            password: password || "password123",
             rol: "MIEMBRO",
             estado: "PENDIENTE",
             persona_id: newPersona.id,

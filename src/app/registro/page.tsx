@@ -14,6 +14,7 @@ export default function RegistroNuevoCreyente() {
   const [fechaNacimiento, setFechaNacimiento] = useState("");
   const [sexo, setSexo] = useState("");
   const [correo, setCorreo] = useState("");
+  const [password, setPassword] = useState("");
   const [estadoCivil, setEstadoCivil] = useState("");
   const [tieneHijos, setTieneHijos] = useState("");
   const [nivelAcademico, setNivelAcademico] = useState("");
@@ -191,6 +192,7 @@ export default function RegistroNuevoCreyente() {
       calculatedAge,
       sexo,
       correo,
+      password,
       estadoCivil,
       tieneHijos,
       nivelAcademico,
@@ -403,6 +405,11 @@ export default function RegistroNuevoCreyente() {
             <div className={styles.formGroup}>
               <label className={styles.label}>Correo Electrónico</label>
               <input type="email" className={styles.input} placeholder="correo@ejemplo.com" value={correo} onChange={(e) => setCorreo(e.target.value)} />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Crear Contraseña para mi Cuenta</label>
+              <input type="password" className={styles.input} placeholder="•••••••• (Para iniciar sesión sin Google)" value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
 
             <div className={styles.formGroup}>
