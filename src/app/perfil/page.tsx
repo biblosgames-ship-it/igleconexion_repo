@@ -29,6 +29,7 @@ export default function Perfil() {
     eventosInscritos: any[];
     eventosHistorial: any[];
     promesasFe: any[];
+    promesasResumen?: any;
     agendaDepartamentos: any[];
   }>({
     clasesActivas: [],
@@ -36,6 +37,7 @@ export default function Perfil() {
     eventosInscritos: [],
     eventosHistorial: [],
     promesasFe: [],
+    promesasResumen: null,
     agendaDepartamentos: [],
   });
   const [activeTabPerfil, setActiveTabPerfil] = useState<"clases" | "eventos" | "promesas" | "historial">("clases");
@@ -999,53 +1001,85 @@ export default function Perfil() {
           </div>
         </section>
 
-        {/* Promesas de Fe - Pendientes Semanales (compacto) */}
-        {actividades.promesasFe.filter((pf: any) => pf.estado === 'ACTIVA').length > 0 && (
+        {/* Promesas de Fe - Avance General del Proyecto (Dos Barras de Porcentaje) */}
+        {actividades.promesasResumen && (
           <section style={{
-            background: '#fffbeb',
+            background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
             border: '1px solid #fde68a',
-            borderRadius: '12px',
-            padding: '0.75rem 1rem',
+            borderRadius: '16px',
+            padding: '1.15rem 1.25rem',
+            boxShadow: '0 4px 12px rgba(245, 158, 11, 0.08)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem' }}>
-              <img src="/Iconos SVG/Peticiones.svg" alt="" style={{ width: '14px', height: '14px', objectFit: 'contain' }} />
-              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#92400e' }}>Promesas de Fe</span>
-              <span style={{ fontSize: '0.58rem', fontWeight: 700, background: '#f59e0b', color: 'white', padding: '1px 6px', borderRadius: '99px' }}>
-                {actividades.promesasFe.filter((pf: any) => pf.estado === 'ACTIVA').length}
-              </span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '1.2rem' }}>🌟</span>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#78350f' }}>
+                    Promesas de Fe • {actividades.promesasResumen.proyectoNombre}
+                  </h3>
+                  <span style={{ fontSize: '0.75rem', color: '#92400e', fontWeight: 600 }}>
+                    Avance General del Proyecto
+                  </span>
+                </div>
+              </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-              {actividades.promesasFe.filter((pf: any) => pf.estado === 'ACTIVA').map((pf: any) => (
-                <button
-                  key={pf.id}
-                  onClick={() => setSelectedPromesaModal(pf)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.6rem',
-                    background: 'white',
-                    border: '1px solid #fbbf24',
-                    borderRadius: '8px',
-                    padding: '0.45rem 0.65rem',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    width: '100%',
-                  }}
-                >
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#1e293b' }}>
-                      {pf.proyecto_nombre}
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: '50px' }}>
-                    <div style={{ width: '40px', height: '4px', background: '#fef3c7', borderRadius: '99px', overflow: 'hidden' }}>
-                      <div style={{ width: `${pf.progreso_porcentaje || 0}%`, height: '100%', background: '#f59e0b', borderRadius: '99px' }} />
-                    </div>
-                    <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#d97706' }}>{pf.progreso_porcentaje || 0}%</span>
-                  </div>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
-                </button>
-              ))}
+
+            {/* LAS DOS BARRAS DE PROGRESO EN PORCENTAJE (SIN MONTOS EN PESOS/DÓLARES) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', background: '#ffffff', padding: '0.9rem 1rem', borderRadius: '12px', border: '1px solid #fef3c7' }}>
+              
+              {/* BARRA 1: PORCENTAJE PROMETIDO (%) */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    🤝 Compromiso Total Prometido
+                  </span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 900, color: '#d97706' }}>
+                    {actividades.promesasResumen.porcentajePrometido || 0}%
+                  </span>
+                </div>
+                <div style={{ width: '100%', height: '10px', backgroundColor: '#fef3c7', borderRadius: '99px', overflow: 'hidden' }}>
+                  <div style={{
+                    width: `${actividades.promesasResumen.porcentajePrometido || 0}%`,
+                    height: '100%',
+                    background: 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)',
+                    borderRadius: '99px',
+                    transition: 'width 0.6s ease'
+                  }} />
+                </div>
+              </div>
+
+              {/* BARRA 2: PORCENTAJE RECAUDADO REAL (%) */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    🟢 Recaudado Real
+                  </span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 900, color: '#16a34a' }}>
+                    {actividades.promesasResumen.porcentajeRecaudado || 0}%
+                  </span>
+                </div>
+                <div style={{ width: '100%', height: '10px', backgroundColor: '#dcfce7', borderRadius: '99px', overflow: 'hidden' }}>
+                  <div style={{
+                    width: `${actividades.promesasResumen.porcentajeRecaudado || 0}%`,
+                    height: '100%',
+                    background: 'linear-gradient(90deg, #22c55e 0%, #16a34a 100%)',
+                    borderRadius: '99px',
+                    transition: 'width 0.6s ease'
+                  }} />
+                </div>
+              </div>
+
+              {/* ESTADO PERSONAL DEL USUARIO (SI TIENE PROMESA) */}
+              {actividades.promesasResumen.tienePromesa && (
+                <div style={{ marginTop: '0.35rem', paddingTop: '0.65rem', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569' }}>
+                    🙌 Tu Avance Personal:
+                  </span>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0284c7', background: '#e0f2fe', padding: '2px 8px', borderRadius: '12px' }}>
+                    {actividades.promesasResumen.miProgresoPorcentaje || 0}% Cumplido
+                  </span>
+                </div>
+              )}
             </div>
           </section>
         )}

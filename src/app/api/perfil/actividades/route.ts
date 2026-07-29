@@ -129,7 +129,58 @@ export async function GET() {
       }
     }
 
-    // 3. Promesas de Fe de la Persona
+    // 3. Promesas de Fe y Avance General del Proyecto (Porcentajes Sin Montos)
+    const proyectosActivos = await prisma.proyectoPromesa.findMany({
+      where: { iglesia_id: defaultIglesiaId, estado: 'ACTIVO' },
+      include: {
+        promesas: {
+          select: {
+            monto_promesa: true,
+            monto_aportado: true,
+            persona_id: true,
+          }
+        }
+      },
+      orderBy: { createdAt: "desc" }
+    });
+
+    let proyectoPrincipal = proyectosActivos[0] || null;
+    let porcentajePrometido = 0;
+    let porcentajeRecaudado = 0;
+    let miProgresoPorcentaje = 0;
+    let tienePromesa = false;
+    let proyectoNombre = proyectoPrincipal?.nombre || "Proyecto General";
+
+    if (proyectoPrincipal) {
+      const meta = proyectoPrincipal.meta_financiera || 0;
+      const totalPrometido = proyectoPrincipal.promesas.reduce((sum, p) => sum + p.monto_promesa, 0);
+      const totalAportado = proyectoPrincipal.promesas.reduce((sum, p) => sum + p.monto_aportado, 0);
+
+      if (meta > 0) {
+        porcentajePrometido = Math.min(100, Math.round((totalPrometido / meta) * 100));
+        porcentajeRecaudado = Math.min(100, Math.round((totalAportado / meta) * 100));
+      } else if (totalPrometido > 0) {
+        porcentajePrometido = 100;
+        porcentajeRecaudado = Math.min(100, Math.round((totalAportado / totalPrometido) * 100));
+      }
+
+      const miPromesa = proyectoPrincipal.promesas.find(p => p.persona_id === personaId);
+      if (miPromesa) {
+        tienePromesa = true;
+        miProgresoPorcentaje = miPromesa.monto_promesa > 0 
+          ? Math.min(100, Math.round((miPromesa.monto_aportado / miPromesa.monto_promesa) * 100))
+          : 0;
+      }
+    }
+
+    const promesasResumen = {
+      tienePromesa,
+      proyectoNombre,
+      porcentajePrometido,
+      porcentajeRecaudado,
+      miProgresoPorcentaje,
+    };
+
     const promesas = await prisma.promesaFe.findMany({
       where: { persona_id: personaId },
       include: {
@@ -141,8 +192,6 @@ export async function GET() {
     const promesasFe = promesas.map((p) => ({
       id: p.id,
       proyecto_nombre: p.proyecto?.nombre || "Proyecto Promesa de Fe",
-      monto_promesa: p.monto_promesa,
-      monto_aportado: p.monto_aportado,
       progreso_porcentaje: p.monto_promesa > 0 ? Math.min(100, Math.round((p.monto_aportado / p.monto_promesa) * 100)) : 0,
       fecha_inicio: p.fecha_inicio,
       fecha_limite: p.fecha_limite,
@@ -205,6 +254,7 @@ export async function GET() {
       eventosInscritos,
       eventosHistorial,
       promesasFe,
+      promesasResumen,
       agendaDepartamentos,
     });
   } catch (error: any) {
