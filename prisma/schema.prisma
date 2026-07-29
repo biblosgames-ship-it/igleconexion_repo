@@ -101,6 +101,9 @@ model Usuario {
   comunicados_leidos        ComunicadoLeido[]
   notificaciones            Notificacion[]
   liderEventos              LiderEvento[]
+
+  @@index([iglesia_id])
+  @@index([persona_id])
 }
 
 model LiderModulo {
@@ -118,6 +121,10 @@ model LiderModulo {
   sociedad       Sociedad?      @relation(fields: [sociedad_id], references: [id])
   grupo_conexion GrupoConexion? @relation(fields: [grupo_conexion_id], references: [id])
   grupo_trabajo  GrupoTrabajo?  @relation(fields: [grupo_trabajo_id], references: [id])
+
+  @@index([usuario_id])
+  @@index([sociedad_id])
+  @@index([grupo_conexion_id])
 }
 
 model EtapaConfig {
@@ -187,6 +194,8 @@ model Sociedad {
   inventarios     Inventario[]
   presupuestos    Presupuesto[]
   contacto_mensajes ContactoMensaje[]
+
+  @@index([iglesia_id])
 }
 
 model GrupoConexion {
@@ -209,6 +218,8 @@ model GrupoConexion {
   agenda           AgendaGrupo[]
   comentarios_foro ForoComentario[]
   clases_biblicas  ClaseBiblica[]
+
+  @@index([sociedad_id])
 }
 
 model Persona {
@@ -261,6 +272,10 @@ model Persona {
   asistenteEventos        AsistenteEvento[]
   respuestas_formularios  RespuestaFormulario[]
   promesaFes              PromesaFe[]
+
+  @@index([iglesia_id])
+  @@index([etapa_id])
+  @@index([grupo_conexion_id])
 }
 
 model HistorialTarea {

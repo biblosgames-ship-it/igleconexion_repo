@@ -452,19 +452,17 @@ export default function Hub() {
       {/* Header específico de la Iglesia */}
       <header className={styles.header}>
         <div className={styles.brandBox}>
-          <div className={styles.logoGroup}>
-            {logo ? (
-              <img src={logo} alt={name} className={styles.logoImg} />
-            ) : (
-              <span className={styles.churchEmoji}>⛪</span>
-            )}
-            <h1 className={styles.logoName}>{name}</h1>
-          </div>
-          {slogan && (
-            <div className={styles.logoSloganContainer}>
-              <p className={styles.logoSlogan}>“{slogan}”</p>
-            </div>
+          {logo ? (
+            <img src={logo} alt={name} className={styles.logoImg} />
+          ) : (
+            <span className={styles.churchEmoji}>⛪</span>
           )}
+          <div className={styles.nameAndSloganBox}>
+            <h1 className={styles.logoName}>{name}</h1>
+            {slogan && (
+              <p className={styles.logoSlogan}>“{slogan}”</p>
+            )}
+          </div>
         </div>
         <button
           className={styles.hamburgerBtn}

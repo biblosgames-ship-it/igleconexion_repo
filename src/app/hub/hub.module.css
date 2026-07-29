@@ -19,16 +19,17 @@
 
 .brandBox {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.35rem;
+  align-items: center;
+  gap: 1.2rem;
+  flex-wrap: wrap;
 }
 
-.logoGroup {
+.nameAndSloganBox {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
+  justify-content: center;
+  text-align: center;
 }
 
 .logoImg {
@@ -50,25 +51,18 @@
   font-weight: 900;
   color: #0f172a;
   letter-spacing: -0.035em;
-  line-height: 1.15;
+  line-height: 1.1;
   margin: 0;
+  text-align: center;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.logoSloganContainer {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  margin-top: 0.15rem;
 }
 
 .logoSlogan {
   font-style: italic;
   color: #475569;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 600;
-  margin: 0;
+  margin: 0.1rem 0 0 0;
   text-align: center;
   letter-spacing: 0.01em;
 }
@@ -511,15 +505,17 @@
 
   .brandBox {
     align-items: center;
+    justify-content: center;
     text-align: center;
     width: 100%;
     flex: 1;
     min-width: 0;
+    gap: 0.6rem;
   }
 
-  .logoGroup {
-    justify-content: center;
-    gap: 0.6rem;
+  .nameAndSloganBox {
+    align-items: center;
+    text-align: center;
   }
 
   .logoImg {
@@ -535,21 +531,18 @@
     white-space: normal;
     overflow: visible;
     text-overflow: clip;
-    font-size: 1.4rem;
+    font-size: 1.35rem;
     font-weight: 900;
     text-align: center;
-  }
-
-  .logoSloganContainer {
-    justify-content: center;
+    line-height: 1.1;
   }
 
   .logoSlogan {
-    font-size: 0.88rem;
+    font-size: 0.85rem;
     display: block;
     width: 100%;
     text-align: center;
-    margin-top: 0.2rem;
+    margin-top: 0.08rem;
   }
 
   .hamburgerBtn {

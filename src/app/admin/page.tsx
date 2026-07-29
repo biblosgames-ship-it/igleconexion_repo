@@ -2,10 +2,27 @@
 import { useState, useEffect } from "react";
 import styles from "./admin.module.css";
 import Link from "next/link";
-import FinanzasModule from "./FinanzasModule";
-import GestorEventosModule from "./GestorEventosModule";
-import TemploModule from "./TemploModule";
-import GestorFormulariosModule from "./GestorFormulariosModule";
+import dynamic from "next/dynamic";
+
+const FinanzasModule = dynamic(() => import("./FinanzasModule"), {
+  ssr: false,
+  loading: () => <div style={{ padding: "2rem", textAlign: "center", color: "#64748b", fontWeight: 600 }}>⏳ Cargando Módulo de Finanzas...</div>
+});
+
+const GestorEventosModule = dynamic(() => import("./GestorEventosModule"), {
+  ssr: false,
+  loading: () => <div style={{ padding: "2rem", textAlign: "center", color: "#64748b", fontWeight: 600 }}>⏳ Cargando Módulo de Eventos...</div>
+});
+
+const TemploModule = dynamic(() => import("./TemploModule"), {
+  ssr: false,
+  loading: () => <div style={{ padding: "2rem", textAlign: "center", color: "#64748b", fontWeight: 600 }}>⏳ Cargando Módulo de Templo...</div>
+});
+
+const GestorFormulariosModule = dynamic(() => import("./GestorFormulariosModule"), {
+  ssr: false,
+  loading: () => <div style={{ padding: "2rem", textAlign: "center", color: "#64748b", fontWeight: 600 }}>⏳ Cargando Gestor de Formularios...</div>
+});
 
 export default function SuperAdminPage() {
   const [activeTab, setActiveTab] = useState(12); // Default; restored from recentTabs in useEffect
