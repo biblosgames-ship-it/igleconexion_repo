@@ -15,6 +15,49 @@ export default function GlobalLogin() {
   const [urlError, setUrlError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Estados para Restablecer Contraseña
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetPasswordVal, setResetPasswordVal] = useState("");
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetLoading, setResetLoading] = useState(false);
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetMessage(null);
+    setResetError(null);
+    setResetLoading(true);
+    try {
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "reset-password",
+          slug,
+          email: resetEmail || email,
+          newPassword: resetPasswordVal
+        }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setResetError(data.error);
+      } else {
+        setResetMessage(data.message || "¡Contraseña actualizada con éxito!");
+        setPassword(resetPasswordVal);
+        setEmail(resetEmail || email);
+        setTimeout(() => {
+          setShowResetModal(false);
+          setResetMessage(null);
+        }, 2000);
+      }
+    } catch (err) {
+      setResetError("Error al intentar restablecer la contraseña.");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedSlug = localStorage.getItem("iglesia_slug");
@@ -208,18 +251,89 @@ export default function GlobalLogin() {
             Iniciar sesión con Google
           </button>
 
-          <p style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.88rem', color: 'rgba(255, 255, 255, 0.9)' }}>
-            ¿Eres nuevo en la iglesia?{' '}
-            <button 
-              type="button" 
-              onClick={handleNewMemberRegister} 
-              className={styles.footerLink}
-              style={{ background: 'none', border: 'none', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', padding: 0, fontSize: '0.88rem' }}
+          <div style={{ marginTop: '1.25rem', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setResetEmail(email);
+                setShowResetModal(true);
+              }}
+              style={{ background: 'none', border: 'none', color: 'rgba(255, 255, 255, 0.85)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
             >
-              Registrarme como nuevo miembro
+              🔑 ¿Olvidaste o deseas restablecer tu contraseña?
             </button>
-          </p>
+
+            <p style={{ margin: 0, fontSize: '0.88rem', color: 'rgba(255, 255, 255, 0.9)' }}>
+              ¿Eres nuevo en la iglesia?{' '}
+              <button 
+                type="button" 
+                onClick={handleNewMemberRegister} 
+                className={styles.footerLink}
+                style={{ background: 'none', border: 'none', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', padding: 0, fontSize: '0.88rem' }}
+              >
+                Registrarme como nuevo miembro
+              </button>
+            </p>
+          </div>
         </form>
+
+        {showResetModal && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+            <div style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '20px', width: '100%', maxWidth: '420px', padding: '1.75rem', color: 'white', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.75rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'white' }}>🔑 Restablecer Contraseña</h3>
+                <button onClick={() => setShowResetModal(false)} style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', color: '#94a3b8' }}>&times;</button>
+              </div>
+
+              {resetError && (
+                <div style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.4)', color: '#fecaca', padding: '0.75rem', borderRadius: '10px', fontSize: '0.82rem', marginBottom: '1rem' }}>
+                  ⚠️ {resetError}
+                </div>
+              )}
+
+              {resetMessage && (
+                <div style={{ background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.4)', color: '#bbf7d0', padding: '0.75rem', borderRadius: '10px', fontSize: '0.82rem', marginBottom: '1rem' }}>
+                  ✅ {resetMessage}
+                </div>
+              )}
+
+              <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.3rem', textTransform: 'uppercase' }}>Correo Electrónico</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="tu.correo@ejemplo.com"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: '0.9rem', outline: 'none' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.3rem', textTransform: 'uppercase' }}>Nueva Contraseña</label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Ingresa tu nueva contraseña"
+                    value={resetPasswordVal}
+                    onChange={(e) => setResetPasswordVal(e.target.value)}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: '0.9rem', outline: 'none' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                  <button type="button" onClick={() => setShowResetModal(false)} style={{ padding: '0.55rem 1.1rem', borderRadius: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#94a3b8', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
+                    Cancelar
+                  </button>
+                  <button type="submit" disabled={resetLoading} style={{ padding: '0.55rem 1.3rem', borderRadius: '10px', background: '#0284c7', color: 'white', border: 'none', fontWeight: 700, cursor: resetLoading ? 'not-allowed' : 'pointer', fontSize: '0.85rem' }}>
+                    {resetLoading ? "Guardando..." : "💾 Cambiar Contraseña"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         <div className={styles.footerInfo}>
           <div className={styles.divider}>¿Iglesia Nueva?</div>

@@ -258,6 +258,46 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
+    // 1d. Restablecer o Establecer Nueva Contraseña
+    if (action === "reset-password") {
+      const { email, slug, newPassword } = body;
+      if (!email || !newPassword) {
+        return NextResponse.json({ error: "Por favor ingresa tu correo y tu nueva contraseña." }, { status: 400 });
+      }
+
+      let churchId = null;
+      if (slug) {
+        const iglesia = await prisma.iglesia.findUnique({
+          where: { subdominio_o_slug: slug }
+        });
+        if (iglesia) churchId = iglesia.id;
+      }
+
+      let usuario = await prisma.usuario.findFirst({
+        where: {
+          email: email.trim(),
+          ...(churchId ? { iglesia_id: churchId } : {})
+        }
+      });
+
+      if (!usuario) {
+        usuario = await prisma.usuario.findFirst({
+          where: { email: email.trim() }
+        });
+      }
+
+      if (!usuario) {
+        return NextResponse.json({ error: "No se encontró ningún usuario registrado con ese correo electrónico." }, { status: 404 });
+      }
+
+      await prisma.usuario.update({
+        where: { id: usuario.id },
+        data: { password: newPassword }
+      });
+
+      return NextResponse.json({ success: true, message: "¡Contraseña actualizada con éxito! Ya puedes iniciar sesión con tu correo y nueva contraseña." });
+    }
+
     // 1c. Cambiar modo de vista (Admin <-> Miembro)
     if (action === "switch-role") {
       const { viewingAs } = body;
