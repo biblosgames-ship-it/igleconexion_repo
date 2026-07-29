@@ -27,6 +27,24 @@ export default function BibliotecaPage() {
   });
 
   const [saving, setSaving] = useState(false);
+  const [userRole, setUserRole] = useState<string>("MIEMBRO");
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      try {
+        const res = await fetch("/api/auth");
+        const data = await res.json();
+        if (data?.user?.rol) {
+          setUserRole(data.user.rol);
+        }
+      } catch (e) {
+        console.error("Error al obtener rol del usuario:", e);
+      }
+    };
+    fetchUserRole();
+  }, []);
+
+  const isAdmin = ["ADMIN_IGLESIA", "SUPERADMIN", "LIDER"].includes(userRole);
 
   useEffect(() => {
     fetchRecursos();
@@ -134,9 +152,11 @@ export default function BibliotecaPage() {
               Explora nuestra colección digital: Guías en PDF, enseñanzas en Video y galerías de fotos ministeriales.
             </p>
           </div>
-          <button className={styles.primaryBtn} onClick={() => setShowAddModal(true)}>
-            <span>➕ Publicar Recurso</span>
-          </button>
+          {isAdmin && (
+            <button className={styles.primaryBtn} onClick={() => setShowAddModal(true)}>
+              <span>➕ Publicar Recurso</span>
+            </button>
+          )}
         </div>
       </header>
 
@@ -212,7 +232,7 @@ export default function BibliotecaPage() {
             <span style={{ fontSize: '3rem' }}>📂</span>
             <h3 style={{ margin: '0.75rem 0 0.25rem 0', color: '#0f172a', fontWeight: 800 }}>No se encontraron recursos</h3>
             <p style={{ fontSize: '0.9rem', margin: 0 }}>
-              No hay archivos guardados en esta categoría. ¡Haz clic en "Publicar Recurso" para añadir el primero!
+              No hay archivos guardados en esta categoría. {isAdmin ? '¡Haz clic en "Publicar Recurso" para añadir el primero!' : 'Vuelve pronto para nuevos contenidos.'}
             </p>
           </div>
         ) : (
@@ -249,9 +269,11 @@ export default function BibliotecaPage() {
                     <button className={styles.viewBtn}>
                       {isVideo ? '▶️ Ver Video' : isPdf ? '📖 Leer Documento' : '👁️ Ver Galería'}
                     </button>
-                    <button className={styles.deleteBtn} onClick={(e) => handleDeleteRecurso(item.id, e)} title="Eliminar">
-                      🗑️
-                    </button>
+                    {isAdmin && (
+                      <button className={styles.deleteBtn} onClick={(e) => handleDeleteRecurso(item.id, e)} title="Eliminar">
+                        🗑️
+                      </button>
+                    )}
                   </div>
                 </div>
               );
