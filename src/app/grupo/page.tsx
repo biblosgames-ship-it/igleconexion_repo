@@ -1215,81 +1215,138 @@ function GrupoContent() {
           /* ========================================================
              LEADER VIEW
              ======================================================== */
-          <div>
-            {/* Header / Selector de Grupo */}
-            <div className={styles.card} style={{ marginBottom: "1.5rem", borderLeft: "5px solid var(--accent-blue)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+            
+            {/* 1. SELECTOR DE GRUPO DE CONEXIÓN ARRIBA */}
+            {gruposDirigidos.length > 0 && (
+              <div style={{ background: "#ffffff", border: "2px solid #0284c7", borderRadius: "14px", padding: "1rem 1.25rem", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 800, color: "#0284c7", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "0.35rem" }}>
+                  📌 Seleccionar Grupo de Conexión a Administrar:
+                </label>
+                <select
+                  value={selectedDirigidoId}
+                  onChange={(e) => setSelectedDirigidoId(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem 1rem",
+                    borderRadius: "10px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "1rem",
+                    fontWeight: 700,
+                    color: "#0f172a",
+                    backgroundColor: "#f8fafc",
+                    outline: "none",
+                    cursor: "pointer"
+                  }}
+                >
+                  {gruposDirigidos.map((g: any) => (
+                    <option key={g.id} value={g.id}>
+                      👥 {g.nombre_grupo} ({g.sociedad?.nombre_sociedad || "Sociedad General"})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* 2. RECUADRO DEL GRUPO SELECCIONADO */}
+            <div className={styles.card} style={{ borderLeft: "6px solid #0284c7", background: "#ffffff", borderRadius: "14px", padding: "1.25rem 1.5rem", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)", marginBottom: "0" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
                 <div>
-                  <span style={{ fontSize: "0.75rem", textTransform: "uppercase", fontWeight: 700, color: "var(--accent-blue)" }}>
-                    Panel de Administración del Grupo
+                  <span style={{ fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 800, color: "#0284c7", letterSpacing: "0.5px" }}>
+                    Grupo de Conexión Seleccionado
                   </span>
-                  <h1 style={{ fontSize: "1.6rem", fontWeight: 800, margin: "0.2rem 0" }}>
-                    {selectedDirigido.nombre_grupo} ({selectedDirigido.sociedad?.nombre_sociedad})
+                  <h1 style={{ fontSize: "1.65rem", fontWeight: 900, color: "#0f172a", margin: "0.2rem 0 0.4rem 0" }}>
+                    {selectedDirigido.nombre_grupo}
                   </h1>
+                  <div style={{ fontSize: "0.85rem", color: "#64748b", fontWeight: 600, display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+                    <span>🏷️ {selectedDirigido.sociedad?.nombre_sociedad || "Sociedad"}</span>
+                    {selectedDirigido.dia_reunion && <span>📅 {selectedDirigido.dia_reunion}</span>}
+                    {selectedDirigido.lugar_reunion && <span>📍 {selectedDirigido.lugar_reunion}</span>}
+                  </div>
                 </div>
 
-                {gruposDirigidos.length > 1 && (
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>Seleccionar Grupo</label>
-                    <select
-                      className={styles.select}
-                      value={selectedDirigidoId}
-                      onChange={(e) => setSelectedDirigidoId(e.target.value)}
-                    >
-                      {gruposDirigidos.map((g: any) => (
-                        <option key={g.id} value={g.id}>
-                          {g.nombre_grupo} ({g.sociedad?.nombre_sociedad})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                <span style={{ padding: "0.35rem 0.85rem", borderRadius: "20px", background: "#e0f2fe", color: "#0369a1", fontWeight: 800, fontSize: "0.8rem" }}>
+                  👥 {selectedDirigido.personas?.length || 0} Integrantes
+                </span>
               </div>
 
-              {/* Sub-tabs for Leader controls */}
-              <div className={styles.subTabs}>
-                <button
-                  onClick={() => setLeaderSubTab("kanban")}
-                  className={`${styles.subTab} ${leaderSubTab === "kanban" ? styles.subTabActive : ""}`}
+              {selectedDirigido.mensaje_bienvenida && (
+                <div style={{ marginTop: "0.85rem", padding: "0.75rem", backgroundColor: "#f8fafc", borderRadius: "8px", borderLeft: "3px solid #38bdf8", fontSize: "0.82rem", color: "#334155", fontStyle: "italic" }}>
+                  “{selectedDirigido.mensaje_bienvenida}”
+                </div>
+              )}
+            </div>
+
+            {/* 3. MENÚ DE OPCIONES DESPLEGABLE Y RÁPIDO (ESTILO HUB) */}
+            <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "14px", padding: "1rem", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={{ fontSize: "0.78rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  ⚡ Menú Desplegable de Opciones de Administración:
+                </label>
+
+                {/* Selector Desplegable estilo Hub (Acceso directo instantáneo sin scroll) */}
+                <select
+                  value={leaderSubTab}
+                  onChange={(e) => setLeaderSubTab(e.target.value as any)}
+                  style={{
+                    width: "100%",
+                    padding: "0.8rem 1rem",
+                    borderRadius: "10px",
+                    border: "2px solid #0284c7",
+                    backgroundColor: "#f0f9ff",
+                    fontSize: "0.95rem",
+                    fontWeight: 800,
+                    color: "#0369a1",
+                    outline: "none",
+                    cursor: "pointer",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.03)"
+                  }}
                 >
-                  📋 Tablero Kanban (Etapas)
-                </button>
-                <button
-                  onClick={() => setLeaderSubTab("attendance")}
-                  className={`${styles.subTab} ${leaderSubTab === "attendance" ? styles.subTabActive : ""}`}
-                >
-                  📝 Pasar Asistencia
-                </button>
-                <button
-                  onClick={() => setLeaderSubTab("agreements")}
-                  className={`${styles.subTab} ${leaderSubTab === "agreements" ? styles.subTabActive : ""}`}
-                >
-                  📣 Publicar Acuerdos
-                </button>
-                <button
-                  onClick={() => setLeaderSubTab("agenda")}
-                  className={`${styles.subTab} ${leaderSubTab === "agenda" ? styles.subTabActive : ""}`}
-                >
-                  📅 Agenda del Grupo
-                </button>
-                <button
-                  onClick={() => setLeaderSubTab("forum")}
-                  className={`${styles.subTab} ${leaderSubTab === "forum" ? styles.subTabActive : ""}`}
-                >
-                  💬 Foro Interno
-                </button>
-                <button
-                  onClick={() => setLeaderSubTab("info")}
-                  className={`${styles.subTab} ${leaderSubTab === "info" ? styles.subTabActive : ""}`}
-                >
-                  ⚙️ Datos del Grupo
-                </button>
-                <button
-                  onClick={() => setLeaderSubTab("biblia")}
-                  className={`${styles.subTab} ${leaderSubTab === "biblia" ? styles.subTabActive : ""}`}
-                >
-                  📖 Programar Clases Bíblicas
-                </button>
+                  <option value="kanban">📋 Tablero Kanban (Seguimiento de Integrantes)</option>
+                  <option value="attendance">📝 Pasar Asistencia Semanal</option>
+                  <option value="agreements">📣 Publicar Acuerdos y Avisos</option>
+                  <option value="agenda">📅 Agenda y Eventos del Grupo</option>
+                  <option value="forum">💬 Foro Interno de Discusión</option>
+                  <option value="info">⚙️ Datos y Configuración del Grupo</option>
+                  <option value="biblia">📖 Programar Clases Bíblicas</option>
+                </select>
+
+                {/* Botones de Acceso Rápido estilo Hub */}
+                <div style={{ display: "flex", gap: "0.4rem", overflowX: "auto", paddingTop: "0.6rem", borderTop: "1px solid #f1f5f9" }}>
+                  {[
+                    { id: "kanban", icon: "📋", label: "Kanban" },
+                    { id: "attendance", icon: "📝", label: "Asistencia" },
+                    { id: "agreements", icon: "📣", label: "Acuerdos" },
+                    { id: "agenda", icon: "📅", label: "Agenda" },
+                    { id: "forum", icon: "💬", label: "Foro" },
+                    { id: "info", icon: "⚙️", label: "Datos" },
+                    { id: "biblia", icon: "📖", label: "Clases" },
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setLeaderSubTab(item.id as any)}
+                      style={{
+                        padding: "0.5rem 0.85rem",
+                        borderRadius: "8px",
+                        border: "1px solid",
+                        borderColor: leaderSubTab === item.id ? "#0284c7" : "#e2e8f0",
+                        background: leaderSubTab === item.id ? "#0284c7" : "#ffffff",
+                        color: leaderSubTab === item.id ? "#ffffff" : "#475569",
+                        fontWeight: 700,
+                        fontSize: "0.8rem",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.35rem",
+                        transition: "all 0.15s ease"
+                      }}
+                    >
+                      <span>{item.icon}</span>
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
