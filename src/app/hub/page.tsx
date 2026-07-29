@@ -1135,6 +1135,7 @@ export default function Hub() {
                   key={soc.id} 
                   className={styles.societyCard} 
                   onClick={() => setSelectedSociety(soc)}
+                  style={{ textAlign: 'left', justifyContent: 'flex-start', alignItems: 'center' }}
                 >
                   <span className={styles.societyIcon} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '3.6rem', height: '3.6rem', padding: soc.logo_url ? '0' : '0.8rem', overflow: 'hidden', flexShrink: 0 }}>
                     {soc.logo_url ? (
@@ -1143,7 +1144,7 @@ export default function Hub() {
                       getSocietyEmoji(soc.nombre_sociedad)
                     )}
                   </span>
-                  <span className={styles.societyName}>{soc.nombre_sociedad}</span>
+                  <span className={styles.societyName} style={{ textAlign: 'left', flex: 1 }}>{soc.nombre_sociedad}</span>
                 </button>
               ))}
             </div>

@@ -228,10 +228,13 @@
   border-radius: var(--radius-card);
   display: flex;
   align-items: center;
+  justify-content: flex-start;
+  text-align: left;
   gap: 1rem;
   box-shadow: var(--shadow-xl);
   border: 1px solid rgba(226, 232, 240, 0.5);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
 }
 
 .societyCard:hover {
@@ -252,6 +255,8 @@
   font-weight: 600;
   font-size: 1.15rem;
   color: var(--text-primary);
+  text-align: left;
+  flex: 1;
 }
 
 .registerBanner {
@@ -729,10 +734,15 @@
 
   .societyCard {
     padding: 1rem;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: left;
+    width: 100%;
   }
 
   .societyName {
     font-size: 1rem;
+    text-align: left;
   }
 
   .societyIcon {
