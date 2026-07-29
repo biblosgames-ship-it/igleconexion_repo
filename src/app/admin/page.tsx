@@ -267,6 +267,7 @@ export default function SuperAdminPage() {
 
   // Formulario de nuevo recurso
   const [newRecTitle, setNewRecTitle] = useState("");
+  const [newRecCategory, setNewRecCategory] = useState("General");
   const [newRecDesc, setNewRecDesc] = useState("");
   const [newRecType, setNewRecType] = useState("LINK");
   const [newRecUrl, setNewRecUrl] = useState("");
@@ -944,17 +945,19 @@ export default function SuperAdminPage() {
 
   const handleAddResource = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newRecTitle.trim() || !newRecUrl.trim()) return;
+    if (!newRecTitle.trim() || (!newRecUrl.trim() && newRecType !== "BLOG")) return;
     const newRec = {
       id: "rec-" + Date.now(),
       titulo: newRecTitle.trim(),
       descripcion: newRecDesc.trim(),
+      categoria: newRecCategory || "General",
       tipo: newRecType,
-      url: newRecUrl.trim(),
+      url: newRecUrl.trim() || (newRecType === "BLOG" ? "#blog" : ""),
     };
     setChurchResources([...churchResources, newRec]);
     setNewRecTitle("");
     setNewRecDesc("");
+    setNewRecCategory("General");
     setNewRecType("LINK");
     setNewRecUrl("");
   };
@@ -2611,7 +2614,7 @@ export default function SuperAdminPage() {
                 {/* Formulario Agregar Recurso */}
                 <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px dashed #cbd5e1', marginBottom: '1.5rem' }}>
                   <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.75rem', color: '#334155' }}>📚 Cargar Nuevo Recurso</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                     <div>
                       <label style={{ display: 'block', fontWeight: 600, fontSize: '0.75rem', marginBottom: '0.25rem' }}>Título del Recurso</label>
                       <input 
@@ -2621,6 +2624,21 @@ export default function SuperAdminPage() {
                         style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} 
                         placeholder="Ej: Libro de Discipulado"
                       />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 600, fontSize: '0.75rem', marginBottom: '0.25rem' }}>Categoría</label>
+                      <select
+                        value={newRecCategory}
+                        onChange={(e) => setNewRecCategory(e.target.value)}
+                        style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', backgroundColor: 'white' }}
+                      >
+                        <option value="Estudios Bíblicos">Estudios Bíblicos</option>
+                        <option value="Sermones y Predicas">Sermones y Prédicas</option>
+                        <option value="Manuales y Guías">Manuales y Guías</option>
+                        <option value="Jóvenes y Niños">Jóvenes y Niños</option>
+                        <option value="Eventos Especiales">Eventos Especiales</option>
+                        <option value="General">General</option>
+                      </select>
                     </div>
                     <div>
                       <label style={{ display: 'block', fontWeight: 600, fontSize: '0.75rem', marginBottom: '0.25rem' }}>Tipo de Recurso</label>
@@ -2634,6 +2652,7 @@ export default function SuperAdminPage() {
                         <option value="VIDEO">📺 Video (YouTube / Vimeo)</option>
                         <option value="GALERIA">🖼️ Fotografía / Galería de Fotos</option>
                         <option value="AUDIO">🎧 Audio / Podcast / Prédica</option>
+                        <option value="BLOG">✍️ Artículo / Reflexión Escrita</option>
                       </select>
                     </div>
                   </div>

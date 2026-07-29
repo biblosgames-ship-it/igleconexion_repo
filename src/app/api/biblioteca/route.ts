@@ -165,3 +165,115 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function PUT(request: Request) {
+  try {
+    const iglesiaId = await getActiveChurchId();
+    if (!iglesiaId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
+    const body = await request.json();
+    const { id, titulo, descripcion, categoria, tipo, url_recurso, url_miniatura, tags } = body;
+
+    if (!id || !titulo || !tipo) {
+      return NextResponse.json({ error: 'ID, Título y Tipo son obligatorios.' }, { status: 400 });
+    }
+
+    const finalUrl = url_recurso || (tipo === 'BLOG' ? '#blog' : '');
+    let miniaturaFinal = url_miniatura || null;
+
+    if (tipo === 'VIDEO' && !miniaturaFinal && finalUrl) {
+      const ytMatch = finalUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+      if (ytMatch && ytMatch[1]) {
+        miniaturaFinal = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+      }
+    } else if (tipo === 'GALERIA' && !miniaturaFinal && finalUrl) {
+      miniaturaFinal = finalUrl;
+    }
+
+    if (!id.startsWith('json-rec-')) {
+      const updated = await prisma.recursoBiblioteca.update({
+        where: { id },
+        data: {
+          titulo,
+          descripcion: descripcion || null,
+          categoria: categoria || 'General',
+          tipo,
+          url_recurso: finalUrl,
+          url_miniatura: miniaturaFinal,
+          tags: tags || null,
+        }
+      });
+      return NextResponse.json(updated);
+    }
+
+    const iglesia = await prisma.iglesia.findUnique({
+      where: { id: iglesiaId },
+      select: { recursos: true }
+    });
+
+    if (iglesia?.recursos) {
+      const parsed = JSON.parse(iglesia.recursos);
+      if (Array.isArray(parsed)) {
+        const updatedList = parsed.map((item: any, idx: number) => {
+          const itemId = item.id || `json-rec-${idx}`;
+          if (itemId === id) {
+            return {
+              ...item,
+              titulo,
+              descripcion,
+              categoria: categoria || 'General',
+              tipo,
+              url_recurso: finalUrl,
+              url_miniatura: miniaturaFinal
+            };
+          }
+          return item;
+        });
+
+        await prisma.iglesia.update({
+          where: { id: iglesiaId },
+          data: { recursos: JSON.stringify(updatedList) }
+        });
+      }
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const iglesiaId = await getActiveChurchId();
+    if (!iglesiaId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) return NextResponse.json({ error: 'ID es obligatorio' }, { status: 400 });
+
+    if (!id.startsWith('json-rec-')) {
+      await prisma.recursoBiblioteca.delete({ where: { id } });
+    } else {
+      const iglesia = await prisma.iglesia.findUnique({
+        where: { id: iglesiaId },
+        select: { recursos: true }
+      });
+      if (iglesia?.recursos) {
+        const parsed = JSON.parse(iglesia.recursos);
+        if (Array.isArray(parsed)) {
+          const updatedList = parsed.filter((item: any, idx: number) => (item.id || `json-rec-${idx}`) !== id);
+          await prisma.iglesia.update({
+            where: { id: iglesiaId },
+            data: { recursos: JSON.stringify(updatedList) }
+          });
+        }
+      }
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

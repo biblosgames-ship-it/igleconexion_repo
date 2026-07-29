@@ -30,6 +30,54 @@ export default function BibliotecaPage() {
   const [saving, setSaving] = useState(false);
   const [userRole, setUserRole] = useState<string>("MIEMBRO");
 
+  // Modal y formulario de Edición
+  const [editItem, setEditItem] = useState<any>(null);
+  const [editFormData, setEditFormData] = useState({
+    id: '',
+    titulo: '',
+    descripcion: '',
+    categoria: 'General',
+    tipo: 'PDF',
+    url_recurso: '',
+    url_miniatura: '',
+  });
+
+  const handleOpenEdit = (item: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditItem(item);
+    setEditFormData({
+      id: item.id,
+      titulo: item.titulo || '',
+      descripcion: item.descripcion || '',
+      categoria: item.categoria || 'General',
+      tipo: item.tipo || 'PDF',
+      url_recurso: item.url_recurso === '#blog' ? '' : (item.url_recurso || ''),
+      url_miniatura: item.url_miniatura || '',
+    });
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await fetch("/api/biblioteca", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editFormData),
+      });
+      if (res.ok) {
+        setEditItem(null);
+        fetchRecursos();
+      } else {
+        alert("Error al actualizar el recurso.");
+      }
+    } catch (e) {
+      console.error("Error al editar:", e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   useEffect(() => {
     const fetchUserRole = async () => {
       try {
@@ -358,9 +406,25 @@ export default function BibliotecaPage() {
                       {isVideo ? '▶️ Ver Video' : isPdf ? '📖 Leer Documento' : '👁️ Ver Galería'}
                     </button>
                     {isAdmin && (
-                      <button className={styles.deleteBtn} onClick={(e) => handleDeleteRecurso(item.id, e)} title="Eliminar">
-                        🗑️
-                      </button>
+                      <div style={{ display: 'flex', gap: '0.35rem' }}>
+                        <button
+                          type="button"
+                          className={styles.deleteBtn}
+                          onClick={(e) => handleOpenEdit(item, e)}
+                          title="Editar Recurso"
+                          style={{ background: '#f0f9ff', color: '#0284c7', borderColor: '#bae6fd' }}
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.deleteBtn}
+                          onClick={(e) => handleDeleteRecurso(item.id, e)}
+                          title="Eliminar Recurso"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -591,6 +655,120 @@ export default function BibliotecaPage() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: EDITAR RECURSO EXISTENTE */}
+      {editItem && (
+        <div className={styles.modalOverlay} onClick={() => setEditItem(null)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>✏️ Editar Recurso</h3>
+              <button className={styles.closeBtn} onClick={() => setEditItem(null)}>✕</button>
+            </div>
+            <form onSubmit={handleSaveEdit} className={styles.modalBody}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Tipo de Recurso *</label>
+                <select
+                  value={editFormData.tipo}
+                  onChange={(e) => setEditFormData({ ...editFormData, tipo: e.target.value })}
+                  className={styles.formSelect}
+                  required
+                >
+                  <option value="PDF">📄 Documento PDF (Lectura y Descarga)</option>
+                  <option value="VIDEO">📺 Video de YouTube (Reproducción integrada)</option>
+                  <option value="GALERIA">🖼️ Fotos / Galería Externa por URL (Sin ocupar espacio en BD)</option>
+                  <option value="AUDIO">🎧 Audio / Podcast / Prédica</option>
+                  <option value="BLOG">✍️ Artículo / Blog / Reflexión Escrita</option>
+                </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Título del Recurso *</label>
+                <input
+                  type="text"
+                  required
+                  value={editFormData.titulo}
+                  onChange={(e) => setEditFormData({ ...editFormData, titulo: e.target.value })}
+                  className={styles.formInput}
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Categoría *</label>
+                <select
+                  value={editFormData.categoria}
+                  onChange={(e) => setEditFormData({ ...editFormData, categoria: e.target.value })}
+                  className={styles.formSelect}
+                >
+                  <option value="Estudios Bíblicos">Estudios Bíblicos</option>
+                  <option value="Sermones y Predicas">Sermones y Prédicas</option>
+                  <option value="Manuales y Guías">Manuales y Guías</option>
+                  <option value="Jóvenes y Niños">Jóvenes y Niños</option>
+                  <option value="Eventos Especiales">Eventos Especiales</option>
+                  <option value="General">General</option>
+                </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  {editFormData.tipo === 'PDF' && 'Link o URL del Documento PDF *'}
+                  {editFormData.tipo === 'VIDEO' && 'Link o URL del Video de YouTube *'}
+                  {editFormData.tipo === 'GALERIA' && 'Link o URL de la Foto / Galería Externa (Instagram/Drive/Flickr) *'}
+                  {editFormData.tipo === 'BLOG' && 'Link Externo Adicional u Opcional'}
+                </label>
+                <input
+                  type="text"
+                  placeholder={editFormData.tipo === 'BLOG' ? 'Opcional (Ej: https://...)' : 'https://...'}
+                  value={editFormData.url_recurso}
+                  onChange={(e) => setEditFormData({ ...editFormData, url_recurso: e.target.value })}
+                  className={styles.formInput}
+                  required={editFormData.tipo !== 'BLOG'}
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>URL de Portada / Miniatura (Opcional)</label>
+                <input
+                  type="url"
+                  placeholder="https://ejemplo.com/portada.jpg"
+                  value={editFormData.url_miniatura}
+                  onChange={(e) => setEditFormData({ ...editFormData, url_miniatura: e.target.value })}
+                  className={styles.formInput}
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  {editFormData.tipo === 'BLOG' ? 'Contenido del Artículo / Reflexión Escrita *' : 'Descripción Resumida'}
+                </label>
+                <textarea
+                  rows={editFormData.tipo === 'BLOG' ? 8 : 3}
+                  placeholder="Escribe la descripción o contenido completo..."
+                  value={editFormData.descripcion}
+                  onChange={(e) => setEditFormData({ ...editFormData, descripcion: e.target.value })}
+                  className={styles.formTextarea}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setEditItem(null)}
+                  style={{ background: '#f1f5f9', color: '#64748b', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '10px', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className={styles.primaryBtn}
+                >
+                  {saving ? "Guardando..." : "💾 Guardar Cambios"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
