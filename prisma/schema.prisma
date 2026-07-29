@@ -549,10 +549,12 @@ model Comunicado {
   titulo         String
   contenido      String
   imagen         String? // Imagen adjunta en base64 o URL
-  destinatario   String   @default("TODOS") // TODOS, SOCIEDAD, GRUPO_CONEXION, LIDERES
-  destinatarioId String? // ID de la sociedad o grupo de conexión específico si aplica
-  esObligatorio  Boolean  @default(false)
-  createdAt      DateTime @default(now())
+  destinatario   String    @default("TODOS") // TODOS, SOCIEDAD, GRUPO_CONEXION, DEPARTAMENTO, LIDERES
+  destinatarioId String? // ID de la sociedad, grupo o departamento específico
+  esObligatorio  Boolean   @default(false)
+  fechaInicio    DateTime?
+  fechaFin       DateTime?
+  createdAt      DateTime  @default(now())
   updatedAt      DateTime @updatedAt
 
   iglesia Iglesia           @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)

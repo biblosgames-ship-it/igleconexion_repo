@@ -40,8 +40,18 @@ export async function GET() {
       orderBy: { createdAt: "desc" }
     });
 
-    // Filter announcements according to recipient audience
+    const now = new Date();
+
+    // Filter announcements according to recipient audience and date/time range
     const filteredComunicados = allComunicados.filter((c) => {
+      // 0. Validar rango de fecha y hora de vigencia
+      if (c.fechaInicio && now < new Date(c.fechaInicio)) {
+        return false;
+      }
+      if (c.fechaFin && now > new Date(c.fechaFin)) {
+        return false;
+      }
+
       // 1. All membership
       if (c.destinatario === "TODOS") {
         return true;
@@ -54,23 +64,24 @@ export async function GET() {
 
       // 3. Specific Society
       if (c.destinatario === "SOCIEDAD") {
-        // Check if member of the society
         const isMember = user.persona?.grupo_conexion?.sociedad_id === c.destinatarioId;
-        // Check if leader of the society
         const isLeader = user.modulos_lider.some((ml) => ml.sociedad_id === c.destinatarioId);
         return isMember || isLeader || ["SUPERADMIN", "ADMIN_IGLESIA"].includes(user.rol);
       }
 
       // 4. Specific Connection Group
       if (c.destinatario === "GRUPO_CONEXION") {
-        // Check if member of the group
         const isMember = user.persona?.grupo_conexion?.id === c.destinatarioId;
-        // Check if leader of the group
         const isLeader = user.modulos_lider.some((ml) => ml.grupo_conexion_id === c.destinatarioId);
         return isMember || isLeader || ["SUPERADMIN", "ADMIN_IGLESIA"].includes(user.rol);
       }
 
-      return false;
+      // 5. Departamento / Ministerio Específico
+      if (c.destinatario === "DEPARTAMENTO") {
+        return true;
+      }
+
+      return true;
     });
 
     // Format output to include a simple "leido" boolean
@@ -119,7 +130,7 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: "No autorizado para publicar comunicados oficiales" }, { status: 403 });
         }
 
-        const { titulo, contenido, imagen, destinatario, destinatarioId, esObligatorio } = data;
+        const { titulo, contenido, imagen, destinatario, destinatarioId, esObligatorio, fechaInicio, fechaFin } = data;
         if (!titulo || !contenido) {
           return NextResponse.json({ error: "El título y contenido son requeridos" }, { status: 400 });
         }
@@ -132,7 +143,9 @@ export async function POST(request: Request) {
             imagen: imagen || null,
             destinatario: destinatario || "TODOS",
             destinatarioId: destinatarioId || null,
-            esObligatorio: !!esObligatorio
+            esObligatorio: !!esObligatorio,
+            fechaInicio: fechaInicio ? new Date(fechaInicio) : null,
+            fechaFin: fechaFin ? new Date(fechaFin) : null
           }
         });
 

@@ -1163,6 +1163,8 @@ export default function SuperAdminPage() {
   const [newComunicadoDestinatario, setNewComunicadoDestinatario] = useState("TODOS"); // TODOS, LIDERES, SOCIEDAD, GRUPO_CONEXION
   const [newComunicadoDestId, setNewComunicadoDestId] = useState("");
   const [newComunicadoObligatorio, setNewComunicadoObligatorio] = useState(false);
+  const [newComunicadoFechaInicio, setNewComunicadoFechaInicio] = useState("");
+  const [newComunicadoFechaFin, setNewComunicadoFechaFin] = useState("");
   const [comunicadosLoading, setComunicadosLoading] = useState(false);
 
   // Edición de Labels
@@ -6704,7 +6706,9 @@ export default function SuperAdminPage() {
                               imagen: newComunicadoImagen || null,
                               destinatario: newComunicadoDestinatario,
                               destinatarioId: newComunicadoDestId,
-                              esObligatorio: newComunicadoObligatorio
+                              esObligatorio: newComunicadoObligatorio,
+                              fechaInicio: newComunicadoFechaInicio || null,
+                              fechaFin: newComunicadoFechaFin || null
                             }
                           })
                         });
@@ -6718,6 +6722,8 @@ export default function SuperAdminPage() {
                           setNewComunicadoImagen("");
                           setNewComunicadoDestId("");
                           setNewComunicadoObligatorio(false);
+                          setNewComunicadoFechaInicio("");
+                          setNewComunicadoFechaFin("");
                           await loadComunicados();
                         }
                       } catch (err) {
@@ -6752,6 +6758,31 @@ export default function SuperAdminPage() {
                         required
                       />
                     </div>
+
+                    {/* Rango de Fecha y Hora de Vigencia */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>📅 Activo Desde (Fecha y Hora)</label>
+                        <input
+                          type="datetime-local"
+                          value={newComunicadoFechaInicio}
+                          onChange={(e) => setNewComunicadoFechaInicio(e.target.value)}
+                          style={{ padding: '0.55rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                        />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>⏰ Expira En (Fecha y Hora Desaparición)</label>
+                        <input
+                          type="datetime-local"
+                          value={newComunicadoFechaFin}
+                          onChange={(e) => setNewComunicadoFechaFin(e.target.value)}
+                          style={{ padding: '0.55rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                        />
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '-0.5rem' }}>
+                      Una vez cumplida la fecha y hora de expiración, el comunicado se eliminará automáticamente de la pantalla de todos los usuarios.
+                    </span>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                       <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>Imagen Adjunta (Opcional)</label>
@@ -6792,7 +6823,7 @@ export default function SuperAdminPage() {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                      <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>Enviar a:</label>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>Enviar a / Dirigido a:</label>
                       <select
                         value={newComunicadoDestinatario}
                         onChange={(e) => {
@@ -6801,10 +6832,11 @@ export default function SuperAdminPage() {
                         }}
                         style={{ padding: '0.55rem', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: 'white' }}
                       >
-                        <option value="TODOS">Toda la Membresía</option>
-                        <option value="LIDERES">Grupo de Líderes y Directivas</option>
-                        <option value="SOCIEDAD">Por Sociedad</option>
-                        <option value="GRUPO_CONEXION">Por Grupo de Conexión</option>
+                        <option value="TODOS">🌐 Toda la Membresía</option>
+                        <option value="LIDERES">👑 Grupo de Líderes y Directivas</option>
+                        <option value="SOCIEDAD">👥 Por Sociedad (Damas, Jóvenes, Caballeros...)</option>
+                        <option value="GRUPO_CONEXION">🏠 Por Grupo de Conexión</option>
+                        <option value="DEPARTAMENTO">💼 Por Departamento / Ministerio</option>
                       </select>
                     </div>
 
@@ -6837,6 +6869,23 @@ export default function SuperAdminPage() {
                           <option value="">Selecciona un grupo...</option>
                           {gruposConexion.map((g) => (
                             <option key={g.id} value={g.id}>{g.nombre_grupo}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {newComunicadoDestinatario === "DEPARTAMENTO" && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>Seleccionar Departamento / Ministerio</label>
+                        <select
+                          value={newComunicadoDestId}
+                          onChange={(e) => setNewComunicadoDestId(e.target.value)}
+                          style={{ padding: '0.55rem', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: 'white' }}
+                          required
+                        >
+                          <option value="">Selecciona un departamento...</option>
+                          {modulos.map((m: any) => (
+                            <option key={m.id} value={m.id}>{m.nombre_modulo || m.nombre}</option>
                           ))}
                         </select>
                       </div>
