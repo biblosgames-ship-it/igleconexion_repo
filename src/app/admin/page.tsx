@@ -113,6 +113,70 @@ export default function SuperAdminPage() {
   const [lideres, setLideres] = useState<any[]>([]);
   const [miembros, setMiembros] = useState<any[]>([]);
 
+  // Estados para Modal Crear Miembro y Carga Masiva (Tab 7)
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
+  const [newMemberNombre, setNewMemberNombre] = useState("");
+  const [newMemberTelefono, setNewMemberTelefono] = useState("");
+  const [newMemberCorreo, setNewMemberCorreo] = useState("");
+  const [newMemberSexo, setNewMemberSexo] = useState("M");
+  const [newMemberEstadoCivil, setNewMemberEstadoCivil] = useState("Soltero/a");
+  const [newMemberGrupoId, setNewMemberGrupoId] = useState("");
+  const [newMemberEtapaId, setNewMemberEtapaId] = useState("");
+  const [addMemberLoading, setAddMemberLoading] = useState(false);
+
+  const handleCreateMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMemberNombre.trim()) {
+      alert("Ingresa el nombre del miembro.");
+      return;
+    }
+    setAddMemberLoading(true);
+    try {
+      const selectedGroup = gruposConexion.find(g => g.id === newMemberGrupoId);
+      const selectedSoc = selectedGroup ? sociedades.find(s => s.id === selectedGroup.sociedad_id) : null;
+
+      const res = await fetch("/api/registro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: newMemberNombre,
+          telefono: newMemberTelefono || null,
+          correo: newMemberCorreo || null,
+          sexo: newMemberSexo,
+          estadoCivil: newMemberEstadoCivil,
+          etapaId: newMemberEtapaId || (etapas[0]?.id || null),
+          sociedadName: selectedSoc?.nombre_sociedad || null,
+          grupoName: selectedGroup?.nombre_grupo || null,
+        }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        alert("Error al registrar miembro: " + data.error);
+      } else {
+        alert("¡Miembro registrado con éxito!");
+        setShowAddMemberModal(false);
+        setNewMemberNombre("");
+        setNewMemberTelefono("");
+        setNewMemberCorreo("");
+        setNewMemberSexo("M");
+        setNewMemberGrupoId("");
+        
+        // Reload miembros list
+        const resM = await fetch("/api/miembros");
+        const dataM = await resM.json();
+        if (!dataM.error && Array.isArray(dataM)) {
+          setMiembros(dataM);
+        }
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert("Error al intentar registrar el miembro.");
+    } finally {
+      setAddMemberLoading(false);
+    }
+  };
+
   // Estados para Etiquetas/Alertas de Atención Especial
   const [availableTags, setAvailableTags] = useState<any[]>([]);
   const [selectedMemberForTags, setSelectedMemberForTags] = useState<any | null>(null);
@@ -3342,9 +3406,6 @@ export default function SuperAdminPage() {
                 );
               })}
 
-              <div style={{ marginTop: '3rem', borderTop: '2px solid #e2e8f0', paddingTop: '2rem' }}>
-                <BulkImportSection gruposConexion={gruposConexion} sociedades={sociedades} />
-              </div>
             </div>
           )}
 
@@ -5514,7 +5575,19 @@ export default function SuperAdminPage() {
                   <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
                     {hasActiveFilters ? `${displayMiembros.length} de ${miembros.length} miembros` : `Mostrando ${displayMiembros.length} miembros`}
                   </span>
-                  <span style={{ marginLeft: 'auto', display: 'flex', gap: '0.4rem' }}>
+                  <span style={{ marginLeft: 'auto', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <button 
+                      onClick={() => setShowAddMemberModal(true)} 
+                      style={{ padding: '0.45rem 0.9rem', borderRadius: '8px', background: '#0284c7', color: 'white', border: 'none', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    >
+                      ➕ Agregar Miembro
+                    </button>
+                    <button 
+                      onClick={() => setShowBulkImportModal(true)} 
+                      style={{ padding: '0.45rem 0.9rem', borderRadius: '8px', background: '#16a34a', color: 'white', border: 'none', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    >
+                      📥 Carga Masiva (Excel)
+                    </button>
                     <button onClick={() => window.print()} style={{ padding: '0.45rem 0.9rem', borderRadius: '8px', background: '#1e293b', color: 'white', border: 'none', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                       🖨️ Imprimir
                     </button>
@@ -5941,6 +6014,122 @@ export default function SuperAdminPage() {
                         </div>
                       </div>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* MODAL: CREAR / AGREGAR NUEVO MIEMBRO */}
+              {showAddMemberModal && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem', overflowY: 'auto' }}>
+                  <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '520px', maxHeight: '85vh', overflowY: 'auto', padding: '1.75rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.15)', margin: 'auto' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>➕ Agregar Nuevo Miembro</h3>
+                      <button onClick={() => setShowAddMemberModal(false)} style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>&times;</button>
+                    </div>
+
+                    <form onSubmit={handleCreateMember} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Nombre Completo *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Ej: Alexander Palacio"
+                          value={newMemberNombre}
+                          onChange={(e) => setNewMemberNombre(e.target.value)}
+                          style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none' }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Teléfono / WhatsApp</label>
+                          <input
+                            type="text"
+                            placeholder="Ej: 8095551234"
+                            value={newMemberTelefono}
+                            onChange={(e) => setNewMemberTelefono(e.target.value)}
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Sexo</label>
+                          <select
+                            value={newMemberSexo}
+                            onChange={(e) => setNewMemberSexo(e.target.value)}
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: 'white' }}
+                          >
+                            <option value="M">Masculino</option>
+                            <option value="F">Femenino</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Correo Electrónico</label>
+                        <input
+                          type="email"
+                          placeholder="ejemplo@correo.com"
+                          value={newMemberCorreo}
+                          onChange={(e) => setNewMemberCorreo(e.target.value)}
+                          style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none' }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Asignar Grupo de Conexión / Sociedad</label>
+                        <select
+                          value={newMemberGrupoId}
+                          onChange={(e) => setNewMemberGrupoId(e.target.value)}
+                          style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: 'white' }}
+                        >
+                          <option value="">Selecciona un Grupo de Conexión...</option>
+                          {gruposConexion.map(g => {
+                            const socName = sociedades.find(s => s.id === g.sociedad_id)?.nombre_sociedad || "";
+                            return (
+                              <option key={g.id} value={g.id}>
+                                {g.nombre_grupo} ({socName})
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Etapa de Crecimiento</label>
+                        <select
+                          value={newMemberEtapaId}
+                          onChange={(e) => setNewMemberEtapaId(e.target.value)}
+                          style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: 'white' }}
+                        >
+                          {etapas.map((et: any) => (
+                            <option key={et.id} value={et.id}>{et.nombre_etapa}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.75rem' }}>
+                        <button type="button" onClick={() => setShowAddMemberModal(false)} style={{ padding: '0.6rem 1.25rem', borderRadius: '8px', background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#475569', fontWeight: 600, cursor: 'pointer' }}>
+                          Cancelar
+                        </button>
+                        <button type="submit" disabled={addMemberLoading} style={{ padding: '0.6rem 1.5rem', borderRadius: '8px', background: '#0284c7', color: 'white', border: 'none', fontWeight: 700, cursor: addMemberLoading ? 'not-allowed' : 'pointer' }}>
+                          {addMemberLoading ? "Guardando..." : "💾 Registrar Miembro"}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* MODAL: CARGA MASIVA DE MIEMBROS (EXCEL / CSV) */}
+              {showBulkImportModal && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem', overflowY: 'auto' }}>
+                  <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '850px', maxHeight: '85vh', overflowY: 'auto', padding: '1.75rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.15)', margin: 'auto' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>📥 Carga Masiva de Miembros</h3>
+                      <button onClick={() => setShowBulkImportModal(false)} style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>&times;</button>
+                    </div>
+
+                    <BulkImportSection gruposConexion={gruposConexion} sociedades={sociedades} />
                   </div>
                 </div>
               )}
@@ -7514,9 +7703,55 @@ function BulkImportSection({ gruposConexion, sociedades }: { gruposConexion: any
   const [result, setResult] = useState<{ success: boolean; count: number; errors: any[] } | null>(null);
   const [selectedImportGroupId, setSelectedImportGroupId] = useState("");
 
+  const handleDownloadTemplate = () => {
+    let csvContent = "\uFEFF"; // UTF-8 BOM para Excel
+    if (selectedImportGroupId) {
+      csvContent += "Nombre Completo,Correo,Teléfono\n";
+      csvContent += "Juan Pérez,juan.perez@email.com,8095551234\n";
+      csvContent += "María Gómez,maria.gomez@email.com,8095555678\n";
+    } else {
+      csvContent += "Sociedad,Grupo de Conexión,Nombre Completo,Correo,Teléfono,Sexo,Edad\n";
+      if (gruposConexion && gruposConexion.length > 0) {
+        gruposConexion.forEach((g: any) => {
+          const socName = sociedades.find((s: any) => s.id === g.sociedad_id)?.nombre_sociedad || "Sociedad General";
+          csvContent += `"${socName}","${g.nombre_grupo}","Ejemplo ${g.nombre_grupo}","ejemplo@email.com","8095550000","M","30"\n`;
+        });
+      } else {
+        csvContent += `"Sociedad de Honor","Grupo Jóvenes","Juan Pérez","juan.perez@email.com","8095551234","M","25"\n`;
+      }
+    }
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", selectedImportGroupId ? "plantilla_grupo_conexion.csv" : "plantilla_importacion_miembros.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const text = evt.target?.result as string;
+      if (text) {
+        const lines = text.split("\n");
+        if (lines.length > 0 && (lines[0].toLowerCase().includes("nombre") || lines[0].toLowerCase().includes("sociedad"))) {
+          setPastedText(lines.slice(1).join("\n"));
+        } else {
+          setPastedText(text);
+        }
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const handleImport = async () => {
     if (!pastedText.trim()) {
-      alert("Por favor copia y pega algunos datos primero.");
+      alert("Por favor copia y pega algunos datos primero o selecciona un archivo de Excel.");
       return;
     }
     setLoading(true);
@@ -7541,18 +7776,18 @@ function BulkImportSection({ gruposConexion, sociedades }: { gruposConexion: any
 
       if (selectedImportGroupId) {
         // Formato simple de grupo directo: Nombre | Correo | Teléfono
-        nombre = parts[0]?.trim() || "";
-        correo = parts[1]?.trim() || "";
-        telefono = parts[2]?.trim() || "";
+        nombre = parts[0]?.trim()?.replace(/^"|"$/g, '') || "";
+        correo = parts[1]?.trim()?.replace(/^"|"$/g, '') || "";
+        telefono = parts[2]?.trim()?.replace(/^"|"$/g, '') || "";
       } else {
         // Formato completo clasificado: Sociedad | Grupo | Nombre | Correo | Teléfono | Sexo | Edad
-        sociedadName = parts[0]?.trim() || "";
-        grupoName = parts[1]?.trim() || "";
-        nombre = parts[2]?.trim() || "";
-        correo = parts[3]?.trim() || "";
-        telefono = parts[4]?.trim() || "";
-        sexo = parts[5]?.trim() || "";
-        edad = parts[6]?.trim() || "";
+        sociedadName = parts[0]?.trim()?.replace(/^"|"$/g, '') || "";
+        grupoName = parts[1]?.trim()?.replace(/^"|"$/g, '') || "";
+        nombre = parts[2]?.trim()?.replace(/^"|"$/g, '') || "";
+        correo = parts[3]?.trim()?.replace(/^"|"$/g, '') || "";
+        telefono = parts[4]?.trim()?.replace(/^"|"$/g, '') || "";
+        sexo = parts[5]?.trim()?.replace(/^"|"$/g, '') || "";
+        edad = parts[6]?.trim()?.replace(/^"|"$/g, '') || "";
       }
 
       if (nombre) {
@@ -7604,10 +7839,25 @@ function BulkImportSection({ gruposConexion, sociedades }: { gruposConexion: any
     <div>
       <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.25rem' }}>📥 Carga Masiva de Miembros</h2>
       <p style={{ color: '#64748b', marginBottom: '1.25rem', fontSize: '0.88rem' }}>
-        Importa múltiples miembros al mismo tiempo pegando un listado directamente de tu Excel o Google Sheets.
+        Importa múltiples miembros al mismo tiempo descargando nuestra plantilla de Excel o cargando tu archivo directamente.
       </p>
 
       <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+        {/* BOTONES DE DESCARGA DE PLANTILLA Y CARGA DE ARCHIVO */}
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+          <button
+            onClick={handleDownloadTemplate}
+            type="button"
+            style={{ padding: '0.55rem 1.1rem', background: '#16a34a', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 2px 4px rgba(22,163,74,0.2)' }}
+          >
+            📥 Descargar Plantilla en Excel (.csv)
+          </button>
+          <label style={{ padding: '0.55rem 1.1rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 2px 4px rgba(2,132,199,0.2)' }}>
+            📁 Seleccionar Archivo Excel / CSV
+            <input type="file" accept=".csv, .txt" onChange={handleFileUpload} style={{ display: 'none' }} />
+          </label>
+        </div>
+
         <div style={{ marginBottom: '1.25rem' }}>
           <label style={{ display: 'block', fontWeight: 600, fontSize: '0.85rem', marginBottom: '0.4rem', color: '#475569' }}>
             Método de Importación:
