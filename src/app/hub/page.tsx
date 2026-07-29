@@ -38,6 +38,27 @@ export default function Hub() {
   const [promoProyecto, setPromoProyecto] = useState<any>(null);
   const [showPromoProyecto, setShowPromoProyecto] = useState(false);
   const [promesaMonto, setPromesaMonto] = useState("");
+
+  // Estado para Recursos de la Biblioteca en el Hub
+  const [featuredResource, setFeaturedResource] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchLibraryResources = async () => {
+      try {
+        const res = await fetch("/api/biblioteca");
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            const randomIndex = Math.floor(Math.random() * data.length);
+            setFeaturedResource(data[randomIndex]);
+          }
+        }
+      } catch (e) {
+        console.error("Error loading library resources for Hub:", e);
+      }
+    };
+    fetchLibraryResources();
+  }, []);
   const [promesaEnviando, setPromesaEnviando] = useState(false);
 
   const [userId, setUserId] = useState<string|null>(null);
@@ -947,6 +968,64 @@ export default function Hub() {
             </div>
           </section>
         )}
+
+        {/* 📚 RECUADRO PROMOCIONAL DE RECURSO Y BIBLIOTECA DIGITAL */}
+        <section style={{ marginBottom: '2rem' }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+            borderRadius: '20px',
+            padding: '1.5rem 1.75rem',
+            color: 'white',
+            boxShadow: '0 12px 30px -5px rgba(0,0,0,0.25)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '1.25rem'
+          }}>
+            <div style={{ flex: 1, minWidth: '260px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                <span style={{ background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', padding: '3px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  📚 Biblioteca Digital • {featuredResource ? (featuredResource.tipo === 'PDF' ? '📄 Documento PDF' : featuredResource.tipo === 'VIDEO' ? '📺 Video' : featuredResource.tipo === 'GALERIA' ? '🖼️ Galería' : featuredResource.tipo === 'AUDIO' ? '🎧 Audio' : '✍️ Reflexión') : 'Recursos Recomendados'}
+                </span>
+              </div>
+              <h3 style={{ margin: '0 0 0.4rem 0', fontSize: '1.25rem', fontWeight: 800, color: 'white' }}>
+                {featuredResource ? featuredResource.titulo : "Explora Libros, Guías en PDF, Videos y Reflexiones"}
+              </h3>
+              <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.88rem', lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                {featuredResource && featuredResource.descripcion 
+                  ? featuredResource.descripcion 
+                  : "Accede a todo nuestro material de discipulado, enseñanzas en video, predicas y artículos espirituales."}
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+              <Link href="/biblioteca" style={{ textDecoration: 'none' }}>
+                <button
+                  type="button"
+                  style={{
+                    background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '0.75rem 1.35rem',
+                    fontWeight: 800,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(2, 132, 199, 0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  <span>Explorar Biblioteca</span>
+                  <span>→</span>
+                </button>
+              </Link>
+            </div>
+          </div>
+        </section>
 
         {/* Widget de Agenda Destacada: Agenda Semanal vs Eventos Especiales */}
         <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '1rem' }}>

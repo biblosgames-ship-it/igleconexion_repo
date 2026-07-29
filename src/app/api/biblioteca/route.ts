@@ -129,17 +129,21 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { titulo, descripcion, categoria, tipo, url_recurso, url_miniatura, tags } = body;
 
-    if (!titulo || !tipo || !url_recurso) {
+    if (!titulo || !tipo || (!url_recurso && tipo !== 'BLOG')) {
       return NextResponse.json({ error: 'Título, Tipo y URL del recurso son obligatorios.' }, { status: 400 });
     }
 
-    // Procesamiento especial para YouTube thumbnails si no se proporciona miniatura
+    const finalUrl = url_recurso || (tipo === 'BLOG' ? '#blog' : '');
+
+    // Procesamiento especial para YouTube y Galerías
     let miniaturaFinal = url_miniatura || null;
     if (tipo === 'VIDEO' && !miniaturaFinal) {
-      const ytMatch = url_recurso.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+      const ytMatch = finalUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
       if (ytMatch && ytMatch[1]) {
         miniaturaFinal = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
       }
+    } else if (tipo === 'GALERIA' && !miniaturaFinal && finalUrl) {
+      miniaturaFinal = finalUrl;
     }
 
     const nuevoRecurso = await prisma.recursoBiblioteca.create({
@@ -149,7 +153,7 @@ export async function POST(request: Request) {
         descripcion: descripcion || null,
         categoria: categoria || 'General',
         tipo,
-        url_recurso,
+        url_recurso: finalUrl,
         url_miniatura: miniaturaFinal,
         creado_por: creadorNombre,
         tags: tags || null,

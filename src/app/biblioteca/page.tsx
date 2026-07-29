@@ -14,6 +14,7 @@ export default function BibliotecaPage() {
   // Modales
   const [showAddModal, setShowAddModal] = useState(false);
   const [viewerItem, setViewerItem] = useState<any>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Formulario nuevo recurso
   const [formData, setFormData] = useState({
@@ -164,32 +165,95 @@ export default function BibliotecaPage() {
       <main className={styles.mainContent}>
         {/* Barra de Filtros y Búsqueda */}
         <div className={styles.topBarCard}>
-          {/* Navegación por Tipos de Biblioteca */}
-          <div className={styles.tabGroup}>
+          {/* BOTÓN DESPLEGABLE CON ICONOS ESTILO HUB */}
+          <div style={{ position: 'relative', marginBottom: '1.25rem' }}>
             <button
-              onClick={() => setSelectedType('TODOS')}
-              className={`${styles.tabBtn} ${selectedType === 'TODOS' ? styles.tabBtnAllActive : styles.tabBtnInactive}`}
+              type="button"
+              onClick={() => setMenuOpen(!menuOpen)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0.9rem 1.25rem',
+                background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.15)',
+                borderRadius: '16px',
+                cursor: 'pointer',
+                fontSize: '0.98rem',
+                fontWeight: 700,
+                boxShadow: '0 10px 25px -5px rgba(0,0,0,0.15)'
+              }}
             >
-              📂 Todos ({recursos.length})
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ fontSize: '1.3rem' }}>
+                  {selectedType === 'TODOS' ? '📂' : selectedType === 'PDF' ? '📄' : selectedType === 'VIDEO' ? '📺' : selectedType === 'GALERIA' ? '🖼️' : selectedType === 'AUDIO' ? '🎧' : '✍️'}
+                </span>
+                <span>
+                  Categoría / Formato: {selectedType === 'TODOS' ? 'Todos los Recursos' : selectedType === 'PDF' ? 'Documentos PDF' : selectedType === 'VIDEO' ? 'Videos y Prédicas' : selectedType === 'GALERIA' ? 'Fotografías y Galerías' : selectedType === 'AUDIO' ? 'Audios y Podcasts' : 'Artículos y Reflexiones'}
+                </span>
+              </div>
+              <span style={{ fontSize: '1.1rem', color: '#38bdf8', transform: menuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
             </button>
-            <button
-              onClick={() => setSelectedType('PDF')}
-              className={`${styles.tabBtn} ${selectedType === 'PDF' ? styles.tabBtnPdfActive : styles.tabBtnInactive}`}
-            >
-              📄 Documentos PDF
-            </button>
-            <button
-              onClick={() => setSelectedType('VIDEO')}
-              className={`${styles.tabBtn} ${selectedType === 'VIDEO' ? styles.tabBtnVideoActive : styles.tabBtnInactive}`}
-            >
-              📺 Videos (YouTube)
-            </button>
-            <button
-              onClick={() => setSelectedType('GALERIA')}
-              className={`${styles.tabBtn} ${selectedType === 'GALERIA' ? styles.tabBtnFotoActive : styles.tabBtnInactive}`}
-            >
-              🖼️ Fotos y Galerías
-            </button>
+
+            {/* MENÚ FLOTANTE CON ICONOS ESTILO HUB */}
+            {menuOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '110%',
+                  left: 0,
+                  right: 0,
+                  background: '#0f172a',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '18px',
+                  padding: '1rem',
+                  zIndex: 200,
+                  boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                  gap: '0.75rem'
+                }}
+              >
+                {[
+                  { type: 'TODOS', label: 'Todos los Recursos', desc: 'Explorar todo', icon: '📂', color: '#0284c7' },
+                  { type: 'PDF', label: 'Documentos PDF', desc: 'Guías y manuales', icon: '📄', color: '#ef4444' },
+                  { type: 'VIDEO', label: 'Videos y Prédicas', desc: 'Canal de YouTube', icon: '📺', color: '#f59e0b' },
+                  { type: 'GALERIA', label: 'Fotos y Galerías', desc: 'Enlaces externos (URL)', icon: '🖼️', color: '#10b981' },
+                  { type: 'AUDIO', label: 'Audios y Podcasts', desc: 'Predicas en audio', icon: '🎧', color: '#8b5cf6' },
+                  { type: 'BLOG', label: 'Artículos y Blogs', desc: 'Reflexiones de texto', icon: '✍️', color: '#ec4899' },
+                ].map((item) => (
+                  <button
+                    key={item.type}
+                    type="button"
+                    onClick={() => {
+                      setSelectedType(item.type);
+                      setMenuOpen(false);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.85rem',
+                      background: selectedType === item.type ? `${item.color}25` : 'rgba(255,255,255,0.04)',
+                      border: selectedType === item.type ? `2px solid ${item.color}` : '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '12px',
+                      color: 'white',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s'
+                    }}
+                  >
+                    <span style={{ fontSize: '1.6rem' }}>{item.icon}</span>
+                    <div>
+                      <strong style={{ display: 'block', fontSize: '0.88rem', color: selectedType === item.type ? '#38bdf8' : 'white' }}>{item.label}</strong>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{item.desc}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Buscador y Categorías */}
@@ -300,8 +364,10 @@ export default function BibliotecaPage() {
                   required
                 >
                   <option value="PDF">📄 Documento PDF (Lectura y Descarga)</option>
-                  <option value="VIDEO">📺 Video de YouTube (Reproducción integrada sin salir)</option>
-                  <option value="GALERIA">🖼️ Fotos / Galería Externa (Instagram, Flickr, Unsplash, etc.)</option>
+                  <option value="VIDEO">📺 Video de YouTube (Reproducción integrada)</option>
+                  <option value="GALERIA">🖼️ Fotos / Galería Externa por URL (Sin ocupar espacio en BD)</option>
+                  <option value="AUDIO">🎧 Audio / Podcast / Prédica</option>
+                  <option value="BLOG">✍️ Artículo / Blog / Reflexión Escrita</option>
                 </select>
               </div>
 
@@ -463,9 +529,29 @@ export default function BibliotecaPage() {
                       className={styles.primaryBtn}
                       style={{ textDecoration: 'none', background: '#8b5cf6' }}
                     >
-                      🔗 Abrir Galería en Fuente Externa (Instagram/Flickr)
+                      🔗 Abrir Galería en Fuente Externa (Instagram/Drive/Flickr)
                     </a>
                   </div>
+                </div>
+              )}
+
+              {/* VISUALIZADOR DE ARTÍCULOS Y BLOGS DE TEXTO */}
+              {viewerItem.tipo === 'BLOG' && (
+                <div style={{ padding: '1.25rem', background: '#f8fafc', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: '1rem', display: 'flex', gap: '1.25rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>
+                    <span>✍️ Autor: <strong>{viewerItem.creado_por || 'Administración'}</strong></span>
+                    <span>📅 Publicado: {new Date(viewerItem.createdAt).toLocaleDateString('es-ES')}</span>
+                  </div>
+                  <div style={{ fontSize: '1.02rem', lineHeight: '1.75', color: '#1e293b', whiteSpace: 'pre-line' }}>
+                    {viewerItem.descripcion || 'Sin contenido en esta reflexión.'}
+                  </div>
+                  {viewerItem.url_recurso && viewerItem.url_recurso !== '#blog' && (
+                    <div style={{ marginTop: '1.5rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0' }}>
+                      <a href={viewerItem.url_recurso} target="_blank" rel="noopener noreferrer" style={{ color: '#0284c7', fontWeight: 700, fontSize: '0.9rem' }}>
+                        🔗 Ver fuente o lectura extendida externa →
+                      </a>
+                    </div>
+                  )}
                 </div>
               )}
 
