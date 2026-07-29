@@ -2629,9 +2629,11 @@ export default function SuperAdminPage() {
                         onChange={(e) => setNewRecType(e.target.value)} 
                         style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', backgroundColor: 'white' }} 
                       >
-                        <option value="LINK">Link Externo</option>
-                        <option value="PDF">Archivo PDF (Link)</option>
-                        <option value="VIDEO">Video (YouTube/Vimeo)</option>
+                        <option value="LINK">🌐 Link / Sitio Web</option>
+                        <option value="PDF">📄 Documento PDF / Guía</option>
+                        <option value="VIDEO">📺 Video (YouTube / Vimeo)</option>
+                        <option value="GALERIA">🖼️ Fotografía / Galería de Fotos</option>
+                        <option value="AUDIO">🎧 Audio / Podcast / Prédica</option>
                       </select>
                     </div>
                   </div>

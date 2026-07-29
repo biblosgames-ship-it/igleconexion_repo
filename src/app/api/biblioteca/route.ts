@@ -48,13 +48,18 @@ export async function GET(request: Request) {
           jsonRecursos = parsed.map((item: any, idx: number) => {
             const rawUrl = item.url_recurso || item.url || item.link || "";
             let miniatura = item.url_miniatura || item.miniatura || item.imagen || null;
-            const itemTipo = (item.tipo || "LINK").toUpperCase();
+            let itemTipo = (item.tipo || "LINK").toUpperCase();
+            if (["FOTOGRAFIA", "FOTO", "IMAGEN", "GALERÍA", "GALERIA"].includes(itemTipo)) {
+              itemTipo = "GALERIA";
+            }
 
             if (itemTipo === "VIDEO" && !miniatura && rawUrl) {
               const ytMatch = rawUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
               if (ytMatch && ytMatch[1]) {
                 miniatura = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
               }
+            } else if (itemTipo === "GALERIA" && !miniatura && rawUrl) {
+              miniatura = rawUrl;
             }
 
             return {
