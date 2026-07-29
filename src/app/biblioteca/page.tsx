@@ -143,6 +143,30 @@ export default function BibliotecaPage() {
     <div className={styles.container}>
       {/* Encabezado Principal */}
       <header className={styles.header}>
+        <div style={{ marginBottom: '0.75rem' }}>
+          <Link href="/hub" style={{ textDecoration: 'none' }}>
+            <button
+              type="button"
+              style={{
+                background: 'rgba(255, 255, 255, 0.12)',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                color: 'white',
+                padding: '0.45rem 0.9rem',
+                borderRadius: '10px',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                backdropFilter: 'blur(4px)'
+              }}
+            >
+              <span>🏠 ← Volver al Hub</span>
+            </button>
+          </Link>
+        </div>
+
         <div className={styles.headerContent}>
           <div className={styles.titleGroup}>
             <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
