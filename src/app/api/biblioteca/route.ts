@@ -29,12 +29,78 @@ export async function GET(request: Request) {
       ];
     }
 
-    const recursos = await prisma.recursoBiblioteca.findMany({
+    const dbRecursos = await prisma.recursoBiblioteca.findMany({
       where: whereClause,
       orderBy: { createdAt: 'desc' },
     });
 
-    return NextResponse.json(recursos);
+    // Fusionar recursos cargados desde la Configuración de la Iglesia (JSON iglesia.recursos)
+    const iglesia = await prisma.iglesia.findUnique({
+      where: { id: iglesiaId },
+      select: { recursos: true }
+    });
+
+    let jsonRecursos: any[] = [];
+    if (iglesia?.recursos) {
+      try {
+        const parsed = JSON.parse(iglesia.recursos);
+        if (Array.isArray(parsed)) {
+          jsonRecursos = parsed.map((item: any, idx: number) => {
+            const rawUrl = item.url_recurso || item.url || item.link || "";
+            let miniatura = item.url_miniatura || item.miniatura || item.imagen || null;
+            const itemTipo = (item.tipo || "LINK").toUpperCase();
+
+            if (itemTipo === "VIDEO" && !miniatura && rawUrl) {
+              const ytMatch = rawUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+              if (ytMatch && ytMatch[1]) {
+                miniatura = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+              }
+            }
+
+            return {
+              id: item.id || `json-rec-${idx}`,
+              iglesia_id: iglesiaId,
+              titulo: item.titulo || item.nombre || "Recurso de la Iglesia",
+              descripcion: item.descripcion || item.detalle || null,
+              categoria: item.categoria || "General",
+              tipo: itemTipo,
+              url_recurso: rawUrl,
+              url_miniatura: miniatura,
+              creado_por: "Administración",
+              createdAt: item.createdAt || new Date().toISOString(),
+            };
+          });
+        }
+      } catch (e) {
+        console.error("Error al procesar JSON de recursos de la iglesia:", e);
+      }
+    }
+
+    // Filtrar recursos del JSON de la iglesia si hay filtros aplicados
+    const filteredJsonRecursos = jsonRecursos.filter((r) => {
+      if (tipo && tipo !== 'TODOS' && r.tipo !== tipo) return false;
+      if (categoria && categoria !== 'TODOS' && r.categoria !== categoria) return false;
+      if (query) {
+        const q = query.toLowerCase();
+        const matchTitle = r.titulo?.toLowerCase().includes(q);
+        const matchDesc = r.descripcion?.toLowerCase().includes(q);
+        if (!matchTitle && !matchDesc) return false;
+      }
+      return true;
+    });
+
+    // Fusionar sin duplicados por url_recurso o id
+    const combinedMap = new Map();
+    dbRecursos.forEach((r) => combinedMap.set(r.url_recurso || r.id, r));
+    filteredJsonRecursos.forEach((r) => {
+      const key = r.url_recurso || r.id;
+      if (!combinedMap.has(key)) {
+        combinedMap.set(key, r);
+      }
+    });
+
+    const finalRecursos = Array.from(combinedMap.values());
+    return NextResponse.json(finalRecursos);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
