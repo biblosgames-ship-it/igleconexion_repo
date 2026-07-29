@@ -83,60 +83,14 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Auto-link persona for superadmin/admin if missing - robust search across ALL churches
+    // Auto-link persona for superadmin/admin if missing - search strictly in searchChurchId
     if ((user.rol === "SUPERADMIN" || user.rol === "ADMIN_IGLESIA") && !user.persona_id) {
-      let foundPersona: any = null;
       const searchChurchId = activeChurchId || user.iglesia_id;
 
-      // 1. Exact email match in active church
-      foundPersona = await prisma.persona.findFirst({
+      // Search exact email in current church
+      let foundPersona = await prisma.persona.findFirst({
         where: { iglesia_id: searchChurchId, correo: user.email },
       });
-
-      // 2. Exact email match in ANY church
-      if (!foundPersona) {
-        foundPersona = await prisma.persona.findFirst({
-          where: { correo: user.email },
-        });
-      }
-
-      // 3. Partial email/name match in active church
-      if (!foundPersona && user.email) {
-        const emailPrefix = user.email.split("@")[0];
-        const allPersonas = await prisma.persona.findMany({
-          where: { iglesia_id: searchChurchId },
-          select: { id: true, nombre: true, correo: true, iglesia_id: true },
-        });
-        foundPersona = allPersonas.find((p: any) => {
-          const pEmail = (p.correo || "").toLowerCase();
-          const pNombre = (p.nombre || "").toLowerCase().replace(/\s+/g, "");
-          return pEmail.includes(emailPrefix) || emailPrefix.includes(pNombre);
-        });
-      }
-
-      // 4. Name-based search in active church
-      if (!foundPersona && user.email) {
-        const allPersonas = await prisma.persona.findMany({
-          where: { iglesia_id: searchChurchId },
-          select: { id: true, nombre: true, correo: true, iglesia_id: true },
-        });
-        foundPersona = allPersonas.find((p: any) => {
-          const pNombre = (p.nombre || "").toLowerCase();
-          return pNombre.includes("alexander") || pNombre.includes("palacio");
-        });
-      }
-
-      // 5. Name-based search across ALL churches
-      if (!foundPersona) {
-        foundPersona = await prisma.persona.findFirst({
-          where: {
-            OR: [
-              { nombre: { contains: "alexander", mode: "insensitive" } },
-              { nombre: { contains: "palacio", mode: "insensitive" } },
-            ],
-          },
-        });
-      }
 
       if (foundPersona) {
         await prisma.usuario.update({
@@ -155,10 +109,6 @@ export async function GET() {
           },
         });
         (user as any).persona = fullPersona;
-        // If persona is in a different church, update active church
-        if (foundPersona.iglesia_id && foundPersona.iglesia_id !== activeChurchId) {
-          cookieStore.set("active_iglesia_id", foundPersona.iglesia_id, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
-        }
       }
     }
 
@@ -455,59 +405,11 @@ export async function POST(request: Request) {
         cookieStore.set("session_user_id", superAdminUser.id, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
         cookieStore.set("active_iglesia_id", activeChurchId, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
 
-        // Robust auto-link persona - search across ALL churches
+        // Auto-link persona for superadmin if missing - search strictly in activeChurchId
         if (!superAdminUser.persona_id) {
-          let foundPersona: any = null;
-
-          // 1. Exact email match in target church
-          foundPersona = await prisma.persona.findFirst({
+          let foundPersona = await prisma.persona.findFirst({
             where: { iglesia_id: activeChurchId, correo: email },
           });
-
-          // 2. Exact email match in ANY church
-          if (!foundPersona) {
-            foundPersona = await prisma.persona.findFirst({
-              where: { correo: email },
-            });
-          }
-
-          // 3. Partial email/name match in target church
-          if (!foundPersona) {
-            const emailPrefix = email.split("@")[0];
-            const allPersonas = await prisma.persona.findMany({
-              where: { iglesia_id: activeChurchId },
-              select: { id: true, nombre: true, correo: true, iglesia_id: true },
-            });
-            foundPersona = allPersonas.find((p: any) => {
-              const pEmail = (p.correo || "").toLowerCase();
-              const pNombre = (p.nombre || "").toLowerCase().replace(/\s+/g, "");
-              return pEmail.includes(emailPrefix) || emailPrefix.includes(pNombre);
-            });
-          }
-
-          // 4. Name-based search in target church
-          if (!foundPersona) {
-            const allPersonas = await prisma.persona.findMany({
-              where: { iglesia_id: activeChurchId },
-              select: { id: true, nombre: true, correo: true, iglesia_id: true },
-            });
-            foundPersona = allPersonas.find((p: any) => {
-              const pNombre = (p.nombre || "").toLowerCase();
-              return pNombre.includes("alexander") || pNombre.includes("palacio");
-            });
-          }
-
-          // 5. Name-based search across ALL churches
-          if (!foundPersona) {
-            foundPersona = await prisma.persona.findFirst({
-              where: {
-                OR: [
-                  { nombre: { contains: "alexander", mode: "insensitive" } },
-                  { nombre: { contains: "palacio", mode: "insensitive" } },
-                ],
-              },
-            });
-          }
 
           if (foundPersona) {
             await prisma.usuario.update({
@@ -515,11 +417,6 @@ export async function POST(request: Request) {
               data: { persona_id: foundPersona.id },
             });
             superAdminUser.persona_id = foundPersona.id;
-            // If persona is in a different church, use that church
-            if (foundPersona.iglesia_id !== activeChurchId) {
-              activeChurchId = foundPersona.iglesia_id;
-              cookieStore.set("active_iglesia_id", activeChurchId, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
-            }
             const fullPersona = await prisma.persona.findUnique({
               where: { id: foundPersona.id },
               select: {
