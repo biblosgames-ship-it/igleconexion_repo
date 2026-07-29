@@ -179,10 +179,18 @@ export default function SuperAdminPage() {
   };
 
   // switch to manage church (keep superadmin session, only change active church)
-  const handleManageChurch = (church: any) => {
+  const handleManageChurch = async (church: any) => {
+    try {
+      await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "set-active-church", churchId: church.id }),
+      });
+    } catch (err) {
+      console.error("Error setting active church via API:", err);
+    }
     document.cookie = `active_iglesia_id=${church.id}; path=/; max-age=31536000; SameSite=Lax`;
-    alert(`Gestionando la iglesia: ${church.nombre}\nRol: Super Administrador`);
-    router.push("/admin");
+    window.location.href = "/admin";
   };
 
   // Toggle church status (Suspend/Activate)

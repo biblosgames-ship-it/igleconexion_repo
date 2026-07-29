@@ -211,7 +211,7 @@ export async function GET() {
 
     // If superadmin is viewing as SUPERADMIN (or default), include switch info
     if (user.rol === "SUPERADMIN" && user.persona_id) {
-      const resp: any = mapUserToResponse(user);
+      const resp: any = mapUserToResponse(user, activeChurchId);
       resp.viewingAs = "SUPERADMIN";
       resp.canSwitchRole = true;
       return NextResponse.json(resp);
@@ -236,7 +236,7 @@ export async function GET() {
       }
     }
 
-    return NextResponse.json(mapUserToResponse(user));
+    return NextResponse.json(mapUserToResponse(user, activeChurchId));
   } catch (error: any) {
     console.error("Error in GET /api/auth:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -272,19 +272,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, viewingAs: newView });
     }
 
-    // 1b. Seleccionar Iglesia Activa para Registro de Nuevos Miembros
+    // 1b. Seleccionar Iglesia Activa para Registro de Nuevos Miembros o Gestión de SuperAdmin
     if (action === "set-active-church") {
-      if (!slug) {
-        return NextResponse.json({ error: "Se requiere el código o slug de la iglesia" }, { status: 400 });
+      const { churchId } = body;
+      let targetChurchId = churchId;
+      if (!targetChurchId && slug) {
+        const iglesia = await prisma.iglesia.findUnique({
+          where: { subdominio_o_slug: slug }
+        });
+        if (iglesia) targetChurchId = iglesia.id;
       }
-      const iglesia = await prisma.iglesia.findUnique({
-        where: { subdominio_o_slug: slug }
-      });
-      if (!iglesia) {
-        return NextResponse.json({ error: "No se encontró ninguna iglesia registrada con ese código." }, { status: 404 });
+      if (!targetChurchId) {
+        return NextResponse.json({ error: "Se requiere el código, slug o ID de la iglesia" }, { status: 400 });
       }
-      cookieStore.set("active_iglesia_id", iglesia.id, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
-      return NextResponse.json({ success: true, iglesiaId: iglesia.id });
+      cookieStore.set("active_iglesia_id", targetChurchId, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
+      return NextResponse.json({ success: true, iglesiaId: targetChurchId });
     }
 
     // 2. Manejo de Registro/Asignación Directa de Persona (Backward Compatibility)
@@ -528,8 +530,9 @@ export async function POST(request: Request) {
   }
 }
 
-function mapUserToResponse(user: any) {
+function mapUserToResponse(user: any, activeChurchId?: string) {
   const p = user.persona;
+  const effectiveIglesiaId = (user.rol === "SUPERADMIN" && activeChurchId) ? activeChurchId : user.iglesia_id;
 
   if (!p) {
     // Si no tiene persona asociada (ej. Superadmin o Admin de Iglesia puro)
@@ -539,7 +542,7 @@ function mapUserToResponse(user: any) {
       nombre: user.rol === "SUPERADMIN" ? "Super Administrador" : "Administrador de Iglesia",
       email: user.email,
       rol: user.rol,
-      iglesia_id: user.iglesia_id,
+      iglesia_id: effectiveIglesiaId,
       estado: user.estado,
       foto_url: null,
       persona_id: null,
@@ -576,7 +579,7 @@ function mapUserToResponse(user: any) {
     nombre: p.nombre,
     email: user.email,
     rol: user.rol,
-    iglesia_id: user.iglesia_id,
+    iglesia_id: effectiveIglesiaId,
     estado: user.estado,
     persona_id: p.id,
     paginas_acceso: user.paginas_acceso || null,
