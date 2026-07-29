@@ -22,6 +22,44 @@ export default function Perfil() {
   const [isSearching, setIsSearching] = useState(false);
   const [isLinking, setIsLinking] = useState(false);
 
+  // Estados para Cambiar Contraseña desde el Perfil
+  const [editPassword, setEditPassword] = useState("");
+  const [passwordSuccessMsg, setPasswordSuccessMsg] = useState<string | null>(null);
+  const [passwordErrorMsg, setPasswordErrorMsg] = useState<string | null>(null);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
+  const handleUpdatePasswordInProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordSuccessMsg(null);
+    setPasswordErrorMsg(null);
+    if (!editPassword || editPassword.length < 6) {
+      setPasswordErrorMsg("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update-my-password",
+          newPassword: editPassword
+        }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setPasswordErrorMsg(data.error);
+      } else {
+        setPasswordSuccessMsg("¡Contraseña establecida y guardada con éxito!");
+        setEditPassword("");
+      }
+    } catch (err) {
+      setPasswordErrorMsg("Error al intentar cambiar la contraseña.");
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   // Estados para Clases, Eventos y Promesas de Fe en Perfil
   const [actividades, setActividades] = useState<{
     clasesActivas: any[];
@@ -606,7 +644,46 @@ export default function Perfil() {
                 )}
               </div>
 
-              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+              {/* Bloque: Seguridad y Contraseña */}
+              <div style={{ marginTop: '0.75rem', padding: '1rem', background: '#f0f9ff', borderRadius: '8px', border: '1px solid #bae6fd' }}>
+                <h3 style={{ fontSize: '1rem', color: '#0369a1', margin: '0 0 0.4rem 0', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  🔐 Seguridad / Establecer Contraseña
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: '#0284c7', margin: '0 0 0.75rem 0', lineHeight: 1.4 }}>
+                  Si iniciaste sesión con Google o deseas usar tu propio correo y clave tradicional, establece tu nueva contraseña personal aquí.
+                </p>
+
+                {passwordErrorMsg && (
+                  <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b', padding: '0.5rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
+                    ⚠️ {passwordErrorMsg}
+                  </div>
+                )}
+                {passwordSuccessMsg && (
+                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', padding: '0.5rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
+                    ✅ {passwordSuccessMsg}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <input
+                    type="password"
+                    placeholder="Nueva Contraseña (mínimo 6 caracteres)"
+                    value={editPassword}
+                    onChange={(e) => setEditPassword(e.target.value)}
+                    style={{ flex: 1, minWidth: '200px', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleUpdatePasswordInProfile}
+                    disabled={passwordLoading}
+                    style={{ background: '#0284c7', color: 'white', border: 'none', borderRadius: '6px', padding: '0.5rem 1.1rem', fontSize: '0.85rem', fontWeight: 600, cursor: passwordLoading ? 'not-allowed' : 'pointer' }}
+                  >
+                    {passwordLoading ? 'Guardando...' : '💾 Establecer Clave'}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
                 <button
                   type="submit"
                   disabled={saveLoading}

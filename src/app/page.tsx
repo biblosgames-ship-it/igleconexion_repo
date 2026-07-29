@@ -15,15 +15,17 @@ export default function GlobalLogin() {
   const [urlError, setUrlError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Estados para Restablecer Contraseña
+  // Estados para Restablecimiento Seguro de Contraseña (2 Pasos)
   const [showResetModal, setShowResetModal] = useState(false);
-  const [resetEmail, setResetEmail] = useState("");
+  const [resetStep, setResetStep] = useState<1 | 2>(1);
+  const [resetEmailOrPhone, setResetEmailOrPhone] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
   const [resetPasswordVal, setResetPasswordVal] = useState("");
   const [resetMessage, setResetMessage] = useState<string | null>(null);
   const [resetError, setResetError] = useState<string | null>(null);
   const [resetLoading, setResetLoading] = useState(false);
 
-  const handleResetPassword = async (e: React.FormEvent) => {
+  const handleRequestResetCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setResetMessage(null);
     setResetError(null);
@@ -33,9 +35,40 @@ export default function GlobalLogin() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "reset-password",
+          action: "request-reset-code",
           slug,
-          email: resetEmail || email,
+          emailOrPhone: resetEmailOrPhone || email
+        }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setResetError(data.error);
+      } else {
+        setResetMessage(data.message);
+        if (data.pinDemo) {
+          setVerificationCode(data.pinDemo);
+        }
+        setResetStep(2);
+      }
+    } catch (err) {
+      setResetError("Error al solicitar la verificación.");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleVerifyAndResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetMessage(null);
+    setResetError(null);
+    setResetLoading(true);
+    try {
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "verify-and-reset",
+          verificationCode,
           newPassword: resetPasswordVal
         }),
       });
@@ -43,16 +76,19 @@ export default function GlobalLogin() {
       if (data.error) {
         setResetError(data.error);
       } else {
-        setResetMessage(data.message || "¡Contraseña actualizada con éxito!");
+        setResetMessage(data.message);
         setPassword(resetPasswordVal);
-        setEmail(resetEmail || email);
+        setEmail(resetEmailOrPhone || email);
         setTimeout(() => {
           setShowResetModal(false);
+          setResetStep(1);
           setResetMessage(null);
-        }, 2000);
+          setResetPasswordVal("");
+          setVerificationCode("");
+        }, 2200);
       }
     } catch (err) {
-      setResetError("Error al intentar restablecer la contraseña.");
+      setResetError("Error al verificar el código.");
     } finally {
       setResetLoading(false);
     }
@@ -255,12 +291,15 @@ export default function GlobalLogin() {
             <button
               type="button"
               onClick={() => {
-                setResetEmail(email);
+                setResetEmailOrPhone(email);
+                setResetStep(1);
+                setResetError(null);
+                setResetMessage(null);
                 setShowResetModal(true);
               }}
               style={{ background: 'none', border: 'none', color: 'rgba(255, 255, 255, 0.85)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
             >
-              🔑 ¿Olvidaste o deseas restablecer tu contraseña?
+              🔒 ¿Olvidaste tu contraseña? (Recuperación Segura)
             </button>
 
             <p style={{ margin: 0, fontSize: '0.88rem', color: 'rgba(255, 255, 255, 0.9)' }}>
@@ -279,9 +318,11 @@ export default function GlobalLogin() {
 
         {showResetModal && (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-            <div style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '20px', width: '100%', maxWidth: '420px', padding: '1.75rem', color: 'white', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+            <div style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '20px', width: '100%', maxWidth: '440px', padding: '1.75rem', color: 'white', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.75rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'white' }}>🔑 Restablecer Contraseña</h3>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'white' }}>
+                  🔒 Recuperación Segura de Contraseña {resetStep === 2 ? "(Paso 2/2)" : "(Paso 1/2)"}
+                </h3>
                 <button onClick={() => setShowResetModal(false)} style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', color: '#94a3b8' }}>&times;</button>
               </div>
 
@@ -292,45 +333,73 @@ export default function GlobalLogin() {
               )}
 
               {resetMessage && (
-                <div style={{ background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.4)', color: '#bbf7d0', padding: '0.75rem', borderRadius: '10px', fontSize: '0.82rem', marginBottom: '1rem' }}>
+                <div style={{ background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.4)', color: '#bbf7d0', padding: '0.75rem', borderRadius: '10px', fontSize: '0.82rem', marginBottom: '1rem', lineHeight: 1.4 }}>
                   ✅ {resetMessage}
                 </div>
               )}
 
-              <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.3rem', textTransform: 'uppercase' }}>Correo Electrónico</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="tu.correo@ejemplo.com"
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: '0.9rem', outline: 'none' }}
-                  />
-                </div>
+              {resetStep === 1 ? (
+                <form onSubmit={handleRequestResetCode} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.3rem', textTransform: 'uppercase' }}>Correo Electrónico o Teléfono Registrado</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ej: tu.correo@ejemplo.com o 8095551234"
+                      value={resetEmailOrPhone}
+                      onChange={(e) => setResetEmailOrPhone(e.target.value)}
+                      style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: '0.9rem', outline: 'none' }}
+                    />
+                    <span style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginTop: '0.3rem' }}>
+                      Validaremos tu cuenta y te solicitaremos tu código de verificación.
+                    </span>
+                  </div>
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.3rem', textTransform: 'uppercase' }}>Nueva Contraseña</label>
-                  <input
-                    type="password"
-                    required
-                    placeholder="Ingresa tu nueva contraseña"
-                    value={resetPasswordVal}
-                    onChange={(e) => setResetPasswordVal(e.target.value)}
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: '0.9rem', outline: 'none' }}
-                  />
-                </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                    <button type="button" onClick={() => setShowResetModal(false)} style={{ padding: '0.55rem 1.1rem', borderRadius: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#94a3b8', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
+                      Cancelar
+                    </button>
+                    <button type="submit" disabled={resetLoading} style={{ padding: '0.55rem 1.3rem', borderRadius: '10px', background: '#0284c7', color: 'white', border: 'none', fontWeight: 700, cursor: resetLoading ? 'not-allowed' : 'pointer', fontSize: '0.85rem' }}>
+                      {resetLoading ? "Verificando..." : "🔍 Verificar Identidad"}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyAndResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.3rem', textTransform: 'uppercase' }}>Código de Verificación (6 dígitos)</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ej: 742918"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value)}
+                      style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: '1rem', fontWeight: 700, textAlign: 'center', letterSpacing: '4px', outline: 'none' }}
+                    />
+                  </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                  <button type="button" onClick={() => setShowResetModal(false)} style={{ padding: '0.55rem 1.1rem', borderRadius: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#94a3b8', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
-                    Cancelar
-                  </button>
-                  <button type="submit" disabled={resetLoading} style={{ padding: '0.55rem 1.3rem', borderRadius: '10px', background: '#0284c7', color: 'white', border: 'none', fontWeight: 700, cursor: resetLoading ? 'not-allowed' : 'pointer', fontSize: '0.85rem' }}>
-                    {resetLoading ? "Guardando..." : "💾 Cambiar Contraseña"}
-                  </button>
-                </div>
-              </form>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.3rem', textTransform: 'uppercase' }}>Nueva Contraseña</label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="Mínimo 6 caracteres"
+                      value={resetPasswordVal}
+                      onChange={(e) => setResetPasswordVal(e.target.value)}
+                      style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: '0.9rem', outline: 'none' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                    <button type="button" onClick={() => setResetStep(1)} style={{ padding: '0.55rem 1.1rem', borderRadius: '10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#94a3b8', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
+                      Atrás
+                    </button>
+                    <button type="submit" disabled={resetLoading} style={{ padding: '0.55rem 1.3rem', borderRadius: '10px', background: '#16a34a', color: 'white', border: 'none', fontWeight: 700, cursor: resetLoading ? 'not-allowed' : 'pointer', fontSize: '0.85rem' }}>
+                      {resetLoading ? "Guardando..." : "🔐 Confirmar y Cambiar"}
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
         )}

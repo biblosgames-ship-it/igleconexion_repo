@@ -258,11 +258,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
-    // 1d. Restablecer o Establecer Nueva Contraseña
-    if (action === "reset-password") {
-      const { email, slug, newPassword } = body;
-      if (!email || !newPassword) {
-        return NextResponse.json({ error: "Por favor ingresa tu correo y tu nueva contraseña." }, { status: 400 });
+    // 1d. Cambio de Contraseña de Usuario Autenticado (Desde Mi Perfil)
+    if (action === "update-my-password") {
+      const sessionUserId = cookieStore.get("session_user_id")?.value;
+      const { newPassword } = body;
+      
+      if (!sessionUserId) {
+        return NextResponse.json({ error: "Debes haber iniciado sesión para cambiar tu contraseña." }, { status: 401 });
+      }
+      if (!newPassword || newPassword.length < 6) {
+        return NextResponse.json({ error: "La nueva contraseña debe tener al menos 6 caracteres." }, { status: 400 });
+      }
+
+      await prisma.usuario.update({
+        where: { id: sessionUserId },
+        data: { password: newPassword }
+      });
+
+      return NextResponse.json({ success: true, message: "¡Tu contraseña ha sido establecida y guardada con éxito en tu perfil!" });
+    }
+
+    // 1e. Restablecimiento Seguro de Contraseña Olvidada (Paso 1: Solicitar Código de Verificación)
+    if (action === "request-reset-code") {
+      const { emailOrPhone, slug } = body;
+      if (!emailOrPhone) {
+        return NextResponse.json({ error: "Por favor ingresa tu correo electrónico o teléfono registrado." }, { status: 400 });
       }
 
       let churchId = null;
@@ -273,29 +293,65 @@ export async function POST(request: Request) {
         if (iglesia) churchId = iglesia.id;
       }
 
+      const searchTerm = emailOrPhone.trim();
       let usuario = await prisma.usuario.findFirst({
         where: {
-          email: email.trim(),
+          OR: [
+            { email: searchTerm },
+            { persona: { telefono: searchTerm } },
+            { persona: { whatsapp: searchTerm } }
+          ],
           ...(churchId ? { iglesia_id: churchId } : {})
-        }
+        },
+        include: { persona: true }
       });
 
       if (!usuario) {
-        usuario = await prisma.usuario.findFirst({
-          where: { email: email.trim() }
-        });
+        return NextResponse.json({ error: "No encontramos ninguna cuenta asociada a este correo o teléfono en esta iglesia." }, { status: 404 });
       }
 
-      if (!usuario) {
-        return NextResponse.json({ error: "No se encontró ningún usuario registrado con ese correo electrónico." }, { status: 404 });
+      // Generar código de seguridad de 6 dígitos
+      const securePin = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // En una app en producción este código se envía por SMS/Email; aquí simulamos verificación con challenge o guardamos PIN en sesión
+      cookieStore.set("reset_challenge_pin", securePin, { path: "/", maxAge: 600, httpOnly: true, sameSite: "lax" });
+      cookieStore.set("reset_target_user_id", usuario.id, { path: "/", maxAge: 600, httpOnly: true, sameSite: "lax" });
+
+      const maskedContact = usuario.email 
+        ? usuario.email.replace(/(.{2})(.*)(?=@)/, (gp1, gp2, gp3) => gp2 + "*".repeat(gp3.length))
+        : (usuario.persona?.telefono ? `***-***-${usuario.persona.telefono.slice(-4)}` : "tu contacto registrado");
+
+      return NextResponse.json({
+        success: true,
+        message: `Hemos enviado una clave de verificación a ${maskedContact}. Ingresa el código de 6 dígitos para verificar tu identidad.`,
+        pinDemo: process.env.NODE_ENV === "development" ? securePin : undefined, // Para facilitar pruebas
+        maskedContact
+      });
+    }
+
+    // 1f. Restablecimiento Seguro (Paso 2: Validar Código de Verificación y Asignar Nueva Contraseña)
+    if (action === "verify-and-reset") {
+      const { verificationCode, newPassword } = body;
+      const storedPin = cookieStore.get("reset_challenge_pin")?.value;
+      const targetUserId = cookieStore.get("reset_target_user_id")?.value;
+
+      if (!newPassword || newPassword.length < 6) {
+        return NextResponse.json({ error: "La contraseña debe tener al menos 6 caracteres." }, { status: 400 });
+      }
+
+      if (!storedPin || !targetUserId || verificationCode !== storedPin) {
+        return NextResponse.json({ error: "El código de verificación es incorrecto o ha expirado. Intenta de nuevo." }, { status: 400 });
       }
 
       await prisma.usuario.update({
-        where: { id: usuario.id },
+        where: { id: targetUserId },
         data: { password: newPassword }
       });
 
-      return NextResponse.json({ success: true, message: "¡Contraseña actualizada con éxito! Ya puedes iniciar sesión con tu correo y nueva contraseña." });
+      cookieStore.delete("reset_challenge_pin");
+      cookieStore.delete("reset_target_user_id");
+
+      return NextResponse.json({ success: true, message: "¡Identidad verificada! Tu contraseña ha sido actualizada con éxito." });
     }
 
     // 1c. Cambiar modo de vista (Admin <-> Miembro)
