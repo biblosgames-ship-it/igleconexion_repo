@@ -451,17 +451,19 @@ export default function Hub() {
     <div className={styles.container} style={{ '--accent-blue': color } as React.CSSProperties}>
       {/* Header específico de la Iglesia */}
       <header className={styles.header}>
-        <div className={styles.logo} style={{ background: 'white', padding: '0.5rem 1rem', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-          {logo ? (
-            <img src={logo} alt="Logo" style={{ maxHeight: '40px', objectFit: 'contain', borderRadius: '4px' }} />
-          ) : (
-            <span>⛪</span>
-          )}
-          <span className={styles.logoName}>{name}</span>
+        <div className={styles.brandBox}>
+          <div className={styles.logoGroup}>
+            {logo ? (
+              <img src={logo} alt={name} className={styles.logoImg} />
+            ) : (
+              <span className={styles.churchEmoji}>⛪</span>
+            )}
+            <h1 className={styles.logoName}>{name}</h1>
+          </div>
           {slogan && (
-            <span className={styles.logoSlogan}>
-              — {slogan}
-            </span>
+            <div className={styles.logoSloganContainer}>
+              <p className={styles.logoSlogan}>“{slogan}”</p>
+            </div>
           )}
         </div>
         <button
