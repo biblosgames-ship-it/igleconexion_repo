@@ -235,124 +235,110 @@ export default function BibliotecaPage() {
 
       {/* Contenido Principal */}
       <main className={styles.mainContent}>
-        {/* Barra de Filtros y Búsqueda */}
-        <div className={styles.topBarCard}>
-          {/* BOTÓN DESPLEGABLE CON ICONOS ESTILO HUB */}
-          <div style={{ position: 'relative', marginBottom: '1.25rem' }}>
-            <button
-              type="button"
-              onClick={() => setMenuOpen(!menuOpen)}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '0.9rem 1.25rem',
-                background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-                color: 'white',
-                border: '1px solid rgba(255,255,255,0.15)',
-                borderRadius: '16px',
-                cursor: 'pointer',
-                fontSize: '0.98rem',
-                fontWeight: 700,
-                boxShadow: '0 10px 25px -5px rgba(0,0,0,0.15)'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{ fontSize: '1.3rem' }}>
-                  {selectedType === 'TODOS' ? '📂' : selectedType === 'PDF' ? '📄' : selectedType === 'VIDEO' ? '📺' : selectedType === 'GALERIA' ? '🖼️' : selectedType === 'AUDIO' ? '🎧' : '✍️'}
-                </span>
-                <span>
-                  Categoría / Formato: {selectedType === 'TODOS' ? 'Todos los Recursos' : selectedType === 'PDF' ? 'Documentos PDF' : selectedType === 'VIDEO' ? 'Videos y Prédicas' : selectedType === 'GALERIA' ? 'Fotografías y Galerías' : selectedType === 'AUDIO' ? 'Audios y Podcasts' : 'Artículos y Reflexiones'}
-                </span>
-              </div>
-              <span style={{ fontSize: '1.1rem', color: '#38bdf8', transform: menuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
-            </button>
-
-            {/* MENÚ FLOTANTE CON ICONOS ESTILO HUB */}
-            {menuOpen && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '110%',
-                  left: 0,
-                  right: 0,
-                  background: '#0f172a',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  borderRadius: '18px',
-                  padding: '1rem',
-                  zIndex: 200,
-                  boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                  gap: '0.75rem'
-                }}
-              >
-                {[
-                  { type: 'TODOS', label: 'Todos los Recursos', desc: 'Explorar todo', icon: '📂', color: '#0284c7' },
-                  { type: 'PDF', label: 'Documentos PDF', desc: 'Guías y manuales', icon: '📄', color: '#ef4444' },
-                  { type: 'VIDEO', label: 'Videos y Prédicas', desc: 'Canal de YouTube', icon: '📺', color: '#f59e0b' },
-                  { type: 'GALERIA', label: 'Fotos y Galerías', desc: 'Enlaces externos (URL)', icon: '🖼️', color: '#10b981' },
-                  { type: 'AUDIO', label: 'Audios y Podcasts', desc: 'Predicas en audio', icon: '🎧', color: '#8b5cf6' },
-                  { type: 'BLOG', label: 'Artículos y Blogs', desc: 'Reflexiones de texto', icon: '✍️', color: '#ec4899' },
-                ].map((item) => (
-                  <button
-                    key={item.type}
-                    type="button"
-                    onClick={() => {
-                      setSelectedType(item.type);
-                      setMenuOpen(false);
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                      padding: '0.85rem',
-                      background: selectedType === item.type ? `${item.color}25` : 'rgba(255,255,255,0.04)',
-                      border: selectedType === item.type ? `2px solid ${item.color}` : '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '12px',
-                      color: 'white',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s'
-                    }}
-                  >
-                    <span style={{ fontSize: '1.6rem' }}>{item.icon}</span>
-                    <div>
-                      <strong style={{ display: 'block', fontSize: '0.88rem', color: selectedType === item.type ? '#38bdf8' : 'white' }}>{item.label}</strong>
-                      <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{item.desc}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+        {/* BARRA DE FILTROS FLUIDA Y MINIMALISTA */}
+        <div style={{
+          background: 'white',
+          borderRadius: '16px',
+          padding: '1.25rem',
+          boxShadow: '0 4px 20px -2px rgba(0,0,0,0.05)',
+          border: '1px solid #e2e8f0',
+          marginBottom: '2rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}>
+          {/* Fila 1: Píldoras de Selección Rápida con Scroll Suave */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            overflowX: 'auto',
+            paddingBottom: '0.25rem',
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none'
+          }}>
+            {[
+              { type: 'TODOS', label: 'Todos', icon: '✨' },
+              { type: 'PDF', label: 'PDFs', icon: '📄' },
+              { type: 'VIDEO', label: 'Videos', icon: '📺' },
+              { type: 'GALERIA', label: 'Galerías', icon: '🖼️' },
+              { type: 'AUDIO', label: 'Audios', icon: '🎧' },
+              { type: 'BLOG', label: 'Reflexiones', icon: '✍️' },
+            ].map((item) => {
+              const isSelected = selectedType === item.type;
+              return (
+                <button
+                  key={item.type}
+                  type="button"
+                  onClick={() => setSelectedType(item.type)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    padding: '0.55rem 1.1rem',
+                    borderRadius: '25px',
+                    fontSize: '0.88rem',
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
+                    border: isSelected ? '1px solid #0284c7' : '1px solid #e2e8f0',
+                    background: isSelected ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : '#f8fafc',
+                    color: isSelected ? 'white' : '#475569',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: isSelected ? '0 4px 12px rgba(2, 132, 199, 0.25)' : 'none'
+                  }}
+                >
+                  <span style={{ fontSize: '1rem' }}>{item.icon}</span>
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
           </div>
 
-          {/* Buscador y Categorías */}
-          <div className={styles.filterControls}>
-            <form onSubmit={handleSearchSubmit} className={styles.searchBox}>
-              <span>🔍</span>
+          {/* Fila 2: Buscador e Inline Category Selector */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
+            <form onSubmit={handleSearchSubmit} style={{ position: 'relative', width: '100%' }}>
               <input
                 type="text"
-                placeholder="Buscar por título, tema o etiquetas..."
+                placeholder="Buscar por título, tema o palabra clave..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className={styles.searchInput}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 1rem 0.65rem 2.4rem',
+                  borderRadius: '12px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '0.9rem',
+                  outline: 'none',
+                  backgroundColor: '#f8fafc'
+                }}
               />
+              <span style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>
+                🔍
+              </span>
             </form>
 
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className={styles.categorySelect}
+              style={{
+                padding: '0.65rem 1rem',
+                borderRadius: '12px',
+                border: '1px solid #cbd5e1',
+                fontSize: '0.88rem',
+                fontWeight: 600,
+                backgroundColor: 'white',
+                color: '#334155',
+                cursor: 'pointer'
+              }}
             >
-              <option value="TODOS">Todas las Categorías</option>
-              <option value="Estudios Bíblicos">Estudios Bíblicos</option>
-              <option value="Sermones y Predicas">Sermones y Prédicas</option>
-              <option value="Manuales y Guías">Manuales y Guías</option>
-              <option value="Jóvenes y Niños">Jóvenes y Niños</option>
-              <option value="Eventos Especiales">Eventos Especiales</option>
-              <option value="General">General</option>
+              <option value="TODOS">🏷️ Todas las Categorías</option>
+              <option value="Estudios Bíblicos">📂 Estudios Bíblicos</option>
+              <option value="Sermones y Predicas">📂 Sermones y Prédicas</option>
+              <option value="Manuales y Guías">📂 Manuales y Guías</option>
+              <option value="Jóvenes y Niños">📂 Jóvenes y Niños</option>
+              <option value="Eventos Especiales">📂 Eventos Especiales</option>
+              <option value="General">📂 General</option>
             </select>
           </div>
         </div>
