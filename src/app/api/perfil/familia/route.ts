@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { linkFamily } from '@/lib/family';
+import { linkFamily, generateFamilyCode } from '@/lib/family';
 import { cookies } from 'next/headers';
 
 export async function GET(request: Request) {
@@ -164,10 +164,10 @@ export async function POST(request: Request) {
         }, { status: 400 });
       }
 
-      // Asegurar o generar código de familia para el padre
+      // Asegurar o generar código de familia usando la función estándar de la iglesia
       let familyCode = parentPersona.familia_codigo;
       if (!familyCode) {
-        familyCode = `FAM-${Math.floor(1000 + Math.random() * 9000)}`;
+        familyCode = await generateFamilyCode(parentPersona.iglesia_id);
         await prisma.persona.update({
           where: { id: user.persona_id },
           data: { familia_codigo: familyCode }
