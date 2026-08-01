@@ -211,8 +211,8 @@ export async function POST(request: Request) {
           sexo: sexo || "M",
           familia_codigo: familyCode,
           rol_familiar: "HIJO/A",
-          etapa_id: etapa ? etapa.id : null,
-          grupo_conexion_id: autoGrupoId
+          ...(etapa ? { etapa_id: etapa.id } : {}),
+          ...(autoGrupoId ? { grupo_conexion_id: autoGrupoId } : {})
         }
       });
 
