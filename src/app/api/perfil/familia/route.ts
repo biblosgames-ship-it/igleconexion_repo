@@ -174,18 +174,28 @@ export async function POST(request: Request) {
         });
       }
 
-      // Buscar Etapa inicial
+      // Buscar Etapa inicial (o crear si no existe)
       let etapa = await prisma.etapaConfig.findFirst({
         where: { iglesia_id: parentPersona.iglesia_id },
         orderBy: { orden_secuencial: 'asc' }
       });
+
+      if (!etapa) {
+        etapa = await prisma.etapaConfig.create({
+          data: {
+            iglesia_id: parentPersona.iglesia_id,
+            nombre_etapa: "Etapa 1: Amigos / Oyentes",
+            orden_secuencial: 1
+          }
+        });
+      }
 
       // Auto-asignación de Grupo de Conexión según edad y sexo
       const churchGroups = await prisma.grupoConexion.findMany({
         where: { sociedad: { iglesia_id: parentPersona.iglesia_id } }
       });
 
-      let autoGrupoId = null;
+      let autoGrupoId: string | null = null;
       const matchedGc = churchGroups.find((g) => {
         const minAge = g.rango_edad_min ?? 0;
         const maxAge = g.rango_edad_max ?? 99;
@@ -203,17 +213,19 @@ export async function POST(request: Request) {
       }
 
       // Crear el registro del niño
+      const newChildData: any = {
+        iglesia_id: parentPersona.iglesia_id,
+        etapa_id: etapa.id,
+        nombre: nombre.trim(),
+        fecha_nacimiento: birthDate,
+        sexo: sexo || "M",
+        familia_codigo: familyCode,
+        rol_familiar: "HIJO/A",
+        grupo_conexion_id: autoGrupoId,
+      };
+
       const newChild = await prisma.persona.create({
-        data: {
-          iglesia_id: parentPersona.iglesia_id,
-          nombre: nombre.trim(),
-          fecha_nacimiento: birthDate,
-          sexo: sexo || "M",
-          familia_codigo: familyCode,
-          rol_familiar: "HIJO/A",
-          ...(etapa ? { etapa_id: etapa.id } : {}),
-          ...(autoGrupoId ? { grupo_conexion_id: autoGrupoId } : {})
-        }
+        data: newChildData
       });
 
       return NextResponse.json({ success: true, persona: newChild });
