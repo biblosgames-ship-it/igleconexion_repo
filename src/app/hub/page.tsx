@@ -103,12 +103,23 @@ export default function Hub() {
   useEffect(() => {
     const checkAuthAndLoad = async () => {
       try {
-        const authRes = await fetch("/api/auth");
-        if (authRes.status === 401) {
+        // Disparar auth en paralelo con iglesia, eventos, proyectos, comunicados, notificaciones y formularios
+        const [authRes, iglesiaRes, evRes, proyRes, formRes, comRes, notifRes, biblioRes] = await Promise.all([
+          fetch("/api/auth").catch(() => null),
+          fetch("/api/iglesia").catch(() => null),
+          fetch("/api/eventos").catch(() => null),
+          fetch("/api/finanzas/proyectos").catch(() => null),
+          fetch("/api/formularios/pendientes").catch(() => null),
+          fetch("/api/comunicados").catch(() => null),
+          fetch("/api/notificaciones").catch(() => null),
+          fetch("/api/biblioteca").catch(() => null),
+        ]);
+
+        if (!authRes || authRes.status === 401) {
           window.location.href = "/";
           return;
         }
-        
+
         const dataAuth = await authRes.json();
         if (dataAuth.error) {
           window.location.href = "/";
@@ -121,21 +132,13 @@ export default function Hub() {
         setCanSwitchRole(dataAuth.canSwitchRole || false);
         setViewingAs(dataAuth.viewingAs || dataAuth.rol);
 
-        // Todas las llamadas en paralelo después del auth
-        const [iglesiaRes, evRes, proyRes, formRes] = await Promise.all([
-          fetch("/api/iglesia").catch(() => null),
-          fetch("/api/eventos").catch(() => null),
-          fetch("/api/finanzas/proyectos").catch(() => null),
-          fetch("/api/formularios/pendientes").catch(() => null),
-        ]);
-
-        // Iglesia
+        // Procesar Iglesia
         if (iglesiaRes?.ok) {
           const data = await iglesiaRes.json();
           if (!data.error) setChurchData(data);
         }
 
-        // Eventos
+        // Procesar Eventos
         if (evRes?.ok) {
           const eventos = await evRes.json();
           const userEtapaId = dataAuth.persona?.etapa_id;
@@ -147,35 +150,46 @@ export default function Hub() {
           }
         }
 
-        // Proyectos (Promesas de Fe) para promoción
+        // Procesar Proyectos (Promesas de Fe)
         if (proyRes?.ok) {
           const proyectos = await proyRes.json();
           const promoP = proyectos.find((p: any) => p.promocionar_hub && p.estado === 'ACTIVO');
           if (promoP) {
              setPromoProyecto(promoP);
-             const resProm = await fetch("/api/finanzas/promesas").catch(() => null);
-             if (resProm?.ok) {
-               const allProm = await resProm.json();
-               const hasPledged = Array.isArray(allProm) && allProm.some((p:any) => p.proyecto_id === promoP.id && p.persona_id === dataAuth.persona_id);
-               setHasPledgedPromo(hasPledged);
-             }
+             fetch("/api/finanzas/promesas").then(r => r.json()).then(allProm => {
+               if (Array.isArray(allProm)) {
+                 const hasPledged = allProm.some((p:any) => p.proyecto_id === promoP.id && p.persona_id === dataAuth.persona_id);
+                 setHasPledgedPromo(hasPledged);
+               }
+             }).catch(() => {});
           }
         }
 
-        // Comunicados y notificaciones en paralelo
-        Promise.all([
-          fetch("/api/comunicados").then(r => r.json()).then(data => {
-            if (!data.error) {
-              setComunicadosList(data);
-              setMandatoryAnnouncements(data.filter((c: any) => c.esObligatorio && !c.leido));
-            }
-          }).catch(() => {}),
-          fetch("/api/notificaciones").then(r => r.json()).then(data => {
-            if (!data.error) setNotificacionesList(data);
-          }).catch(() => {}),
-        ]);
+        // Procesar Comunicados
+        if (comRes?.ok) {
+          const comData = await comRes.json();
+          if (!comData.error) {
+            setComunicadosList(comData);
+            setMandatoryAnnouncements(comData.filter((c: any) => c.esObligatorio && !c.leido));
+          }
+        }
 
-        // Formularios pendientes
+        // Procesar Notificaciones
+        if (notifRes?.ok) {
+          const notifData = await notifRes.json();
+          if (!notifData.error) setNotificacionesList(notifData);
+        }
+
+        // Procesar Biblioteca
+        if (biblioRes?.ok) {
+          const biblioData = await biblioRes.json();
+          if (Array.isArray(biblioData) && biblioData.length > 0) {
+            const randomIndex = Math.floor(Math.random() * biblioData.length);
+            setFeaturedResource(biblioData[randomIndex]);
+          }
+        }
+
+        // Procesar Formularios pendientes
         if (formRes?.ok) {
           const formData = await formRes.json();
           if (formData.pending) {

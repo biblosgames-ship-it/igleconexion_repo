@@ -8,7 +8,7 @@ export async function GET() {
     const userId = await getSessionUserId();
 
     // Todas las queries base en paralelo (sin dependencias entre sí)
-    const [userObj, iglesia, sociedadesRaw, etapas, modulos, dbProcesos] = await Promise.all([
+    const [userObj, iglesia, sociedadesRaw, etapas, modulos] = await Promise.all([
       userId ? prisma.usuario.findUnique({ where: { id: userId }, select: { rol: true } }) : null,
       prisma.iglesia.findUnique({ where: { id: defaultIglesiaId } }),
       prisma.sociedad.findMany({
@@ -30,11 +30,6 @@ export async function GET() {
       prisma.moduloConfig.findMany({
         where: { iglesia_id: defaultIglesiaId },
         orderBy: { orden: "asc" },
-      }),
-      prisma.tareaConfig.findMany({
-        where: { iglesia_id: defaultIglesiaId },
-        orderBy: { orden: "asc" },
-        include: { subtareas: true },
       }),
     ]);
 
@@ -132,20 +127,6 @@ export async function GET() {
       }
     }
 
-    const procesos = dbProcesos.map((p) => ({
-      id: p.id,
-      nombre_tarea: p.nombre_tarea,
-      modulo_id: p.modulo_id,
-      etapa_id: p.etapa_id,
-      dias_limite: p.dias_limite,
-      es_obligatoria: p.es_obligatoria,
-      subtareas: p.subtareas.map((s) => ({
-        id: s.id,
-        nombre_subtarea: s.nombre_subtarea,
-        dias_limite: s.dias_limite,
-      })),
-    }));
-
     const flatGrupos = sociedades.flatMap(s => s.grupos_conexion?.map(gc => ({
       id: gc.id,
       sociedad_id: s.id,
@@ -168,7 +149,6 @@ export async function GET() {
       grupos: flatGrupos,
       etapas,
       modulos,
-      procesos,
     }, {
       headers: {
         'Cache-Control': 'private, s-maxage=30, stale-while-revalidate=120'
