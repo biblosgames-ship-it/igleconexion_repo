@@ -711,7 +711,7 @@ export default function Perfil() {
               {/* Bloque: Registrar Hijo Menor de 9 Años */}
               <div style={{ marginTop: '0.5rem', padding: '1rem', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
                 <h3 style={{ fontSize: '1rem', color: '#166534', margin: '0 0 0.35rem 0', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  👶 Registrar Hijo/a Menor (< 9 años)
+                  👶 Registrar Hijo/a Menor (&lt; 9 años)
                 </h3>
                 <p style={{ fontSize: '0.82rem', color: '#15803d', margin: '0 0 0.85rem 0', lineHeight: 1.3 }}>
                   Registra a tus hijos pequeños directamente. El sistema los ubicará automáticamente en su grupo infantil por edad y los vinculará a tu código familiar.
