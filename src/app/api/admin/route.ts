@@ -503,13 +503,16 @@ export async function POST(request: Request) {
       }
 
       case "updateSociedadDetalles": {
-        const { id, descripcion, horarios, galeria } = data;
+        const { id, descripcion, horarios, galeria, rango_edad_min, rango_edad_max, sexo_requerido } = data;
         const updatedSoc = await prisma.sociedad.update({
           where: { id },
           data: {
             descripcion: descripcion || null,
             horarios: horarios || null,
             galeria: galeria || null,
+            rango_edad_min: rango_edad_min !== undefined && rango_edad_min !== null && rango_edad_min !== "" ? parseInt(rango_edad_min) : null,
+            rango_edad_max: rango_edad_max !== undefined && rango_edad_max !== null && rango_edad_max !== "" ? parseInt(rango_edad_max) : null,
+            sexo_requerido: sexo_requerido || "MIXTO",
           },
         });
         return NextResponse.json(updatedSoc);

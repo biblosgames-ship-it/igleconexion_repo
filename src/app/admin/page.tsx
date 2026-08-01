@@ -255,6 +255,9 @@ export default function SuperAdminPage() {
   const [editingSoc, setEditingSoc] = useState<any | null>(null);
   const [editingSocDesc, setEditingSocDesc] = useState("");
   const [editingSocHorarios, setEditingSocHorarios] = useState("");
+  const [editingSocEdadMin, setEditingSocEdadMin] = useState("");
+  const [editingSocEdadMax, setEditingSocEdadMax] = useState("");
+  const [editingSocSexo, setEditingSocSexo] = useState("MIXTO");
   const [editingSocGaleria, setEditingSocGaleria] = useState<string[]>([]);
 
 
@@ -1672,6 +1675,9 @@ export default function SuperAdminPage() {
     setEditingSoc(soc);
     setEditingSocDesc(soc.descripcion || "");
     setEditingSocHorarios(soc.horarios || "");
+    setEditingSocEdadMin(soc.rango_edad_min !== null && soc.rango_edad_min !== undefined ? String(soc.rango_edad_min) : "");
+    setEditingSocEdadMax(soc.rango_edad_max !== null && soc.rango_edad_max !== undefined ? String(soc.rango_edad_max) : "");
+    setEditingSocSexo(soc.sexo_requerido || "MIXTO");
     let gal: string[] = [];
     if (soc.galeria) {
       try {
@@ -1689,6 +1695,9 @@ export default function SuperAdminPage() {
       id: editingSoc.id,
       descripcion: editingSocDesc,
       horarios: editingSocHorarios,
+      rango_edad_min: editingSocEdadMin,
+      rango_edad_max: editingSocEdadMax,
+      sexo_requerido: editingSocSexo,
       galeria: JSON.stringify(editingSocGaleria),
     });
     setEditingSoc(null);
@@ -3068,7 +3077,9 @@ export default function SuperAdminPage() {
 
               {/* Lista de Sociedades */}
               {sociedades.map(soc => {
-                const gruposDeLaSoc = gruposConexion.filter(g => g.sociedad_id === soc.id);
+                const gruposDeLaSoc = gruposConexion
+                  .filter(g => g.sociedad_id === soc.id)
+                  .sort((a, b) => (a.rango_edad_min ?? 0) - (b.rango_edad_min ?? 0));
 
                 return (
                   <div key={soc.id} className={styles.configBlock} style={{ background: 'white' }}>
@@ -7109,6 +7120,48 @@ export default function SuperAdminPage() {
                         resize: 'vertical'
                       }}
                     />
+                  </div>
+
+                  {/* Rango de Edad y Sexo */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.4rem', color: '#475569' }}>
+                        Edad Mínima
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="Ej: 0"
+                        value={editingSocEdadMin}
+                        onChange={(e) => setEditingSocEdadMin(e.target.value)}
+                        style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.4rem', color: '#475569' }}>
+                        Edad Máxima
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="Ej: 12"
+                        value={editingSocEdadMax}
+                        onChange={(e) => setEditingSocEdadMax(e.target.value)}
+                        style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.4rem', color: '#475569' }}>
+                        Sexo Requerido
+                      </label>
+                      <select
+                        value={editingSocSexo}
+                        onChange={(e) => setEditingSocSexo(e.target.value)}
+                        style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: 'white' }}
+                      >
+                        <option value="MIXTO">Mixto</option>
+                        <option value="M">Hombres</option>
+                        <option value="F">Mujeres</option>
+                      </select>
+                    </div>
                   </div>
 
                   {/* Horarios */}
