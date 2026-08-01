@@ -368,6 +368,38 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true, persona: updated });
       }
 
+      case "updateMemberDetails": {
+        const { memberId, nombre, fecha_nacimiento, sexo, telefono, correo, grupo_conexion_id, etapa_id, familia_codigo } = data;
+
+        const updated = await prisma.persona.update({
+          where: { id: memberId },
+          data: {
+            ...(nombre ? { nombre: nombre.trim() } : {}),
+            fecha_nacimiento: fecha_nacimiento ? new Date(fecha_nacimiento) : null,
+            sexo: sexo || "M",
+            telefono: telefono || null,
+            correo: correo || null,
+            grupo_conexion_id: grupo_conexion_id || null,
+            ...(etapa_id ? { etapa_id } : {}),
+            familia_codigo: familia_codigo?.trim()?.toUpperCase() || null,
+          },
+        });
+
+        if (correo) {
+          const existingUser = await prisma.usuario.findFirst({
+            where: { persona_id: memberId }
+          });
+          if (existingUser && existingUser.email !== correo) {
+            await prisma.usuario.update({
+              where: { id: existingUser.id },
+              data: { email: correo }
+            });
+          }
+        }
+
+        return NextResponse.json({ success: true, persona: updated });
+      }
+
       case "deleteMember": {
         const { memberId } = data;
 

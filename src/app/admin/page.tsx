@@ -180,6 +180,70 @@ export default function SuperAdminPage() {
     }
   };
 
+  // Estados para Edición Completa de Miembros desde Admin
+  const [editingMember, setEditingMember] = useState<any | null>(null);
+  const [editMemberNombre, setEditMemberNombre] = useState("");
+  const [editMemberFechaNacimiento, setEditMemberFechaNacimiento] = useState("");
+  const [editMemberSexo, setEditMemberSexo] = useState("M");
+  const [editMemberTelefono, setEditMemberTelefono] = useState("");
+  const [editMemberCorreo, setEditMemberCorreo] = useState("");
+  const [editMemberGrupoId, setEditMemberGrupoId] = useState("");
+  const [editMemberEtapaId, setEditMemberEtapaId] = useState("");
+  const [editMemberFamiliaCodigo, setEditMemberFamiliaCodigo] = useState("");
+  const [editMemberLoading, setEditMemberLoading] = useState(false);
+
+  const handleOpenEditMemberModal = (m: any) => {
+    setEditingMember(m);
+    setEditMemberNombre(m.nombre || "");
+    setEditMemberFechaNacimiento(m.fecha_nacimiento ? m.fecha_nacimiento.split("T")[0] : "");
+    setEditMemberSexo(m.sexo || "M");
+    setEditMemberTelefono(m.telefono || "");
+    setEditMemberCorreo(m.correo || "");
+    setEditMemberGrupoId(m.grupo_conexion_id || "");
+    setEditMemberEtapaId(m.etapa_id || "");
+    setEditMemberFamiliaCodigo(m.familia_codigo || "");
+  };
+
+  const handleSaveEditMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMember) return;
+    setEditMemberLoading(true);
+    try {
+      const res = await fetch("/api/miembros", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "updateMemberDetails",
+          data: {
+            memberId: editingMember.id,
+            nombre: editMemberNombre,
+            fecha_nacimiento: editMemberFechaNacimiento,
+            sexo: editMemberSexo,
+            telefono: editMemberTelefono,
+            correo: editMemberCorreo,
+            grupo_conexion_id: editMemberGrupoId,
+            etapa_id: editMemberEtapaId,
+            familia_codigo: editMemberFamiliaCodigo,
+          }
+        })
+      });
+      const data = await res.json();
+      if (data.error) {
+        alert("Error al actualizar miembro: " + data.error);
+      } else {
+        alert("¡Ficha del miembro actualizada con éxito!");
+        setEditingMember(null);
+        const resM = await fetch("/api/miembros");
+        const dataM = await resM.json();
+        if (!dataM.error && Array.isArray(dataM)) setMiembros(dataM);
+      }
+    } catch (err) {
+      alert("Error de conexión al actualizar miembro.");
+    } finally {
+      setEditMemberLoading(false);
+    }
+  };
+
   // Estados para Etiquetas/Alertas de Atención Especial
   const [availableTags, setAvailableTags] = useState<any[]>([]);
   const [selectedMemberForTags, setSelectedMemberForTags] = useState<any | null>(null);
@@ -5798,6 +5862,9 @@ export default function SuperAdminPage() {
                               <Link href={`/perfil/${m.id}`} title="Ver Perfil" style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: '3px', display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                               </Link>
+                              <button onClick={() => handleOpenEditMemberModal(m)} title="Editar Ficha Completa del Miembro" style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', padding: '3px', display: 'inline-flex', alignItems: 'center' }}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                              </button>
                               <button onClick={() => openTimelineForMember(m.id)} title="Historial" style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: '3px', display: 'inline-flex', alignItems: 'center' }}>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>
                               </button>
@@ -6146,30 +6213,6 @@ export default function SuperAdminPage() {
                         <select
                           value={newMemberGrupoId}
                           onChange={(e) => setNewMemberGrupoId(e.target.value)}
-                          style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: 'white' }}
-                        >
-                          <option value="">Selecciona un Grupo de Conexión...</option>
-                          {gruposConexion.map(g => {
-                            const socName = sociedades.find(s => s.id === g.sociedad_id)?.nombre_sociedad || "";
-                            return (
-                              <option key={g.id} value={g.id}>
-                                {g.nombre_grupo} ({socName})
-                              </option>
-                            );
-                          })}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Etapa de Crecimiento</label>
-                        <select
-                          value={newMemberEtapaId}
-                          onChange={(e) => setNewMemberEtapaId(e.target.value)}
-                          style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: 'white' }}
-                        >
-                          {etapas.map((et: any) => (
-                            <option key={et.id} value={et.id}>{et.nombre_etapa}</option>
-                          ))}
                         </select>
                       </div>
 
@@ -6196,6 +6239,130 @@ export default function SuperAdminPage() {
                     </div>
 
                     <BulkImportSection gruposConexion={gruposConexion} sociedades={sociedades} />
+                  </div>
+                </div>
+              )}
+
+              {/* MODAL: EDITAR FICHA COMPLETA DE MIEMBRO (ADMIN) */}
+              {editingMember && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem', overflowY: 'auto' }} onClick={() => setEditingMember(null)}>
+                  <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '560px', maxHeight: '88vh', overflowY: 'auto', padding: '1.75rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.15)', margin: 'auto' }} onClick={(e) => e.stopPropagation()}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>✏️ Editar Ficha: {editingMember.nombre}</h3>
+                      <button onClick={() => setEditingMember(null)} style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>&times;</button>
+                    </div>
+
+                    <form onSubmit={handleSaveEditMember} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Nombre Completo *</label>
+                        <input
+                          type="text"
+                          required
+                          value={editMemberNombre}
+                          onChange={(e) => setEditMemberNombre(e.target.value)}
+                          style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Código de Familia</label>
+                          <input
+                            type="text"
+                            placeholder="Ej: TF0001"
+                            value={editMemberFamiliaCodigo}
+                            onChange={(e) => setEditMemberFamiliaCodigo(e.target.value)}
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', fontWeight: 700, color: '#4f46e5', textTransform: 'uppercase' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Fecha de Nacimiento</label>
+                          <input
+                            type="date"
+                            value={editMemberFechaNacimiento}
+                            onChange={(e) => setEditMemberFechaNacimiento(e.target.value)}
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: 'white', fontFamily: 'inherit' }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Teléfono / WhatsApp</label>
+                          <input
+                            type="text"
+                            placeholder="(809) 555-1234"
+                            value={editMemberTelefono}
+                            onChange={(e) => setEditMemberTelefono(e.target.value)}
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Correo Electrónico</label>
+                          <input
+                            type="email"
+                            placeholder="correo@ejemplo.com"
+                            value={editMemberCorreo}
+                            onChange={(e) => setEditMemberCorreo(e.target.value)}
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Sexo</label>
+                          <select
+                            value={editMemberSexo}
+                            onChange={(e) => setEditMemberSexo(e.target.value)}
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: 'white' }}
+                          >
+                            <option value="M">Masculino</option>
+                            <option value="F">Femenino</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Etapa de Crecimiento</label>
+                          <select
+                            value={editMemberEtapaId}
+                            onChange={(e) => setEditMemberEtapaId(e.target.value)}
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: 'white' }}
+                          >
+                            {etapas.map((et: any) => (
+                              <option key={et.id} value={et.id}>{et.nombre_etapa}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Grupo de Conexión</label>
+                        <select
+                          value={editMemberGrupoId}
+                          onChange={(e) => setEditMemberGrupoId(e.target.value)}
+                          style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: 'white' }}
+                        >
+                          <option value="">Sin Grupo de Conexión</option>
+                          {gruposConexion.map(g => {
+                            const socName = sociedades.find(s => s.id === g.sociedad_id)?.nombre_sociedad || "";
+                            return (
+                              <option key={g.id} value={g.id}>
+                                {g.nombre_grupo} ({socName})
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.75rem' }}>
+                        <button type="button" onClick={() => setEditingMember(null)} style={{ padding: '0.6rem 1.25rem', borderRadius: '8px', background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#475569', fontWeight: 600, cursor: 'pointer' }}>
+                          Cancelar
+                        </button>
+                        <button type="submit" disabled={editMemberLoading} style={{ padding: '0.6rem 1.25rem', borderRadius: '8px', background: '#0284c7', border: 'none', color: 'white', fontWeight: 700, cursor: editMemberLoading ? 'not-allowed' : 'pointer' }}>
+                          {editMemberLoading ? "Guardando..." : "💾 Guardar Cambios"}
+                        </button>
+                      </div>
+                    </form>
                   </div>
                 </div>
               )}
