@@ -354,6 +354,20 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true, persona: updated });
       }
 
+      case "updateFamiliaCodigo": {
+        const { memberId, familia_codigo } = data;
+        const cleanCode = familia_codigo?.trim()?.toUpperCase() || null;
+
+        const updated = await prisma.persona.update({
+          where: { id: memberId },
+          data: {
+            familia_codigo: cleanCode,
+          },
+        });
+
+        return NextResponse.json({ success: true, persona: updated });
+      }
+
       case "deleteMember": {
         const { memberId } = data;
 
