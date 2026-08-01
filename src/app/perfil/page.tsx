@@ -130,6 +130,56 @@ export default function Perfil() {
     return () => clearTimeout(delayDebounceFn);
   }, [familiarSearch]);
 
+  // Estados para Registrar Hijo Menor de 9 Años
+  const [childNombre, setChildNombre] = useState("");
+  const [childFechaNacimiento, setChildFechaNacimiento] = useState("");
+  const [childSexo, setChildSexo] = useState("M");
+  const [childLoading, setChildLoading] = useState(false);
+  const [childMsg, setChildMsg] = useState<string | null>(null);
+  const [childErrorMsg, setChildErrorMsg] = useState<string | null>(null);
+
+  const handleCreateChildInProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setChildMsg(null);
+    setChildErrorMsg(null);
+
+    if (!childNombre.trim() || !childFechaNacimiento) {
+      setChildErrorMsg("Ingresa el nombre y fecha de nacimiento del niño/a.");
+      return;
+    }
+
+    setChildLoading(true);
+    try {
+      const res = await fetch("/api/perfil/familia", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "createChild",
+          nombre: childNombre.trim(),
+          fechaNacimiento: childFechaNacimiento,
+          sexo: childSexo,
+        })
+      });
+      const data = await res.json();
+      if (data.error) {
+        setChildErrorMsg(data.error);
+      } else {
+        setChildMsg(`¡${childNombre} ha sido registrado/a y vinculado/a a tu familia con éxito!`);
+        setChildNombre("");
+        setChildFechaNacimiento("");
+        setChildSexo("M");
+        // Reload familia list
+        const resFam = await fetch("/api/perfil/familia");
+        const dataFam = await resFam.json();
+        if (dataFam.familia) setFamilia(dataFam.familia);
+      }
+    } catch (err) {
+      setChildErrorMsg("Error al intentar registrar el hijo/a.");
+    } finally {
+      setChildLoading(false);
+    }
+  };
+
   const handleLinkFamily = async () => {
     if (!familiarId || !rolFamiliar) {
       alert("Selecciona un familiar y tu parentesco.");
@@ -657,6 +707,72 @@ export default function Perfil() {
                   </div>
                 </div>
               )}
+
+              {/* Bloque: Registrar Hijo Menor de 9 Años */}
+              <div style={{ marginTop: '0.5rem', padding: '1rem', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                <h3 style={{ fontSize: '1rem', color: '#166534', margin: '0 0 0.35rem 0', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  👶 Registrar Hijo/a Menor (< 9 años)
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: '#15803d', margin: '0 0 0.85rem 0', lineHeight: 1.3 }}>
+                  Registra a tus hijos pequeños directamente. El sistema los ubicará automáticamente en su grupo infantil por edad y los vinculará a tu código familiar.
+                </p>
+
+                {childErrorMsg && (
+                  <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b', padding: '0.5rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
+                    ⚠️ {childErrorMsg}
+                  </div>
+                )}
+                {childMsg && (
+                  <div style={{ background: '#dcfce7', border: '1px solid #86efac', color: '#14532d', padding: '0.5rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
+                    ✅ {childMsg}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#166534', marginBottom: '0.25rem' }}>Nombre Completo del Niño/a *</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ej: Mateo Palacio" 
+                      value={childNombre} 
+                      onChange={(e) => setChildNombre(e.target.value)} 
+                      style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid #86efac', fontSize: '0.88rem' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#166534', marginBottom: '0.25rem' }}>Fecha Nacimiento *</label>
+                      <input 
+                        type="date" 
+                        value={childFechaNacimiento} 
+                        onChange={(e) => setChildFechaNacimiento(e.target.value)} 
+                        style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid #86efac', fontSize: '0.88rem', fontFamily: 'inherit', background: 'white' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#166534', marginBottom: '0.25rem' }}>Sexo</label>
+                      <select 
+                        value={childSexo} 
+                        onChange={(e) => setChildSexo(e.target.value)} 
+                        style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid #86efac', fontSize: '0.88rem', background: 'white' }}
+                      >
+                        <option value="M">Masculino</option>
+                        <option value="F">Femenino</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleCreateChildInProfile}
+                    disabled={childLoading}
+                    style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: '6px', padding: '0.5rem', fontSize: '0.85rem', fontWeight: 700, cursor: childLoading ? 'not-allowed' : 'pointer' }}
+                  >
+                    {childLoading ? "Registrando..." : "👶 Registrar e Integrar a Familia"}
+                  </button>
+                </div>
+              </div>
 
               {/* Vinculación Familiar Integrada en Edición */}
               <div style={{ marginTop: '0.5rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>

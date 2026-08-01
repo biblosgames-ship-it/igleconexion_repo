@@ -138,6 +138,87 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, persona: updatedChild });
     }
 
+    // Acción: Crear un hijo menor de 9 años directamente por los padres
+    if (action === "createChild") {
+      const { nombre, fechaNacimiento, sexo } = body;
+
+      if (!nombre || !nombre.trim()) {
+        return NextResponse.json({ error: 'El nombre del niño/a es obligatorio' }, { status: 400 });
+      }
+
+      if (!fechaNacimiento) {
+        return NextResponse.json({ error: 'La fecha de nacimiento es obligatoria para verificar la edad del menor' }, { status: 400 });
+      }
+
+      const birthDate = new Date(fechaNacimiento);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+
+      if (age >= 9) {
+        return NextResponse.json({ 
+          error: `Solo se permite el registro directo de hijos menores de 9 años (el niño/a tiene ${age} años). Para niños de 9 años o más, regístralo mediante el formulario público o contacta al líder de tu iglesia.` 
+        }, { status: 400 });
+      }
+
+      // Asegurar o generar código de familia para el padre
+      let familyCode = parentPersona.familia_codigo;
+      if (!familyCode) {
+        familyCode = `FAM-${Math.floor(1000 + Math.random() * 9000)}`;
+        await prisma.persona.update({
+          where: { id: user.persona_id },
+          data: { familia_codigo: familyCode }
+        });
+      }
+
+      // Buscar Etapa inicial
+      let etapa = await prisma.etapaConfig.findFirst({
+        where: { iglesia_id: parentPersona.iglesia_id },
+        orderBy: { orden_secuencial: 'asc' }
+      });
+
+      // Auto-asignación de Grupo de Conexión según edad y sexo
+      const churchGroups = await prisma.grupoConexion.findMany({
+        where: { sociedad: { iglesia_id: parentPersona.iglesia_id } }
+      });
+
+      let autoGrupoId = null;
+      const matchedGc = churchGroups.find((g) => {
+        const minAge = g.rango_edad_min ?? 0;
+        const maxAge = g.rango_edad_max ?? 99;
+        const ageMatch = age >= minAge && age <= maxAge;
+
+        const gSex = (g.sexo || "").toUpperCase();
+        const pSex = (sexo || "").toUpperCase();
+        const sexMatch = !gSex || gSex === "MIXTO" || gSex === "MIX" || gSex === pSex;
+
+        return ageMatch && sexMatch;
+      });
+
+      if (matchedGc) {
+        autoGrupoId = matchedGc.id;
+      }
+
+      // Crear el registro del niño
+      const newChild = await prisma.persona.create({
+        data: {
+          iglesia_id: parentPersona.iglesia_id,
+          nombre: nombre.trim(),
+          fecha_nacimiento: birthDate,
+          sexo: sexo || "M",
+          familia_codigo: familyCode,
+          rol_familiar: "HIJO/A",
+          etapa_id: etapa ? etapa.id : null,
+          grupo_conexion_id: autoGrupoId
+        }
+      });
+
+      return NextResponse.json({ success: true, persona: newChild });
+    }
+
     // Acción por defecto: Vincular nuevo familiar
     if (!familiarId || !rolFamiliar) {
       return NextResponse.json({ error: 'Faltan datos' }, { status: 400 });
