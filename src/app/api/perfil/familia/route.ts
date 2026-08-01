@@ -36,12 +36,6 @@ export async function GET(request: Request) {
         familia_codigo: persona.familia_codigo
       },
       select: {
-    const familiares = await prisma.persona.findMany({
-      where: {
-        iglesia_id: persona.iglesia_id,
-        familia_codigo: persona.familia_codigo
-      },
-      select: {
         id: true,
         nombre: true,
         rol_familiar: true,
