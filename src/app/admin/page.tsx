@@ -119,6 +119,7 @@ export default function SuperAdminPage() {
   const [newMemberNombre, setNewMemberNombre] = useState("");
   const [newMemberTelefono, setNewMemberTelefono] = useState("");
   const [newMemberCorreo, setNewMemberCorreo] = useState("");
+  const [newMemberFechaNacimiento, setNewMemberFechaNacimiento] = useState("");
   const [newMemberSexo, setNewMemberSexo] = useState("M");
   const [newMemberEstadoCivil, setNewMemberEstadoCivil] = useState("Soltero/a");
   const [newMemberGrupoId, setNewMemberGrupoId] = useState("");
@@ -143,6 +144,7 @@ export default function SuperAdminPage() {
           nombre: newMemberNombre,
           telefono: newMemberTelefono || null,
           correo: newMemberCorreo || null,
+          fechaNacimiento: newMemberFechaNacimiento || null,
           sexo: newMemberSexo,
           estadoCivil: newMemberEstadoCivil,
           etapaId: newMemberEtapaId || (etapas[0]?.id || null),
@@ -159,6 +161,7 @@ export default function SuperAdminPage() {
         setNewMemberNombre("");
         setNewMemberTelefono("");
         setNewMemberCorreo("");
+        setNewMemberFechaNacimiento("");
         setNewMemberSexo("M");
         setNewMemberGrupoId("");
         
@@ -6093,6 +6096,28 @@ export default function SuperAdminPage() {
                           />
                         </div>
                         <div>
+                          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Fecha de Nacimiento</label>
+                          <input
+                            type="date"
+                            value={newMemberFechaNacimiento}
+                            onChange={(e) => setNewMemberFechaNacimiento(e.target.value)}
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none', background: 'white', fontFamily: 'inherit' }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Correo Electrónico</label>
+                          <input
+                            type="email"
+                            placeholder="ejemplo@correo.com"
+                            value={newMemberCorreo}
+                            onChange={(e) => setNewMemberCorreo(e.target.value)}
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none' }}
+                          />
+                        </div>
+                        <div>
                           <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Sexo</label>
                           <select
                             value={newMemberSexo}
@@ -6103,17 +6128,6 @@ export default function SuperAdminPage() {
                             <option value="F">Femenino</option>
                           </select>
                         </div>
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Correo Electrónico</label>
-                        <input
-                          type="email"
-                          placeholder="ejemplo@correo.com"
-                          value={newMemberCorreo}
-                          onChange={(e) => setNewMemberCorreo(e.target.value)}
-                          style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none' }}
-                        />
                       </div>
 
                       <div>
