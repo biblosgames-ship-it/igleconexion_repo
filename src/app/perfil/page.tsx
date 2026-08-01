@@ -571,9 +571,96 @@ export default function Perfil() {
                 </div>
               </div>
 
+              {/* Bloque: Gestionar Contactos de Miembros de Familia */}
+              {familia.length > 0 && (
+                <div style={{ marginTop: '0.5rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <h3 style={{ fontSize: '1rem', color: '#1e293b', margin: '0 0 0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    📱 Gestionar Datos de Familiares / Hijos
+                  </h3>
+                  <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 1rem 0' }}>Asigna o actualiza el teléfono y correo de tus hijos o miembros de tu grupo familiar.</p>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {familia.filter(f => f.id !== currentUser.persona_id).map((fam) => (
+                      <div key={fam.id} style={{ background: 'white', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                          <strong style={{ fontSize: '0.9rem', color: '#0f172a' }}>{fam.nombre}</strong>
+                          {fam.rol_familiar && <span style={{ fontSize: '0.72rem', backgroundColor: '#e2e8f0', color: '#334155', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>{fam.rol_familiar}</span>}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.5rem' }}>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: '0.2rem' }}>Teléfono</label>
+                            <input 
+                              type="text" 
+                              placeholder="Ej: 8095551234" 
+                              defaultValue={fam.telefono || ''} 
+                              id={`fam_tel_${fam.id}`}
+                              style={{ width: '100%', padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: '0.2rem' }}>Correo Electrónico</label>
+                            <input 
+                              type="email" 
+                              placeholder="ejemplo@correo.com" 
+                              defaultValue={fam.correo || ''} 
+                              id={`fam_email_${fam.id}`}
+                              style={{ width: '100%', padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                            />
+                          </div>
+                        </div>
+                        <div style={{ marginTop: '0.5rem', textAlign: 'right' }}>
+                          <button
+                            type="button"
+                            onClick={async (e) => {
+                              const btn = e.currentTarget;
+                              const telInput = document.getElementById(`fam_tel_${fam.id}`) as HTMLInputElement;
+                              const emailInput = document.getElementById(`fam_email_${fam.id}`) as HTMLInputElement;
+                              const newTel = telInput?.value;
+                              const newEmail = emailInput?.value;
+                              
+                              btn.disabled = true;
+                              btn.innerText = "Guardando...";
+                              try {
+                                const res = await fetch("/api/perfil/familia", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({
+                                    action: "updateContact",
+                                    familiarId: fam.id,
+                                    telefono: newTel,
+                                    correo: newEmail
+                                  })
+                                });
+                                const resData = await res.json();
+                                if (resData.error) {
+                                  alert(resData.error);
+                                } else {
+                                  alert(`¡Contacto de ${fam.nombre} actualizado con éxito!`);
+                                }
+                              } catch (err) {
+                                alert("Error al guardar cambios del familiar");
+                              } finally {
+                                btn.disabled = false;
+                                btn.innerText = "💾 Guardar Datos";
+                              }
+                            }}
+                            style={{ background: '#0284c7', color: 'white', border: 'none', padding: '0.35rem 0.75rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}
+                          >
+                            💾 Guardar Datos
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {familia.filter(f => f.id !== currentUser.persona_id).length === 0 && (
+                      <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>No tienes otros miembros vinculados a tu código familiar aún.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Vinculación Familiar Integrada en Edición */}
               <div style={{ marginTop: '0.5rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                <h3 style={{ fontSize: '1rem', color: '#1e293b', margin: '0 0 0.5rem 0' }}>👨‍👩‍👧‍👦 Vincular Familiar</h3>
+                <h3 style={{ fontSize: '1rem', color: '#1e293b', margin: '0 0 0.5rem 0' }}>👨‍👩‍👧‍👦 Vincular Nuevo Familiar</h3>
                 <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 1rem 0' }}>Si tienes familiares ya registrados, vincúlalos aquí para unirlos a tu grupo familiar.</p>
                 
                 {familiarId ? (
