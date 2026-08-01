@@ -60,11 +60,13 @@ const INVERSE_ROL: Record<string, string> = {
   MADRE:   'HIJA',
   HIJO:    'PADRE',
   HIJA:    'MADRE',
-  HERMANO: 'HERMANO',
 };
 
 export async function linkFamily(iglesiaId: string, sourcePersonaId: string, targetPersonaId: string, sourceRol: string) {
-  // 1. Obtener la persona destino
+  // 1. Obtener la persona origen y destino
+  const source = await prisma.persona.findUnique({
+    where: { id: sourcePersonaId }
+  });
   const target = await prisma.persona.findUnique({
     where: { id: targetPersonaId }
   });
@@ -73,9 +75,10 @@ export async function linkFamily(iglesiaId: string, sourcePersonaId: string, tar
     throw new Error("El familiar seleccionado no es válido o pertenece a otra iglesia.");
   }
 
-  let finalFamilyCode = target.familia_codigo;
+  // Usar el código de familia de cualquiera de los dos que ya lo tenga
+  let finalFamilyCode = source?.familia_codigo || target.familia_codigo;
 
-  // 2. Si el objetivo no tiene código, generamos uno nuevo
+  // 2. Si ninguno de los dos tiene código aún, se genera un único código nuevo para ambos
   if (!finalFamilyCode) {
     finalFamilyCode = await generateFamilyCode(iglesiaId);
   }
