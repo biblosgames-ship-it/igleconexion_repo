@@ -6213,6 +6213,17 @@ export default function SuperAdminPage() {
                         <select
                           value={newMemberGrupoId}
                           onChange={(e) => setNewMemberGrupoId(e.target.value)}
+                          style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: 'white' }}
+                        >
+                          <option value="">Selecciona un Grupo de Conexión...</option>
+                          {gruposConexion.map(g => {
+                            const socName = sociedades.find(s => s.id === g.sociedad_id)?.nombre_sociedad || "";
+                            return (
+                              <option key={g.id} value={g.id}>
+                                {g.nombre_grupo} ({socName})
+                              </option>
+                            );
+                          })}
                         </select>
                       </div>
 
