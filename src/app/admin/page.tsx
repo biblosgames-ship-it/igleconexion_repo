@@ -8355,9 +8355,11 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
   // Formulario nuevo grupo
   const [numGrupo, setNumGrupo] = useState("");
   const [nombreGrupo, setNombreGrupo] = useState("");
-  const [direccionReunion, setDireccionReunion] = useState("");
-  const [diaHoraReunion, setDiaHoraReunion] = useState("");
+  const [iconoGrupo, setIconoGrupo] = useState("👨‍👩‍👧‍👦");
   const [descripcionGrupo, setDescripcionGrupo] = useState("");
+
+  // Galería de Íconos Sugeridos
+  const availableIcons = ["👨‍👩‍👧‍👦", "🏡", "🌳", "⚓", "🕊️", "🔥", "🛡️", "⭐", "⛰️", "💡", "❤️", "🙌"];
 
   // Modal Asignación de Integrante
   const [assignGrupoId, setAssignGrupoId] = useState<string | null>(null);
@@ -8394,8 +8396,7 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
           data: {
             numero_grupo: numGrupo ? parseInt(numGrupo) : gruposFamilia.length + 1,
             nombre_grupo: nombreGrupo.trim(),
-            direccion_reunion: direccionReunion.trim(),
-            dia_hora_reunion: diaHoraReunion.trim(),
+            logo_url: iconoGrupo,
             descripcion: descripcionGrupo.trim()
           }
         })
@@ -8405,8 +8406,7 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
       else {
         setNumGrupo("");
         setNombreGrupo("");
-        setDireccionReunion("");
-        setDiaHoraReunion("");
+        setIconoGrupo("👨‍👩‍👧‍👦");
         setDescripcionGrupo("");
         fetchGruposFamilia();
       }
@@ -8461,9 +8461,9 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
       {/* Formulario Crear Grupo de Familia */}
       <div style={{ background: 'white', borderRadius: '12px', padding: '1.5rem', border: '1px solid #cbd5e1', marginBottom: '1.5rem' }}>
         <h3 style={{ margin: '0 0 1rem 0', color: '#0f172a', fontSize: '1.1rem', fontWeight: 800 }}>
-          🏡 Crear Nuevo Grupo de Familia (Culto de Hogar)
+          🏡 Crear Nuevo Grupo de Familia
         </h3>
-        <form onSubmit={handleCreateGrupo} style={{ display: 'grid', gridTemplateColumns: '80px 2fr 2fr 1.5fr', gap: '0.75rem', alignItems: 'end' }}>
+        <form onSubmit={handleCreateGrupo} style={{ display: 'grid', gridTemplateColumns: '80px 2fr 1fr 2fr', gap: '0.75rem', alignItems: 'end' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.2rem' }}>No. Grupo</label>
             <input 
@@ -8479,40 +8479,35 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
             <input 
               type="text" 
               required 
-              placeholder="Ej: Familia de Fe - Los Olivos" 
+              placeholder="Ej: Familia de Fe" 
               value={nombreGrupo} 
               onChange={(e) => setNombreGrupo(e.target.value)} 
               style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} 
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.2rem' }}>Dirección / Hogar Anfitrión</label>
-            <input 
-              type="text" 
-              placeholder="Ej: Calle Principal #45 (Hogar Familia Gómez)" 
-              value={direccionReunion} 
-              onChange={(e) => setDireccionReunion(e.target.value)} 
-              style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} 
-            />
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.2rem' }}>Ícono / Emoji</label>
+            <select 
+              value={iconoGrupo}
+              onChange={(e) => setIconoGrupo(e.target.value)}
+              style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem', backgroundColor: 'white' }}
+            >
+              {availableIcons.map((ic, i) => (
+                <option key={i} value={ic}>{ic} {ic === "👨‍👩‍👧‍👦" ? "Familia" : ic === "🏡" ? "Hogar" : ic === "🌳" ? "Árbol" : ic === "⚓" ? "Ancla" : ic === "🕊️" ? "Paloma" : ic === "🔥" ? "Fuego" : ic === "🛡️" ? "Escudo" : ic}</option>
+              ))}
+            </select>
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.2rem' }}>Día y Hora de Culto</label>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.2rem' }}>Descripción breve</label>
             <input 
               type="text" 
-              placeholder="Ej: Miércoles 7:30 PM" 
-              value={diaHoraReunion} 
-              onChange={(e) => setDiaHoraReunion(e.target.value)} 
+              placeholder="Ej: Grupo de familias zona norte" 
+              value={descripcionGrupo} 
+              onChange={(e) => setDescripcionGrupo(e.target.value)} 
               style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} 
             />
           </div>
-          <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
-            <input 
-              type="text" 
-              placeholder="Descripción opcional (propósito del grupo, barrio o zona)..." 
-              value={descripcionGrupo} 
-              onChange={(e) => setDescripcionGrupo(e.target.value)} 
-              style={{ flex: 1, padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', marginRight: '1rem' }} 
-            />
+          <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
             <button type="submit" style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: '6px', padding: '0.5rem 1.25rem', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer' }}>
               + Registrar Grupo de Familia
             </button>
@@ -8532,16 +8527,12 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
           {gruposFamilia.map((gf) => (
             <div key={gf.id} style={{ background: 'white', borderRadius: '12px', border: '1px solid #cbd5e1', padding: '1.25rem', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
-                <div>
-                  <span style={{ fontSize: '0.75rem', backgroundColor: '#dcfce7', color: '#166534', fontWeight: 800, padding: '2px 8px', borderRadius: '12px', marginRight: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '1.2rem' }}>{gf.logo_url || "👨‍👩‍👧‍👦"}</span>
+                  <span style={{ fontSize: '0.75rem', backgroundColor: '#dcfce7', color: '#166534', fontWeight: 800, padding: '2px 8px', borderRadius: '12px' }}>
                     Grupo #{gf.numero_grupo}
                   </span>
                   <strong style={{ fontSize: '1.1rem', color: '#0f172a' }}>{gf.nombre_grupo}</strong>
-                  {gf.dia_hora_reunion && (
-                    <span style={{ fontSize: '0.82rem', color: '#64748b', marginLeft: '0.75rem' }}>
-                      🗓️ {gf.dia_hora_reunion}
-                    </span>
-                  )}
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   <button 
@@ -8559,12 +8550,6 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
                   </button>
                 </div>
               </div>
-
-              {gf.direccion_reunion && (
-                <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', color: '#475569' }}>
-                  📍 <strong>Lugar de Culto de Hogar:</strong> {gf.direccion_reunion}
-                </p>
-              )}
 
               {/* Directiva del Grupo */}
               <div style={{ marginTop: '0.75rem', marginBottom: '0.75rem', padding: '0.6rem 0.85rem', background: '#f8fafc', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
