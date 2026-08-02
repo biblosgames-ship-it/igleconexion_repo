@@ -84,32 +84,23 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Auto-link persona for superadmin/admin if missing - search strictly in searchChurchId
-    if ((user.rol === "SUPERADMIN" || user.rol === "ADMIN_IGLESIA") && !user.persona_id) {
-      const searchChurchId = activeChurchId || user.iglesia_id;
-
-      // Search exact email in current church
+    // Auto-link u obtener la persona real del usuario en la iglesia activa seleccionada
+    const searchChurchId = activeChurchId || user.iglesia_id;
+    if (user.rol === "SUPERADMIN" || user.rol === "ADMIN_IGLESIA") {
       let foundPersona = await prisma.persona.findFirst({
         where: { iglesia_id: searchChurchId, correo: user.email },
+        select: {
+          id: true, nombre: true, telefono: true, fecha_nacimiento: true,
+          sexo: true, foto_url: true, correo: true, etapa_id: true, grupo_conexion_id: true, grupo_familia_id: true,
+          etapa: { select: { nombre_etapa: true } },
+          grupo_conexion: { select: { nombre_grupo: true, sociedad: { select: { nombre_sociedad: true } } } },
+          historial_tareas: { where: { completada: true }, select: { tarea_id: true } },
+        },
       });
 
       if (foundPersona) {
-        await prisma.usuario.update({
-          where: { id: user.id },
-          data: { persona_id: foundPersona.id },
-        });
-        user.persona_id = foundPersona.id;
-        const fullPersona = await prisma.persona.findUnique({
-          where: { id: foundPersona.id },
-          select: {
-            id: true, nombre: true, telefono: true, fecha_nacimiento: true,
-            sexo: true, foto_url: true, correo: true, etapa_id: true,
-            etapa: { select: { nombre_etapa: true } },
-            grupo_conexion: { select: { nombre_grupo: true, sociedad: { select: { nombre_sociedad: true } } } },
-            historial_tareas: { where: { completada: true }, select: { tarea_id: true } },
-          },
-        });
-        (user as any).persona = fullPersona;
+        (user as any).persona = foundPersona;
+        (user as any).persona_id = foundPersona.id;
       }
     }
 

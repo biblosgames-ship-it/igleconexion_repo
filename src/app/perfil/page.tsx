@@ -372,16 +372,16 @@ export default function Perfil() {
 
 
   const currentUser = user || {
-    nombre: "Juan Pérez",
-    telefono: "(809) 555-1234",
-    fechaNacimiento: "1990-04-15",
+    nombre: "Usuario de la Plataforma",
+    telefono: "Sin teléfono registrado",
+    fechaNacimiento: "1990-01-01",
     calculatedAge: 36,
     sexo: "M",
-    sociedadName: "Sociedad de Jóvenes",
-    grupoName: "Jóvenes Universitarios",
-    etapa_id: "etapa-2",
-    etapa_nombre: "Etapa 2: Nuevo Creyente",
-    tareas_completadas: ["proc-4"]
+    sociedadName: "Mi Iglesia",
+    grupoName: "General",
+    etapa_id: "etapa-1",
+    etapa_nombre: "Etapa 1: Nuevo Creyente",
+    tareas_completadas: []
   };
 
   const matchedMember = {
