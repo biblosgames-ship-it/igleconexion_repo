@@ -32,9 +32,10 @@ function GrupoFamiliaContent() {
         fetch(`/api/grupos-familia?id=${grupoIdParam || ""}`).catch(() => null),
       ]);
 
+      let currentProfile = null;
       if (authRes && authRes.ok) {
-        const authData = await authRes.json();
-        setProfile(authData);
+        currentProfile = await authRes.json();
+        setProfile(currentProfile);
       }
 
       if (grupoRes && grupoRes.ok) {
@@ -43,9 +44,13 @@ function GrupoFamiliaContent() {
           setGrupoData(gData.grupo);
 
           // Verificar si el usuario actual es líder del grupo o admin
-          if (profile) {
-            const isAdmin = profile.rol === "ADMIN_IGLESIA" || profile.rol === "SUPERADMIN";
-            const isDirectiva = gData.grupo.lideres_modulo?.some((l: any) => l.usuario_id === profile.id);
+          if (currentProfile) {
+            const isAdmin = currentProfile.rol === "ADMIN_IGLESIA" || currentProfile.rol === "SUPERADMIN";
+            const isDirectiva = gData.grupo.lideres_modulo?.some((l: any) => 
+              l.usuario_id === currentProfile.id || 
+              l.usuario_id === currentProfile.usuario_id ||
+              (currentProfile.persona_id && l.usuario?.persona_id === currentProfile.persona_id)
+            );
             setIsLeaderOfGroup(isAdmin || isDirectiva);
           }
         }

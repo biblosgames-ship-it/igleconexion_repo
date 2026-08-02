@@ -167,6 +167,19 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: "El usuario seleccionado no posee una cuenta activa para liderar." }, { status: 400 });
         }
 
+        // Verificar si ya existe este líder en el grupo
+        const existingLeader = await prisma.liderModulo.findFirst({
+          where: {
+            usuario_id: targetUserId,
+            alcance_tipo: "GRUPO_FAMILIA",
+            grupo_familia_id
+          }
+        });
+
+        if (existingLeader) {
+          return NextResponse.json({ error: "Esta persona ya está asignada como líder de este Grupo de Familia." }, { status: 400 });
+        }
+
         const newLider = await prisma.liderModulo.create({
           data: {
             usuario_id: targetUserId,

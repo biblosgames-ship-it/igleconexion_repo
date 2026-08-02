@@ -8613,7 +8613,7 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
                   onChange={async (e) => {
                     const val = e.target.value;
                     if (!val) return;
-                    await fetch("/api/grupos-familia", {
+                    const res = await fetch("/api/grupos-familia", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({
@@ -8621,6 +8621,10 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
                         data: { grupo_familia_id: gf.id, persona_id: val }
                       })
                     });
+                    const resData = await res.json();
+                    if (resData.error) {
+                      alert(resData.error);
+                    }
                     fetchGruposFamilia();
                   }}
                   style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: 'white' }}
