@@ -38,6 +38,8 @@ export default function RegistroNuevoCreyente() {
   // Catálogos cargados de localStorage
   const [sociedades, setSociedades] = useState<any[]>([]);
   const [grupos, setGrupos] = useState<any[]>([]);
+  const [gruposFamilia, setGruposFamilia] = useState<any[]>([]);
+  const [selectedGrupoFamiliaId, setSelectedGrupoFamiliaId] = useState("");
   const [etapas, setEtapas] = useState<any[]>([]);
   const [selectedEtapaId, setSelectedEtapaId] = useState("");
   const [opcionesMedioRelacion, setOpcionesMedioRelacion] = useState<string[]>([
@@ -57,6 +59,7 @@ export default function RegistroNuevoCreyente() {
         if (!data.error) {
           setSociedades(data.sociedades || []);
           setGrupos(data.grupos || []);
+          setGruposFamilia(data.grupos_familia || []);
           setEtapas(data.etapas || []);
           if (data.opciones_registro?.medio_relacion) {
             setOpcionesMedioRelacion(data.opciones_registro.medio_relacion);
@@ -203,6 +206,7 @@ export default function RegistroNuevoCreyente() {
       medioRelacion,
       sociedadName: assignment ? assignment.sociedadName : "Sociedad General",
       grupoName: assignment ? assignment.grupoName : "Grupo General",
+      grupoFamiliaId: selectedGrupoFamiliaId || null,
       etapaId: null,
       fechaConversion: esOyente ? null : (fechaConversion || null),
       esOyente: esOyente,
@@ -311,6 +315,25 @@ export default function RegistroNuevoCreyente() {
             </div>
 
 
+
+            {/* SECCIÓN GRUPO DE FAMILIA */}
+            {gruposFamilia.length > 0 && (
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Grupo de Familia (Opcional)</label>
+                <select 
+                  className={styles.select} 
+                  value={selectedGrupoFamiliaId} 
+                  onChange={(e) => setSelectedGrupoFamiliaId(e.target.value)}
+                >
+                  <option value="">Ninguno / Por asignar</option>
+                  {gruposFamilia.map((gf: any) => (
+                    <option key={gf.id} value={gf.id}>
+                      Grupo #{gf.numero_grupo} - {gf.nombre_grupo}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* PREVIEW DE ASIGNACIÓN AUTOMÁTICA EN TIEMPO REAL */}
             {assignment && (

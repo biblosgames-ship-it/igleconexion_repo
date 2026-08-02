@@ -31,7 +31,7 @@ export async function GET() {
     const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     // Todas las queries base en paralelo
-    const [totalMiembros, sociedades, personasBySexo, etapas, totalSeguimientos, totalOracionActivas, totalOracionRespondidas, finanzasIngresos, finanzasEgresos, familiasUnique, lideresUnique, totalDepartamentos, totalMinisterios, totalInstituciones] = await Promise.all([
+    const [totalMiembros, sociedades, personasBySexo, etapas, totalSeguimientos, totalOracionActivas, totalOracionRespondidas, finanzasIngresos, finanzasEgresos, familiasUnique, lideresUnique, totalDepartamentos, totalMinisterios, totalInstituciones, gruposFamiliaList] = await Promise.all([
       prisma.persona.count({ where: { iglesia_id: iglesiaId } }),
       prisma.sociedad.findMany({ where: { iglesia_id: iglesiaId }, select: { id: true } }),
       prisma.persona.groupBy({ by: ['sexo'], where: { iglesia_id: iglesiaId }, _count: { _all: true } }),
@@ -46,6 +46,15 @@ export async function GET() {
       prisma.grupoTrabajo.count({ where: { iglesia_id: iglesiaId, tipo: 'DEPARTAMENTO' } }),
       prisma.grupoTrabajo.count({ where: { iglesia_id: iglesiaId, tipo: 'MINISTERIO' } }),
       prisma.grupoTrabajo.count({ where: { iglesia_id: iglesiaId, tipo: 'INSTITUCION' } }),
+      prisma.grupoFamilia.findMany({
+        where: { iglesia_id: iglesiaId },
+        select: {
+          id: true,
+          numero_grupo: true,
+          nombre_grupo: true,
+          _count: { select: { personas: true } }
+        }
+      })
     ]);
 
     const sociedadIds = sociedades.map((s) => s.id);
@@ -120,9 +129,18 @@ export async function GET() {
       else distribucionSexo.otro += entry._count._all;
     }
 
+    const desgloseGruposFamilia = gruposFamiliaList.map(gf => ({
+      id: gf.id,
+      numero_grupo: gf.numero_grupo,
+      nombre_grupo: gf.nombre_grupo,
+      totalMiembros: gf._count.personas
+    }));
+
     return NextResponse.json({
       totalMiembros,
       totalGrupos,
+      totalGruposFamilia: gruposFamiliaList.length,
+      desgloseGruposFamilia,
       totalFamilias: familiasUnique.length,
       totalLideres: lideresUnique.length,
       totalDepartamentos,

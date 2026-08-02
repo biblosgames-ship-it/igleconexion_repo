@@ -194,6 +194,7 @@ export async function POST(request: Request) {
           iglesia_id: defaultIglesiaId,
           etapa_id: selectedEtapaId,
           grupo_conexion_id: autoGrupoId,
+          grupo_familia_id: body.grupoFamiliaId || null,
           nombre,
           telefono: telefono || null,
           whatsapp: whatsapp || telefono || null,

@@ -206,9 +206,60 @@ function GrupoFamiliaContent() {
         </div>
       </header>
 
+      {/* Mensaje de Bienvenida Confidential/Warm */}
+      <div style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', padding: '1.25rem', borderRadius: '12px', border: '1px solid #bbf7d0', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ fontSize: '2rem' }}>👋</div>
+        <div>
+          <h3 style={{ margin: 0, color: '#166534', fontSize: '1.1rem', fontWeight: 800 }}>
+            ¡Bienvenido/a a {grupoData.nombre_grupo}, {profile?.persona?.nombre || "Hermano/a"}!
+          </h3>
+          <p style={{ margin: '0.2rem 0 0 0', color: '#15803d', fontSize: '0.88rem', lineHeight: 1.4 }}>
+            Nos alegra tenerte en nuestra gran familia de fe. Este es tu espacio para mantenerte conectado, compartir peticiones y participar en todas las actividades del grupo.
+          </p>
+        </div>
+      </div>
+
       {/* VISTA MIEMBRO */}
       {activeRoleView === "member" && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Calendario y Agenda Interna del Grupo */}
+          <div style={{ background: 'white', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+              <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                📅 Calendario y Agenda del Grupo
+              </h3>
+              {grupoData.acuerdos && grupoData.acuerdos.length > 0 && (
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, backgroundColor: '#fef3c7', color: '#b45309', padding: '3px 10px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                  🔔 {grupoData.acuerdos.length} Actividades Pendientes
+                </span>
+              )}
+            </div>
+
+            {grupoData.acuerdos && grupoData.acuerdos.length > 0 ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.85rem' }}>
+                {grupoData.acuerdos.map((act: any) => (
+                  <div key={act.id} style={{ background: '#f8fafc', padding: '0.85rem', borderRadius: '8px', border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                        <span style={{ fontSize: '0.72rem', backgroundColor: '#e0f2fe', color: '#0369a1', fontWeight: 800, padding: '2px 6px', borderRadius: '4px' }}>
+                          PENDIENTE
+                        </span>
+                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>📅 {new Date(act.fecha_publicacion).toLocaleDateString('es-ES')}</span>
+                      </div>
+                      <strong style={{ fontSize: '0.92rem', color: '#0f172a', display: 'block', marginBottom: '0.3rem' }}>{act.titulo}</strong>
+                      <p style={{ margin: 0, fontSize: '0.82rem', color: '#475569', lineHeight: 1.3 }}>{act.contenido}</p>
+                    </div>
+                    <span style={{ fontSize: '0.72rem', color: '#0284c7', marginTop: '0.5rem', fontWeight: 600 }}>Asignado por directiva</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '8px', border: '1px dashed #cbd5e1', textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>
+                No hay reuniones o actividades pendientes asignadas en el calendario.
+              </div>
+            )}
+          </div>
+
           {/* Directiva y aviso */}
           <div style={{ background: 'white', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
             <h3 style={{ margin: '0 0 0.75rem 0', color: '#0f172a', fontSize: '1.1rem', fontWeight: 800 }}>👤 Directiva del Grupo</h3>
@@ -275,7 +326,7 @@ function GrupoFamiliaContent() {
           <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '0.5rem', flexWrap: 'wrap' }}>
             {[
               { id: "kanban", label: "📊 Panel Kanban de Integrantes" },
-              { id: "acuerdos", label: "📢 Acuerdos y Avisos" },
+              { id: "acuerdos", label: "📅 Asignar Calendario y Anuncios" },
               { id: "necesidades", label: "🙏 Necesidades Reportadas" },
             ].map(tab => (
               <button

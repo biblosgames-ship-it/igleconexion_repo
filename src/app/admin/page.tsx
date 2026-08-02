@@ -7795,6 +7795,7 @@ export default function SuperAdminPage() {
                       { label: 'Familias Registradas', value: analyticsData.totalFamilias || 0, icon: '👨‍👩‍👧‍👦', color: 'var(--success)' },
                       { label: 'Líderes Activos', value: analyticsData.totalLideres || 0, icon: '👨‍💼', color: 'var(--color-spiritual)' },
                       { label: 'Grupos de Conexión', value: analyticsData.totalGrupos, icon: '🌐', color: '#0ea5e9' },
+                      { label: 'Grupos de Familias', value: analyticsData.totalGruposFamilia || 0, icon: '🏡', color: '#16a34a' },
                       { label: 'Departamentos', value: analyticsData.totalDepartamentos || 0, icon: '🏢', color: 'var(--warning)' },
                       { label: 'Ministerios', value: analyticsData.totalMinisterios || 0, icon: '⛪', color: 'var(--color-event)' },
                       { label: 'Instituciones', value: analyticsData.totalInstituciones || 0, icon: '🏫', color: '#06b6d4' },
@@ -7905,7 +7906,28 @@ export default function SuperAdminPage() {
                           })}
                         </div>
                       )}
-                    </div>
+                    {/* Evaluativo de Miembros por Grupo de Familia */}
+                    {analyticsData.desgloseGruposFamilia && analyticsData.desgloseGruposFamilia.length > 0 && (
+                      <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+                        <h3 style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a', marginBottom: '1rem' }}>🏡 Miembros por Grupo de Familia</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.66rem' }}>
+                          {analyticsData.desgloseGruposFamilia.map((gf: any) => {
+                            const pct = analyticsData.totalMiembros > 0 ? Math.round((gf.totalMiembros / analyticsData.totalMiembros) * 100) : 0;
+                            return (
+                              <div key={gf.id}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151' }}>Grupo #{gf.numero_grupo} - {gf.nombre_grupo}</span>
+                                  <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700 }}>{gf.totalMiembros} miembros ({pct}%)</span>
+                                </div>
+                                <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                                  <div style={{ height: '100%', width: `${Math.min(pct, 100)}%`, background: 'linear-gradient(to right, #16a34a, #4ade80)', borderRadius: '4px' }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>

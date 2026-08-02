@@ -63,7 +63,8 @@ export async function GET() {
             foto_url: true,
             correo: true,
             etapa_id: true,
-            etapa: { select: { nombre_etapa: true } },
+            grupo_conexion_id: true,
+            grupo_familia_id: true,
             grupo_conexion: {
               select: {
                 nombre_grupo: true,

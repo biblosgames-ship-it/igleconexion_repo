@@ -63,6 +63,7 @@ export default function Hub() {
 
   const [userId, setUserId] = useState<string|null>(null);
   const [userPersonaId, setUserPersonaId] = useState<string|null>(null);
+  const [userPersonaObj, setUserPersonaObj] = useState<any|null>(null);
   const [userRole, setUserRole] = useState<string|null>(null);
   const [canSwitchRole, setCanSwitchRole] = useState(false);
   const [viewingAs, setViewingAs] = useState<string|null>(null);
@@ -128,6 +129,7 @@ export default function Hub() {
 
         setUserId(dataAuth.id);
         setUserPersonaId(dataAuth.persona_id);
+        setUserPersonaObj(dataAuth.persona || null);
         setUserRole(dataAuth.rol);
         setCanSwitchRole(dataAuth.canSwitchRole || false);
         setViewingAs(dataAuth.viewingAs || dataAuth.rol);
@@ -1166,39 +1168,52 @@ export default function Hub() {
         </section>
 
         {/* 🏡 SECCIÓN: GRUPOS DE FAMILIAS */}
-        {churchData?.usar_grupos_familia && churchData?.grupos_familia && churchData.grupos_familia.length > 0 && (
-          <section style={{ marginTop: '2.5rem' }}>
-            <h2 className={styles.sectionTitle}>🏡 Grupos de Familias</h2>
-            <div className={styles.societiesGrid}>
-              {churchData.grupos_familia.map((gf: any) => {
-                const iconDisplay = gf.logo_url || "/Iconos SVG/Grupo de conexion.svg";
-                return (
-                  <Link 
-                    key={gf.id} 
-                    href={`/grupo-familia?id=${gf.id}`} 
-                    style={{ textDecoration: 'none' }}
-                  >
-                    <div 
-                      className={styles.societyCard} 
-                      style={{ textAlign: 'left', justifyContent: 'flex-start', alignItems: 'center', cursor: 'pointer' }}
+        {churchData?.usar_grupos_familia && churchData?.grupos_familia && churchData.grupos_familia.length > 0 && (() => {
+          const isAdminOrLeader = userRole === "ADMIN_IGLESIA" || userRole === "SUPERADMIN" || userRole === "LIDER";
+          const assignedGrupoFamiliaId = userPersonaObj?.grupo_familia_id;
+          
+          const displayedGruposFamilia = churchData.grupos_familia.filter((gf: any) => {
+            if (isAdminOrLeader) return true;
+            if (assignedGrupoFamiliaId) return gf.id === assignedGrupoFamiliaId;
+            return false;
+          });
+
+          if (displayedGruposFamilia.length === 0 && !isAdminOrLeader) return null;
+
+          return (
+            <section style={{ marginTop: '2.5rem' }}>
+              <h2 className={styles.sectionTitle}>🏡 Mi Grupo de Familia</h2>
+              <div className={styles.societiesGrid}>
+                {displayedGruposFamilia.map((gf: any) => {
+                  const iconDisplay = gf.logo_url || "/Iconos SVG/Grupo de conexion.svg";
+                  return (
+                    <Link 
+                      key={gf.id} 
+                      href={`/grupo-familia?id=${gf.id}`} 
+                      style={{ textDecoration: 'none' }}
                     >
-                      <span className={styles.societyIcon} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '2.4rem', height: '2.4rem', padding: '0.4rem', flexShrink: 0 }}>
-                        {iconDisplay.startsWith('/') ? (
-                          <img src={iconDisplay} alt={gf.nombre_grupo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                        ) : (
-                          <span style={{ fontSize: '1.2rem' }}>{iconDisplay}</span>
-                        )}
-                      </span>
-                      <span className={styles.societyName} style={{ textAlign: 'left', flex: 1, fontSize: '0.9rem', fontWeight: 600 }}>
-                        #{gf.numero_grupo} {gf.nombre_grupo}
-                      </span>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-        )}
+                      <div 
+                        className={styles.societyCard} 
+                        style={{ textAlign: 'left', justifyContent: 'flex-start', alignItems: 'center', cursor: 'pointer' }}
+                      >
+                        <span className={styles.societyIcon} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '2.4rem', height: '2.4rem', padding: '0.4rem', flexShrink: 0 }}>
+                          {iconDisplay.startsWith('/') ? (
+                            <img src={iconDisplay} alt={gf.nombre_grupo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                          ) : (
+                            <span style={{ fontSize: '1.2rem' }}>{iconDisplay}</span>
+                          )}
+                        </span>
+                        <span className={styles.societyName} style={{ textAlign: 'left', flex: 1, fontSize: '0.9rem', fontWeight: 600 }}>
+                          #{gf.numero_grupo} {gf.nombre_grupo}
+                        </span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })()}
 
         {/* Banner Nuevo Creyente */}
         <section className={styles.registerBanner}>
