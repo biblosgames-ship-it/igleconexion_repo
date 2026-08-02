@@ -14,15 +14,27 @@ export async function GET(request: Request) {
 
     const user = await prisma.usuario.findUnique({
       where: { id: sessionUserId },
-      select: { persona_id: true }
+      select: { persona_id: true, email: true, iglesia_id: true }
     });
 
-    if (!user || !user.persona_id) {
+    if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
+    let personaId = user.persona_id;
+    if (!personaId && user.email) {
+      const found = await prisma.persona.findFirst({
+        where: { correo: user.email }
+      });
+      if (found) personaId = found.id;
+    }
+
+    if (!personaId) {
+      return NextResponse.json({ familia: [] });
+    }
+
     const persona = await prisma.persona.findUnique({
-      where: { id: user.persona_id },
+      where: { id: personaId },
       select: { familia_codigo: true, iglesia_id: true }
     });
 

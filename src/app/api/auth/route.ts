@@ -89,10 +89,8 @@ export async function GET() {
     if (user.rol === "SUPERADMIN" || user.rol === "ADMIN_IGLESIA") {
       let foundPersona = await prisma.persona.findFirst({
         where: {
-          OR: [
-            { iglesia_id: searchChurchId, correo: user.email },
-            ...(user.persona_id ? [{ id: user.persona_id }] : [])
-          ]
+          correo: user.email,
+          ...(searchChurchId ? { iglesia_id: searchChurchId } : {})
         },
         select: {
           id: true, nombre: true, telefono: true, fecha_nacimiento: true,
@@ -102,6 +100,19 @@ export async function GET() {
           historial_tareas: { where: { completada: true }, select: { tarea_id: true } },
         },
       });
+
+      if (!foundPersona && user.persona_id) {
+        foundPersona = await prisma.persona.findUnique({
+          where: { id: user.persona_id },
+          select: {
+            id: true, nombre: true, telefono: true, fecha_nacimiento: true,
+            sexo: true, foto_url: true, correo: true, etapa_id: true, grupo_conexion_id: true, grupo_familia_id: true,
+            etapa: { select: { nombre_etapa: true } },
+            grupo_conexion: { select: { nombre_grupo: true, sociedad: { select: { nombre_sociedad: true } } } },
+            historial_tareas: { where: { completada: true }, select: { tarea_id: true } },
+          },
+        });
+      }
 
       if (foundPersona) {
         (user as any).persona = foundPersona;
