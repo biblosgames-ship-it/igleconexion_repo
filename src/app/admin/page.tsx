@@ -8355,11 +8355,19 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
   // Formulario nuevo grupo
   const [numGrupo, setNumGrupo] = useState("");
   const [nombreGrupo, setNombreGrupo] = useState("");
-  const [iconoGrupo, setIconoGrupo] = useState("👨‍👩‍👧‍👦");
+  const [iconoGrupo, setIconoGrupo] = useState("/Iconos SVG/Grupo de conexion.svg");
   const [descripcionGrupo, setDescripcionGrupo] = useState("");
 
-  // Galería de Íconos Sugeridos
-  const availableIcons = ["👨‍👩‍👧‍👦", "🏡", "🌳", "⚓", "🕊️", "🔥", "🛡️", "⭐", "⛰️", "💡", "❤️", "🙌"];
+  // Galería de Íconos Sugeridos Minimalistas
+  const availableIcons = [
+    { label: "Familia / Grupo", url: "/Iconos SVG/Grupo de conexion.svg" },
+    { label: "Sociedad / Comunidad", url: "/Iconos SVG/Sociedad.svg" },
+    { label: "Identidad / Hogar", url: "/Iconos SVG/Identidad-2.svg" },
+    { label: "Ministerio / Servicio", url: "/Iconos SVG/servicio.svg" },
+    { label: "Miembros / Red", url: "/Iconos SVG/Miembros.svg" },
+    { label: "Crecimiento / Etapas", url: "/Iconos SVG/Etapas.svg" },
+    { label: "Educación / Biblia", url: "/Iconos SVG/Educacion Cristiana.svg" },
+  ];
 
   // Modal Asignación de Integrante
   const [assignGrupoId, setAssignGrupoId] = useState<string | null>(null);
@@ -8486,14 +8494,14 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.2rem' }}>Ícono / Emoji</label>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.2rem' }}>Ícono Minimalista</label>
             <select 
               value={iconoGrupo}
               onChange={(e) => setIconoGrupo(e.target.value)}
-              style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem', backgroundColor: 'white' }}
+              style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', backgroundColor: 'white' }}
             >
               {availableIcons.map((ic, i) => (
-                <option key={i} value={ic}>{ic} {ic === "👨‍👩‍👧‍👦" ? "Familia" : ic === "🏡" ? "Hogar" : ic === "🌳" ? "Árbol" : ic === "⚓" ? "Ancla" : ic === "🕊️" ? "Paloma" : ic === "🔥" ? "Fuego" : ic === "🛡️" ? "Escudo" : ic}</option>
+                <option key={i} value={ic.url}>{ic.label}</option>
               ))}
             </select>
           </div>
@@ -8527,8 +8535,14 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
           {gruposFamilia.map((gf) => (
             <div key={gf.id} style={{ background: 'white', borderRadius: '12px', border: '1px solid #cbd5e1', padding: '1.25rem', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '1.2rem' }}>{gf.logo_url || "👨‍👩‍👧‍👦"}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <div style={{ width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {gf.logo_url && gf.logo_url.startsWith('/') ? (
+                      <img src={gf.logo_url} alt={gf.nombre_grupo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    ) : (
+                      <span style={{ fontSize: '1.2rem' }}>{gf.logo_url || "👨‍👩‍👧‍👦"}</span>
+                    )}
+                  </div>
                   <span style={{ fontSize: '0.75rem', backgroundColor: '#dcfce7', color: '#166534', fontWeight: 800, padding: '2px 8px', borderRadius: '12px' }}>
                     Grupo #{gf.numero_grupo}
                   </span>

@@ -1186,11 +1186,11 @@ export default function Hub() {
                     }}
                   >
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
-                      <span className={styles.societyIcon} style={{ width: '3rem', height: '3.6rem', fontSize: '1.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {iconDisplay.length > 5 ? (
-                          <img src={iconDisplay} alt={gf.nombre_grupo} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                      <span className={styles.societyIcon} style={{ width: '3rem', height: '3rem', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.4rem' }}>
+                        {iconDisplay.startsWith('/') ? (
+                          <img src={iconDisplay} alt={gf.nombre_grupo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         ) : (
-                          iconDisplay
+                          <span style={{ fontSize: '1.8rem' }}>{iconDisplay}</span>
                         )}
                       </span>
                       <span style={{ fontSize: '0.7rem', fontWeight: 800, backgroundColor: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: '10px' }}>
