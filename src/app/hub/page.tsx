@@ -206,7 +206,6 @@ export default function Hub() {
 
       } catch (err) {
         console.error("Error verifying authentication", err);
-        window.location.href = "/";
       } finally {
         setLoading(false);
       }

@@ -88,7 +88,12 @@ export async function GET() {
     const searchChurchId = activeChurchId || user.iglesia_id;
     if (user.rol === "SUPERADMIN" || user.rol === "ADMIN_IGLESIA") {
       let foundPersona = await prisma.persona.findFirst({
-        where: { iglesia_id: searchChurchId, correo: user.email },
+        where: {
+          OR: [
+            { iglesia_id: searchChurchId, correo: user.email },
+            ...(user.persona_id ? [{ id: user.persona_id }] : [])
+          ]
+        },
         select: {
           id: true, nombre: true, telefono: true, fecha_nacimiento: true,
           sexo: true, foto_url: true, correo: true, etapa_id: true, grupo_conexion_id: true, grupo_familia_id: true,
@@ -670,6 +675,7 @@ function mapUserToResponse(user: any, activeChurchId?: string) {
     iglesia_id: effectiveIglesiaId,
     estado: user.estado,
     persona_id: p.id,
+    persona: p,
     paginas_acceso: user.paginas_acceso || null,
     telefono: p.telefono || "(809) 555-1234",
     fechaNacimiento: p.fecha_nacimiento ? p.fecha_nacimiento.toISOString().split("T")[0] : "1990-04-15",
