@@ -111,6 +111,7 @@ export default function SuperAdminPage() {
   const [procesos, setProcesos] = useState<any[]>([]);
   const [sociedades, setSociedades] = useState<any[]>([]);
   const [gruposConexion, setGruposConexion] = useState<any[]>([]);
+  const [gruposFamilia, setGruposFamilia] = useState<any[]>([]);
   const [lideres, setLideres] = useState<any[]>([]);
   const [miembros, setMiembros] = useState<any[]>([]);
 
@@ -189,6 +190,7 @@ export default function SuperAdminPage() {
   const [editMemberTelefono, setEditMemberTelefono] = useState("");
   const [editMemberCorreo, setEditMemberCorreo] = useState("");
   const [editMemberGrupoId, setEditMemberGrupoId] = useState("");
+  const [editMemberGrupoFamiliaId, setEditMemberGrupoFamiliaId] = useState("");
   const [editMemberEtapaId, setEditMemberEtapaId] = useState("");
   const [editMemberFamiliaCodigo, setEditMemberFamiliaCodigo] = useState("");
   const [editMemberLoading, setEditMemberLoading] = useState(false);
@@ -201,6 +203,7 @@ export default function SuperAdminPage() {
     setEditMemberTelefono(m.telefono || "");
     setEditMemberCorreo(m.correo || "");
     setEditMemberGrupoId(m.grupo_conexion_id || "");
+    setEditMemberGrupoFamiliaId(m.grupo_familia_id || "");
     setEditMemberEtapaId(m.etapa_id || "");
     setEditMemberFamiliaCodigo(m.familia_codigo || "");
   };
@@ -223,6 +226,7 @@ export default function SuperAdminPage() {
             telefono: editMemberTelefono,
             correo: editMemberCorreo,
             grupo_conexion_id: editMemberGrupoId,
+            grupo_familia_id: editMemberGrupoFamiliaId,
             etapa_id: editMemberEtapaId,
             familia_codigo: editMemberFamiliaCodigo,
           }
@@ -406,12 +410,18 @@ export default function SuperAdminPage() {
       setUsuarios(data.usuarios || []);
 
       // Todas las demás llamadas en paralelo
-      const [resLid, resM, resIgl, authRes] = await Promise.all([
+      const [resLid, resM, resIgl, authRes, resGF] = await Promise.all([
         fetch("/api/liderazgo").catch(() => null),
         fetch("/api/miembros").catch(() => null),
         fetch("/api/iglesia").catch(() => null),
         fetch("/api/auth").catch(() => null),
+        fetch("/api/grupos-familia").catch(() => null),
       ]);
+
+      if (resGF?.ok) {
+        const dataGF = await resGF.json();
+        if (dataGF.grupos) setGruposFamilia(dataGF.grupos);
+      }
 
       if (resLid?.ok) {
         const dataLid = await resLid.json();
@@ -6394,23 +6404,40 @@ export default function SuperAdminPage() {
                         </div>
                       </div>
 
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Grupo de Conexión</label>
-                        <select
-                          value={editMemberGrupoId}
-                          onChange={(e) => setEditMemberGrupoId(e.target.value)}
-                          style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: 'white' }}
-                        >
-                          <option value="">Sin Grupo de Conexión</option>
-                          {gruposConexion.map(g => {
-                            const socName = sociedades.find(s => s.id === g.sociedad_id)?.nombre_sociedad || "";
-                            return (
-                              <option key={g.id} value={g.id}>
-                                {g.nombre_grupo} ({socName})
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Grupo de Conexión</label>
+                          <select
+                            value={editMemberGrupoId}
+                            onChange={(e) => setEditMemberGrupoId(e.target.value)}
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: 'white' }}
+                          >
+                            <option value="">Sin Grupo de Conexión</option>
+                            {gruposConexion.map(g => {
+                              const socName = sociedades.find(s => s.id === g.sociedad_id)?.nombre_sociedad || "";
+                              return (
+                                <option key={g.id} value={g.id}>
+                                  {g.nombre_grupo} ({socName})
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>🏡 Grupo de Familia</label>
+                          <select
+                            value={editMemberGrupoFamiliaId}
+                            onChange={(e) => setEditMemberGrupoFamiliaId(e.target.value)}
+                            style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: 'white' }}
+                          >
+                            <option value="">Sin Grupo de Familia</option>
+                            {gruposFamilia.map(gf => (
+                              <option key={gf.id} value={gf.id}>
+                                Grupo #{gf.numero_grupo}: {gf.nombre_grupo}
                               </option>
-                            );
-                          })}
-                        </select>
+                            ))}
+                          </select>
+                        </div>
                       </div>
 
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.75rem' }}>

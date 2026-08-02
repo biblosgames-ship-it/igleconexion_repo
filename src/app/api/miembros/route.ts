@@ -369,7 +369,7 @@ export async function POST(request: Request) {
       }
 
       case "updateMemberDetails": {
-        const { memberId, nombre, fecha_nacimiento, sexo, telefono, correo, grupo_conexion_id, etapa_id, familia_codigo } = data;
+        const { memberId, nombre, fecha_nacimiento, sexo, telefono, correo, grupo_conexion_id, grupo_familia_id, etapa_id, familia_codigo } = data;
 
         const updated = await prisma.persona.update({
           where: { id: memberId },
@@ -380,6 +380,7 @@ export async function POST(request: Request) {
             telefono: telefono || null,
             correo: correo || null,
             grupo_conexion_id: grupo_conexion_id || null,
+            grupo_familia_id: grupo_familia_id !== undefined ? (grupo_familia_id || null) : undefined,
             ...(etapa_id ? { etapa_id } : {}),
             familia_codigo: familia_codigo?.trim()?.toUpperCase() || null,
           },
