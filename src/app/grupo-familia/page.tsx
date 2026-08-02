@@ -151,6 +151,31 @@ function GrupoFamiliaContent() {
 
   return (
     <div className={styles.container}>
+      {/* Botón Volver a Mi Iglesia */}
+      <div style={{ marginBottom: '1rem' }}>
+        <Link href="/hub" style={{ textDecoration: 'none' }}>
+          <button 
+            type="button" 
+            style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '0.4rem', 
+              padding: '0.45rem 0.9rem', 
+              borderRadius: '8px', 
+              border: '1px solid #cbd5e1', 
+              backgroundColor: 'white', 
+              color: '#334155', 
+              fontSize: '0.85rem', 
+              fontWeight: 700, 
+              cursor: 'pointer',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
+            }}
+          >
+            ← Volver a Mi Iglesia
+          </button>
+        </Link>
+      </div>
+
       {/* Header del Grupo de Familia */}
       <header className={styles.headerBanner} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', background: 'linear-gradient(135deg, #0284c7 0%, #0f172a 100%)', padding: '1.5rem', borderRadius: '16px', color: 'white', marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
