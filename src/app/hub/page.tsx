@@ -1165,6 +1165,88 @@ export default function Hub() {
           )}
         </section>
 
+        {/* 🏡 SECCIÓN: MI GRUPO DE FAMILIA (CULTOS DE HOGAR) */}
+        {churchData?.usar_grupos_familia && churchData?.grupos_familia && churchData.grupos_familia.length > 0 && (
+          <section style={{ marginTop: '2.5rem' }}>
+            <h2 className={styles.sectionTitle}>🏡 Grupos de Familias (Cultos de Hogar)</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.25rem' }}>
+              {churchData.grupos_familia.map((gf: any) => (
+                <div 
+                  key={gf.id}
+                  style={{
+                    background: 'white',
+                    borderRadius: '16px',
+                    border: '1px solid #e2e8f0',
+                    padding: '1.25rem',
+                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.03)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 800, backgroundColor: '#dcfce7', color: '#166534', padding: '3px 10px', borderRadius: '12px' }}>
+                        Grupo #{gf.numero_grupo}
+                      </span>
+                      {gf.dia_hora_reunion && (
+                        <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>
+                          🗓️ {gf.dia_hora_reunion}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <h3 style={{ margin: '0 0 0.4rem 0', fontSize: '1.15rem', color: '#0f172a', fontWeight: 800 }}>
+                      {gf.nombre_grupo}
+                    </h3>
+                    
+                    {gf.direccion_reunion && (
+                      <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        📍 {gf.direccion_reunion}
+                      </p>
+                    )}
+
+                    {gf.directiva && gf.directiva.length > 0 && (
+                      <div style={{ marginTop: '0.5rem', background: '#f8fafc', padding: '0.5rem 0.75rem', borderRadius: '8px' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '0.2rem' }}>👤 Líderes de Hogar:</span>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                          {gf.directiva.map((d: any) => (
+                            <span key={d.id} style={{ fontSize: '0.75rem', color: '#0f172a', fontWeight: 600 }}>
+                              • {d.nombre}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px dashed #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
+                      👥 {gf.integrantes_count || 0} Familias/Integrantes
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => alert(`Lugar de reunión: ${gf.direccion_reunion || 'Consultar con los líderes'}\nHorario: ${gf.dia_hora_reunion || 'Por definir'}`)}
+                      style={{
+                        background: '#f1f5f9',
+                        color: '#0f172a',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '8px',
+                        padding: '0.4rem 0.85rem',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Ver Detalle
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Banner Nuevo Creyente */}
         <section className={styles.registerBanner}>
           <div className={styles.registerText}>

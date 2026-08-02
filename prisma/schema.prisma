@@ -42,6 +42,7 @@ model Iglesia {
   label_departamentos   String?   @default("Departamentos")
   label_ministerios     String?   @default("Ministerios")
   label_instituciones   String?   @default("Instituciones")
+  usar_grupos_familia   Boolean   @default(true)
   opciones_registro     String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
@@ -52,6 +53,7 @@ model Iglesia {
   personas              Persona[]
   usuarios              Usuario[]
   sociedades            Sociedad[]
+  grupos_familia        GrupoFamilia[]
   grupo_trabajos        GrupoTrabajo[]
   soporte_tickets       SoporteTicket[]
   comunicados           Comunicado[]
@@ -111,20 +113,23 @@ model LiderModulo {
   usuario_id String
   modulo_id  String?
 
-  alcance_tipo      String  @default("GRUPO_CONEXION") // GLOBAL, SOCIEDAD, GRUPO_CONEXION, CUERPO_OFICIAL, DEPARTAMENTO, MINISTERIO, INSTITUCION
+  alcance_tipo      String  @default("GRUPO_CONEXION") // GLOBAL, SOCIEDAD, GRUPO_CONEXION, GRUPO_FAMILIA, CUERPO_OFICIAL, DEPARTAMENTO, MINISTERIO, INSTITUCION
   sociedad_id       String?
   grupo_conexion_id String?
+  grupo_familia_id  String?
   grupo_trabajo_id  String?
 
   usuario        Usuario        @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
   modulo         ModuloConfig?  @relation(fields: [modulo_id], references: [id], onDelete: Cascade)
   sociedad       Sociedad?      @relation(fields: [sociedad_id], references: [id])
   grupo_conexion GrupoConexion? @relation(fields: [grupo_conexion_id], references: [id])
+  grupo_familia  GrupoFamilia?  @relation(fields: [grupo_familia_id], references: [id])
   grupo_trabajo  GrupoTrabajo?  @relation(fields: [grupo_trabajo_id], references: [id])
 
   @@index([usuario_id])
   @@index([sociedad_id])
   @@index([grupo_conexion_id])
+  @@index([grupo_familia_id])
 }
 
 model EtapaConfig {
@@ -254,12 +259,14 @@ model Persona {
   es_empleado Boolean @default(false)
 
   grupo_conexion_id String?
+  grupo_familia_id  String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   iglesia                 Iglesia               @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
   etapa                   EtapaConfig           @relation(fields: [etapa_id], references: [id])
   grupo_conexion          GrupoConexion?        @relation(fields: [grupo_conexion_id], references: [id])
+  grupo_familia           GrupoFamilia?         @relation(fields: [grupo_familia_id], references: [id])
   usuario                 Usuario?
   historial_tareas        HistorialTarea[]
   historial_subtareas     HistorialSubtarea[]
@@ -330,6 +337,7 @@ model AsistenciaReunion {
   id                String   @id @default(uuid())
   grupo_conexion_id String?
   sociedad_id       String?
+  grupo_familia_id  String?
   grupo_trabajo_id  String?
   fecha             DateTime
   titulo_reunion    String?  @default("Reunión Semanal del Grupo")
@@ -338,6 +346,7 @@ model AsistenciaReunion {
 
   grupo         GrupoConexion? @relation(fields: [grupo_conexion_id], references: [id], onDelete: Cascade)
   sociedad      Sociedad?      @relation(fields: [sociedad_id], references: [id], onDelete: Cascade)
+  grupo_familia GrupoFamilia?  @relation(fields: [grupo_familia_id], references: [id], onDelete: Cascade)
   grupo_trabajo GrupoTrabajo?  @relation(fields: [grupo_trabajo_id], references: [id], onDelete: Cascade)
 }
 
@@ -1180,5 +1189,50 @@ model RecursoBiblioteca {
   descargas_count Int      @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model GrupoFamilia {
+  id                String   @id @default(uuid())
+  iglesia_id        String
+  numero_grupo      Int      @default(1)
+  nombre_grupo      String
+  direccion_reunion String?
+  dia_hora_reunion  String?
+  logo_url          String?
+  descripcion       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  iglesia        Iglesia               @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  personas       Persona[]
+  lideres_modulo LiderModulo[]
+  asistencias    AsistenciaReunion[]
+  acuerdos       AcuerdoGrupoFamilia[]
+  necesidades    NecesidadFamilia[]
+}
+
+model AcuerdoGrupoFamilia {
+  id                String   @id @default(uuid())
+  grupo_familia_id  String
+  titulo            String
+  contenido         String
+  creado_por        String
+  fecha_publicacion DateTime @default(now())
+
+  grupo_familia GrupoFamilia @relation(fields: [grupo_familia_id], references: [id], onDelete: Cascade)
+}
+
+model NecesidadFamilia {
+  id               String   @id @default(uuid())
+  grupo_familia_id String
+  familia_codigo   String?
+  solicitante_nombre String
+  descripcion      String
+  estado           String   @default("PENDIENTE") // "PENDIENTE", "EN_ATENCION", "ATENDIDA"
+  notas_lider      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  grupo_familia GrupoFamilia @relation(fields: [grupo_familia_id], references: [id], onDelete: Cascade)
 }
 

@@ -8,7 +8,7 @@ export async function GET() {
     const userId = await getSessionUserId();
 
     // Todas las queries base en paralelo (sin dependencias entre sí)
-    const [userObj, iglesia, sociedadesRaw, etapas, modulos] = await Promise.all([
+    const [userObj, iglesia, sociedadesRaw, gruposFamiliaRaw, etapas, modulos] = await Promise.all([
       userId ? prisma.usuario.findUnique({ where: { id: userId }, select: { rol: true } }) : null,
       prisma.iglesia.findUnique({ where: { id: defaultIglesiaId } }),
       prisma.sociedad.findMany({
@@ -22,6 +22,19 @@ export async function GET() {
             include: { usuario: { include: { persona: true } } }
           }
         },
+      }),
+      prisma.grupoFamilia.findMany({
+        where: { iglesia_id: defaultIglesiaId },
+        orderBy: { numero_grupo: "asc" },
+        include: {
+          personas: true,
+          lideres_modulo: {
+            where: { alcance_tipo: "GRUPO_FAMILIA" },
+            include: { usuario: { include: { persona: true } } }
+          },
+          acuerdos: { orderBy: { fecha_publicacion: "desc" } },
+          necesidades: { orderBy: { createdAt: "desc" } },
+        }
       }),
       prisma.etapaConfig.findMany({
         where: { iglesia_id: defaultIglesiaId },
@@ -137,6 +150,25 @@ export async function GET() {
       sexo: gc.sexo
     })) || []);
 
+    const grupos_familia = gruposFamiliaRaw.map(gf => ({
+      id: gf.id,
+      numero_grupo: gf.numero_grupo,
+      nombre_grupo: gf.nombre_grupo,
+      direccion_reunion: gf.direccion_reunion,
+      dia_hora_reunion: gf.dia_hora_reunion,
+      logo_url: gf.logo_url,
+      descripcion: gf.descripcion,
+      integrantes_count: gf.personas.length,
+      directiva: gf.lideres_modulo.map(d => ({
+        id: d.id,
+        nombre: d.usuario.persona?.nombre || d.usuario.email.split("@")[0],
+        email: d.usuario.email,
+        telefono: d.usuario.persona?.telefono || "Sin teléfono"
+      })),
+      acuerdos: gf.acuerdos,
+      necesidades: gf.necesidades
+    }));
+
     return NextResponse.json({
       ...iglesia,
       redes_sociales,
@@ -147,6 +179,7 @@ export async function GET() {
       opciones_registro,
       sociedades,
       grupos: flatGrupos,
+      grupos_familia,
       etapas,
       modulos,
     }, {
@@ -188,6 +221,7 @@ export async function POST(request: Request) {
       imagenes_slider,
       tema_anual,
       opciones_registro,
+      usar_grupos_familia,
     } = body;
 
     let cleanSlug = undefined;
@@ -223,6 +257,7 @@ export async function POST(request: Request) {
         contacto_direccion,
         link_google_maps,
         link_waze,
+        usar_grupos_familia: usar_grupos_familia !== undefined ? Boolean(usar_grupos_familia) : true,
         redes_sociales: redes_sociales ? JSON.stringify(redes_sociales) : null,
         recursos: recursos ? JSON.stringify(recursos) : null,
         eventos: eventos ? JSON.stringify(eventos) : null,

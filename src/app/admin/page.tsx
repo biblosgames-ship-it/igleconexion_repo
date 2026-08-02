@@ -51,6 +51,7 @@ export default function SuperAdminPage() {
     { id: 12, label: "Dashboard", title: "Reporte y Dashboard Analítico", description: "Estado y crecimiento congregacional a la luz del avance por etapas.", icon: "/Iconos SVG/dashboard.png", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 1, label: "Mi Iglesia", title: "Mi Iglesia y Configuración General", description: "Gestiona los datos, colores, agenda y recursos disponibles para los miembros.", icon: "/Iconos SVG/Identidad-2.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 2, label: "Sociedades", title: "Estructura de Sociedades y Grupos", description: "Crea las Sociedades principales y subdivídelas en Grupos de Conexión.", icon: "/Iconos SVG/Sociedad.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
+    { id: 18, label: "Grupos de Familias", title: "Grupos de Familias de Hogar", description: "Administra los Macro Grupos de familias mixtos de la iglesia, sus directivas, cultos de hogar y necesidades de familias.", icon: "🏡", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 3, label: "Etapas de Crecimiento", title: "Estructura de la Ruta de Crecimiento", description: "Configura las Etapas del camino de crecimiento del miembro y mapea sus procesos.", icon: "/Iconos SVG/Etapas.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 4, label: "Módulos de Procesos", title: "Catálogo de Módulos y Procesos", description: "Crea los Módulos correspondientes a los departamentos de trabajo y registra las tareas.", icon: "/Iconos SVG/Proceso.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 5, label: "Liderazgo y Permisos", title: "Consola de Liderazgo y Permisos (RBAC)", description: "Organiza y clasifica a los líderes por áreas, personaliza sus categorías y crea sus directivas.", icon: "/Iconos SVG/servicio.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
@@ -279,6 +280,7 @@ export default function SuperAdminPage() {
   const [churchSlogan, setChurchSlogan] = useState("");
   const [churchLogoUrl, setChurchLogoUrl] = useState("");
   const [churchColor, setChurchColor] = useState("#0284c7");
+  const [churchUsarGruposFamilia, setChurchUsarGruposFamilia] = useState(true);
   const [churchDescription, setChurchDescription] = useState("");
   const [churchQuienesSomos, setChurchQuienesSomos] = useState("");
   const [churchMision, setChurchMision] = useState("");
@@ -445,6 +447,7 @@ export default function SuperAdminPage() {
           setChurchSlogan(dataIgl.slogan || "");
           setChurchLogoUrl(dataIgl.logo_url || "");
           setChurchColor(dataIgl.color_principal || "#0284c7");
+          setChurchUsarGruposFamilia(dataIgl.usar_grupos_familia !== undefined ? dataIgl.usar_grupos_familia : true);
           setChurchDescription(dataIgl.descripcion || "");
           setChurchQuienesSomos(dataIgl.quienes_somos || "");
           setChurchMision(dataIgl.mision || "");
@@ -1048,6 +1051,7 @@ export default function SuperAdminPage() {
           slogan: churchSlogan,
           logo_url: churchLogoUrl,
           color_principal: churchColor,
+          usar_grupos_familia: churchUsarGruposFamilia,
           descripcion: churchDescription,
           quienes_somos: churchQuienesSomos,
           mision: churchMision,
@@ -2194,8 +2198,29 @@ export default function SuperAdminPage() {
               {/* Bloque 1: Identidad Básica */}
               <div className={styles.configBlock} style={{ background: 'white' }}>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 700, borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem', marginBottom: '1rem', color: '#1e293b' }}>
-                  ⛪ Identidad de la Iglesia
+                  ⛪ Identidad de la Iglesia y Módulos Activos
                 </h3>
+
+                {/* Checkbox Módulo Grupos de Familias */}
+                <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.85rem 1.1rem', borderRadius: '10px', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  <div>
+                    <strong style={{ color: '#166534', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      🏡 Habilitar Estructura de Grupos de Familias (Cultos de Hogar)
+                    </strong>
+                    <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#15803d' }}>
+                      Si tu iglesia trabaja con macro grupos de familias mixtos para cultos de hogar y consolidación, activa este módulo. De lo contrario, se mantendrá oculto.
+                    </p>
+                  </div>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.88rem', color: '#166534', backgroundColor: 'white', padding: '0.4rem 0.85rem', borderRadius: '8px', border: '1px solid #86efac' }}>
+                    <input 
+                      type="checkbox"
+                      checked={churchUsarGruposFamilia}
+                      onChange={(e) => setChurchUsarGruposFamilia(e.target.checked)}
+                      style={{ accentColor: '#16a34a', transform: 'scale(1.2)' }}
+                    />
+                    {churchUsarGruposFamilia ? 'Módulo Activado' : 'Módulo Desactivado'}
+                  </label>
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
                   <div>
                     <label style={{ display: 'block', fontWeight: 600, fontSize: '0.85rem', marginBottom: '0.4rem', color: '#475569' }}>Nombre de la Iglesia</label>
@@ -3525,6 +3550,29 @@ export default function SuperAdminPage() {
                 );
               })}
 
+            </div>
+          )}
+
+          {/* TAB 18: GRUPOS DE FAMILIAS (MACRO GRUPOS DE HOGARES) */}
+          {activeTab === 18 && (
+            <div>
+              {!churchUsarGruposFamilia && (
+                <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b', padding: '1rem', borderRadius: '10px', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <strong>⚠️ El módulo de Grupos de Familias está desactivado en la configuración de la iglesia.</strong>
+                    <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem' }}>Los miembros y líderes no verán esta opción hasta que la actives desde la pestaña 'Mi Iglesia'.</p>
+                  </div>
+                  <button onClick={() => setActiveTab(1)} style={{ background: '#991b1b', color: 'white', border: 'none', padding: '0.4rem 0.85rem', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}>
+                    Ir a Activar
+                  </button>
+                </div>
+              )}
+
+              <GruposFamiliaAdminSection 
+                miembros={miembros} 
+                lideres={lideres} 
+                etapas={etapas} 
+              />
             </div>
           )}
 
@@ -8295,6 +8343,349 @@ function BulkImportSection({ gruposConexion, sociedades }: { gruposConexion: any
           </div>
           )}
       </div>
+    </div>
+  );
+}
+
+// ── COMPONENTE: GESTIÓN DE GRUPOS DE FAMILIAS (ADMIN) ──────────
+function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: any[]; lideres: any[]; etapas: any[] }) {
+  const [gruposFamilia, setGruposFamilia] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Formulario nuevo grupo
+  const [numGrupo, setNumGrupo] = useState("");
+  const [nombreGrupo, setNombreGrupo] = useState("");
+  const [direccionReunion, setDireccionReunion] = useState("");
+  const [diaHoraReunion, setDiaHoraReunion] = useState("");
+  const [descripcionGrupo, setDescripcionGrupo] = useState("");
+
+  // Modal Asignación de Integrante
+  const [assignGrupoId, setAssignGrupoId] = useState<string | null>(null);
+  const [selectedPersonaId, setSelectedPersonaId] = useState("");
+  const [assignAllFamily, setAssignAllFamily] = useState(true);
+
+  const fetchGruposFamilia = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/grupos-familia");
+      const data = await res.json();
+      if (data.grupos) setGruposFamilia(data.grupos);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGruposFamilia();
+  }, []);
+
+  const handleCreateGrupo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nombreGrupo.trim()) return;
+
+    try {
+      const res = await fetch("/api/grupos-familia", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "createGrupoFamilia",
+          data: {
+            numero_grupo: numGrupo ? parseInt(numGrupo) : gruposFamilia.length + 1,
+            nombre_grupo: nombreGrupo.trim(),
+            direccion_reunion: direccionReunion.trim(),
+            dia_hora_reunion: diaHoraReunion.trim(),
+            descripcion: descripcionGrupo.trim()
+          }
+        })
+      });
+      const data = await res.json();
+      if (data.error) alert(data.error);
+      else {
+        setNumGrupo("");
+        setNombreGrupo("");
+        setDireccionReunion("");
+        setDiaHoraReunion("");
+        setDescripcionGrupo("");
+        fetchGruposFamilia();
+      }
+    } catch (err) {
+      alert("Error al crear Grupo de Familia.");
+    }
+  };
+
+  const handleDeleteGrupo = async (id: string) => {
+    if (!confirm("¿Eliminar este Grupo de Familia? Los integrantes pasarán a no tener grupo asignado.")) return;
+    try {
+      await fetch("/api/grupos-familia", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "deleteGrupoFamilia", data: { id } })
+      });
+      fetchGruposFamilia();
+    } catch (e) {
+      alert("Error al eliminar.");
+    }
+  };
+
+  const handleAssignPersona = async () => {
+    if (!assignGrupoId || !selectedPersonaId) return;
+    try {
+      const res = await fetch("/api/grupos-familia", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "assignPersonaToGrupoFamilia",
+          data: {
+            persona_id: selectedPersonaId,
+            grupo_familia_id: assignGrupoId,
+            assignFamilyCode: assignAllFamily
+          }
+        })
+      });
+      const data = await res.json();
+      if (data.error) alert(data.error);
+      else {
+        setAssignGrupoId(null);
+        setSelectedPersonaId("");
+        fetchGruposFamilia();
+      }
+    } catch (err) {
+      alert("Error al asignar.");
+    }
+  };
+
+  return (
+    <div>
+      {/* Formulario Crear Grupo de Familia */}
+      <div style={{ background: 'white', borderRadius: '12px', padding: '1.5rem', border: '1px solid #cbd5e1', marginBottom: '1.5rem' }}>
+        <h3 style={{ margin: '0 0 1rem 0', color: '#0f172a', fontSize: '1.1rem', fontWeight: 800 }}>
+          🏡 Crear Nuevo Grupo de Familia (Culto de Hogar)
+        </h3>
+        <form onSubmit={handleCreateGrupo} style={{ display: 'grid', gridTemplateColumns: '80px 2fr 2fr 1.5fr', gap: '0.75rem', alignItems: 'end' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.2rem' }}>No. Grupo</label>
+            <input 
+              type="number" 
+              placeholder={`Ej: ${gruposFamilia.length + 1}`}
+              value={numGrupo} 
+              onChange={(e) => setNumGrupo(e.target.value)} 
+              style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} 
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.2rem' }}>Nombre del Grupo *</label>
+            <input 
+              type="text" 
+              required 
+              placeholder="Ej: Familia de Fe - Los Olivos" 
+              value={nombreGrupo} 
+              onChange={(e) => setNombreGrupo(e.target.value)} 
+              style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} 
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.2rem' }}>Dirección / Hogar Anfitrión</label>
+            <input 
+              type="text" 
+              placeholder="Ej: Calle Principal #45 (Hogar Familia Gómez)" 
+              value={direccionReunion} 
+              onChange={(e) => setDireccionReunion(e.target.value)} 
+              style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} 
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.2rem' }}>Día y Hora de Culto</label>
+            <input 
+              type="text" 
+              placeholder="Ej: Miércoles 7:30 PM" 
+              value={diaHoraReunion} 
+              onChange={(e) => setDiaHoraReunion(e.target.value)} 
+              style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} 
+            />
+          </div>
+          <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
+            <input 
+              type="text" 
+              placeholder="Descripción opcional (propósito del grupo, barrio o zona)..." 
+              value={descripcionGrupo} 
+              onChange={(e) => setDescripcionGrupo(e.target.value)} 
+              style={{ flex: 1, padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', marginRight: '1rem' }} 
+            />
+            <button type="submit" style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: '6px', padding: '0.5rem 1.25rem', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer' }}>
+              + Registrar Grupo de Familia
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Lista de Grupos de Familias */}
+      {loading ? (
+        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Cargando Grupos de Familias...</p>
+      ) : gruposFamilia.length === 0 ? (
+        <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', padding: '2rem', borderRadius: '8px', textAlign: 'center', color: '#64748b' }}>
+          No hay Grupos de Familias configurados aún. Utiliza el formulario arriba para registrar el primero.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {gruposFamilia.map((gf) => (
+            <div key={gf.id} style={{ background: 'white', borderRadius: '12px', border: '1px solid #cbd5e1', padding: '1.25rem', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+                <div>
+                  <span style={{ fontSize: '0.75rem', backgroundColor: '#dcfce7', color: '#166534', fontWeight: 800, padding: '2px 8px', borderRadius: '12px', marginRight: '0.5rem' }}>
+                    Grupo #{gf.numero_grupo}
+                  </span>
+                  <strong style={{ fontSize: '1.1rem', color: '#0f172a' }}>{gf.nombre_grupo}</strong>
+                  {gf.dia_hora_reunion && (
+                    <span style={{ fontSize: '0.82rem', color: '#64748b', marginLeft: '0.75rem' }}>
+                      🗓️ {gf.dia_hora_reunion}
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <button 
+                    onClick={() => setAssignGrupoId(gf.id)}
+                    style={{ background: '#0284c7', color: 'white', border: 'none', padding: '0.35rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    + Asignar Familia / Integrante
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteGrupo(gf.id)}
+                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700 }}
+                    title="Eliminar Grupo de Familia"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
+
+              {gf.direccion_reunion && (
+                <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', color: '#475569' }}>
+                  📍 <strong>Lugar de Culto de Hogar:</strong> {gf.direccion_reunion}
+                </p>
+              )}
+
+              {/* Directiva del Grupo */}
+              <div style={{ marginTop: '0.75rem', marginBottom: '0.75rem', padding: '0.6rem 0.85rem', background: '#f8fafc', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155' }}>👤 Directiva / Líderes:</span>
+                {gf.directiva && gf.directiva.map((lid: any) => (
+                  <span key={lid.id} style={{ fontSize: '0.78rem', backgroundColor: '#e2e8f0', color: '#0f172a', padding: '2px 8px', borderRadius: '6px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                    {lid.nombre} ({lid.telefono})
+                    <button 
+                      onClick={async () => {
+                        await fetch("/api/grupos-familia", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ action: "removeLiderGrupoFamilia", data: { lider_id: lid.id } })
+                        });
+                        fetchGruposFamilia();
+                      }}
+                      style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 'bold' }}
+                    >✕</button>
+                  </span>
+                ))}
+                <select
+                  value=""
+                  onChange={async (e) => {
+                    const val = e.target.value;
+                    if (!val) return;
+                    await fetch("/api/grupos-familia", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        action: "addLiderGrupoFamilia",
+                        data: { grupo_familia_id: gf.id, persona_id: val }
+                      })
+                    });
+                    fetchGruposFamilia();
+                  }}
+                  style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: 'white' }}
+                >
+                  <option value="">+ Añadir Líder al Grupo...</option>
+                  {miembros.map((m: any) => (
+                    <option key={m.id} value={m.id}>{m.nombre}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Integrantes asignados */}
+              <div style={{ marginTop: '0.5rem' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>
+                  👨‍👩‍👧‍👦 Integrantes Registrados ({gf.personas ? gf.personas.length : 0}):
+                </span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.4rem' }}>
+                  {gf.personas && gf.personas.map((p: any) => (
+                    <span key={p.id} style={{ fontSize: '0.75rem', backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', color: '#334155', padding: '2px 8px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                      {p.nombre} {p.familia_codigo ? `(${p.familia_codigo})` : ''}
+                      <button 
+                        onClick={async () => {
+                          await fetch("/api/grupos-familia", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              action: "assignPersonaToGrupoFamilia",
+                              data: { persona_id: p.id, grupo_familia_id: null }
+                            })
+                          });
+                          fetchGruposFamilia();
+                        }}
+                        style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 'bold', fontSize: '10px' }}
+                        title="Desvincular del grupo"
+                      >✕</button>
+                    </span>
+                  ))}
+                  {(!gf.personas || gf.personas.length === 0) && (
+                    <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontStyle: 'italic' }}>No hay integrantes vinculados aún.</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Modal Asignar Persona a Grupo de Familia */}
+      {assignGrupoId && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }} onClick={() => setAssignGrupoId(null)}>
+          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', width: '100%', maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 1rem 0', color: '#0f172a', fontSize: '1.1rem', fontWeight: 800 }}>➕ Asignar Miembro a Grupo de Familia</h3>
+            
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Seleccionar Persona</label>
+              <select 
+                value={selectedPersonaId} 
+                onChange={(e) => setSelectedPersonaId(e.target.value)}
+                style={{ width: '100%', padding: '0.55rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.88rem', background: 'white' }}
+              >
+                <option value="">Buscar persona...</option>
+                {miembros.map((m: any) => (
+                  <option key={m.id} value={m.id}>
+                    {m.nombre} {m.familia_codigo ? `(Código Fam: ${m.familia_codigo})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: '1.25rem', backgroundColor: '#f0fdf4', padding: '0.75rem', borderRadius: '6px', border: '1px solid #bbf7d0' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', color: '#166534', fontWeight: 600, cursor: 'pointer' }}>
+                <input 
+                  type="checkbox" 
+                  checked={assignAllFamily} 
+                  onChange={(e) => setAssignAllFamily(e.target.checked)} 
+                  style={{ accentColor: '#16a34a' }}
+                />
+                Asignar también a toda su familia vinculada (mismo código)
+              </label>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button onClick={() => setAssignGrupoId(null)} style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '0.5rem 1rem', borderRadius: '6px', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}>Cancelar</button>
+              <button onClick={handleAssignPersona} style={{ background: '#0284c7', color: 'white', border: 'none', padding: '0.5rem 1.25rem', borderRadius: '6px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}>Guardar Asignación</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
