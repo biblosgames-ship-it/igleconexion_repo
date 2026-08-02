@@ -1169,77 +1169,31 @@ export default function Hub() {
         {churchData?.usar_grupos_familia && churchData?.grupos_familia && churchData.grupos_familia.length > 0 && (
           <section style={{ marginTop: '2.5rem' }}>
             <h2 className={styles.sectionTitle}>🏡 Grupos de Familias</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+            <div className={styles.societiesGrid}>
               {churchData.grupos_familia.map((gf: any) => {
-                const iconDisplay = gf.logo_url ? gf.logo_url : "👨‍👩‍👧‍👦";
+                const iconDisplay = gf.logo_url || "/Iconos SVG/Grupo de conexion.svg";
                 return (
-                  <div 
-                    key={gf.id}
-                    className={styles.societyCard}
-                    style={{ 
-                      flexDirection: 'column', 
-                      alignItems: 'stretch', 
-                      justifyContent: 'space-between',
-                      padding: '1rem',
-                      height: 'auto',
-                      textAlign: 'center'
-                    }}
+                  <Link 
+                    key={gf.id} 
+                    href={`/grupo-familia?id=${gf.id}`} 
+                    style={{ textDecoration: 'none' }}
                   >
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
-                      <span className={styles.societyIcon} style={{ width: '3rem', height: '3rem', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.4rem' }}>
+                    <div 
+                      className={styles.societyCard} 
+                      style={{ textAlign: 'left', justifyContent: 'flex-start', alignItems: 'center', cursor: 'pointer' }}
+                    >
+                      <span className={styles.societyIcon} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '2.4rem', height: '2.4rem', padding: '0.4rem', flexShrink: 0 }}>
                         {iconDisplay.startsWith('/') ? (
                           <img src={iconDisplay} alt={gf.nombre_grupo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         ) : (
-                          <span style={{ fontSize: '1.8rem' }}>{iconDisplay}</span>
+                          <span style={{ fontSize: '1.2rem' }}>{iconDisplay}</span>
                         )}
                       </span>
-                      <span style={{ fontSize: '0.7rem', fontWeight: 800, backgroundColor: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: '10px' }}>
-                        Grupo #{gf.numero_grupo}
+                      <span className={styles.societyName} style={{ textAlign: 'left', flex: 1, fontSize: '0.9rem', fontWeight: 600 }}>
+                        #{gf.numero_grupo} {gf.nombre_grupo}
                       </span>
-                      <h4 style={{ margin: '0.2rem 0 0 0', fontSize: '0.95rem', color: '#0f172a', fontWeight: 700, lineHeight: 1.2 }}>
-                        {gf.nombre_grupo}
-                      </h4>
                     </div>
-
-                    <div style={{ marginTop: '0.85rem', display: 'flex', gap: '0.4rem', justifyContent: 'center' }}>
-                      <Link href={`/grupo?tipo=familia&id=${gf.id}`} style={{ flex: 1, textDecoration: 'none' }}>
-                        <button 
-                          type="button" 
-                          style={{ 
-                            width: '100%', 
-                            padding: '0.35rem 0.5rem', 
-                            fontSize: '0.75rem', 
-                            fontWeight: 700, 
-                            borderRadius: '6px', 
-                            border: '1px solid #cbd5e1', 
-                            backgroundColor: '#f8fafc', 
-                            color: '#0f172a', 
-                            cursor: 'pointer' 
-                          }}
-                        >
-                          👁️ Miembro
-                        </button>
-                      </Link>
-                      <Link href={`/lider?tipo=familia&id=${gf.id}`} style={{ flex: 1, textDecoration: 'none' }}>
-                        <button 
-                          type="button" 
-                          style={{ 
-                            width: '100%', 
-                            padding: '0.35rem 0.5rem', 
-                            fontSize: '0.75rem', 
-                            fontWeight: 700, 
-                            borderRadius: '6px', 
-                            border: 'none', 
-                            backgroundColor: '#0284c7', 
-                            color: 'white', 
-                            cursor: 'pointer' 
-                          }}
-                        >
-                          ⚙️ Líder
-                        </button>
-                      </Link>
-                    </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
