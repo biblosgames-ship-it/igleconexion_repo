@@ -24,18 +24,32 @@ function GrupoFamiliaContent() {
   const [newNecesidadDesc, setNewNecesidadDesc] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const [etapas, setEtapas] = useState<any[]>([]);
+  const [activeLeaderStageId, setActiveLeaderStageId] = useState<string>("");
+
   const loadGrupoFamilia = async () => {
     setLoading(true);
     try {
-      const [authRes, grupoRes] = await Promise.all([
+      const [authRes, grupoRes, adminRes] = await Promise.all([
         fetch("/api/auth").catch(() => null),
         fetch(`/api/grupos-familia?id=${grupoIdParam || ""}`).catch(() => null),
+        fetch("/api/admin").catch(() => null),
       ]);
 
       let currentProfile = null;
       if (authRes && authRes.ok) {
         currentProfile = await authRes.json();
         setProfile(currentProfile);
+      }
+
+      if (adminRes && adminRes.ok) {
+        const adminData = await adminRes.json();
+        if (adminData.etapas && adminData.etapas.length > 0) {
+          setEtapas(adminData.etapas);
+          if (!activeLeaderStageId) {
+            setActiveLeaderStageId(adminData.etapas[0].id);
+          }
+        }
       }
 
       if (grupoRes && grupoRes.ok) {
@@ -380,29 +394,127 @@ function GrupoFamiliaContent() {
 
           {/* Subpestaña 1: KANBAN DE INTEGRANTES */}
           {leaderSubTab === "kanban" && (
-            <div>
-              <h3 style={{ margin: '0 0 1rem 0', color: '#0f172a', fontSize: '1.1rem', fontWeight: 800 }}>📋 Integrantes del Grupo ({grupoData.personas ? grupoData.personas.length : 0})</h3>
-              {(!grupoData.personas || grupoData.personas.length === 0) ? (
-                <div style={{ background: '#f8fafc', padding: '2rem', borderRadius: '12px', border: '1px dashed #cbd5e1', textAlign: 'center', color: '#64748b' }}>
-                  No hay personas o familias asignadas a este grupo de familia aún.
-                </div>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
-                  {grupoData.personas.map((p: any) => (
-                    <div key={p.id} style={{ background: 'white', borderRadius: '10px', border: '1px solid #cbd5e1', padding: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}>
-                      <strong style={{ display: 'block', fontSize: '0.95rem', color: '#0f172a', marginBottom: '0.2rem' }}>{p.nombre}</strong>
-                      <span style={{ fontSize: '0.78rem', color: '#0284c7', fontWeight: 700, display: 'block', marginBottom: '0.4rem' }}>
-                        Etapa: {p.etapa?.nombre_etapa || 'Sin etapa'}
-                      </span>
-                      {p.familia_codigo && (
-                        <span style={{ fontSize: '0.72rem', backgroundColor: '#f1f5f9', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
-                          Código Familia: {p.familia_codigo}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.1rem', fontWeight: 800 }}>
+                  📋 Panel Kanban por Etapas ({grupoData.personas ? grupoData.personas.length : 0} integrantes)
+                </h3>
+              </div>
+
+              {/* Selector de Pestañas de Etapas de Crecimiento */}
+              {etapas.length > 0 && (
+                <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+                  {etapas.map((etapa: any) => {
+                    const countInStage = grupoData.personas?.filter((p: any) => p.etapa_id === etapa.id).length || 0;
+                    const isSelected = activeLeaderStageId === etapa.id;
+                    return (
+                      <button
+                        key={etapa.id}
+                        onClick={() => setActiveLeaderStageId(etapa.id)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '8px',
+                          border: isSelected ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                          backgroundColor: isSelected ? '#f0f9ff' : 'white',
+                          color: isSelected ? '#0369a1' : '#475569',
+                          fontWeight: isSelected ? 800 : 600,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        <span>{etapa.nombre_etapa}</span>
+                        <span style={{
+                          backgroundColor: isSelected ? '#0284c7' : '#e2e8f0',
+                          color: isSelected ? 'white' : '#475569',
+                          padding: '1px 7px',
+                          borderRadius: '12px',
+                          fontSize: '0.75rem',
+                          fontWeight: 700
+                        }}>
+                          {countInStage}
                         </span>
-                      )}
-                    </div>
-                  ))}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
+
+              {/* Tarjetas de Miembros en la Etapa Seleccionada */}
+              {(() => {
+                const stageMembers = grupoData.personas?.filter((p: any) => p.etapa_id === activeLeaderStageId) || [];
+
+                if (stageMembers.length === 0) {
+                  return (
+                    <div style={{ background: '#f8fafc', padding: '2.5rem', borderRadius: '12px', border: '1px dashed #cbd5e1', textAlign: 'center', color: '#64748b' }}>
+                      No hay ningún integrante en esta etapa dentro de este Grupo de Familia.
+                    </div>
+                  );
+                }
+
+                return (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+                    {stageMembers.map((m: any) => {
+                      const hasAlerts = m.etiquetas && m.etiquetas.length > 0;
+                      return (
+                        <div 
+                          key={m.id} 
+                          style={{ 
+                            background: 'white', 
+                            borderRadius: '12px', 
+                            border: hasAlerts ? '2px solid #f87171' : '1px solid #cbd5e1', 
+                            padding: '1.25rem', 
+                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justify: 'space-between',
+                            gap: '0.75rem'
+                          }}
+                        >
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.35rem' }}>
+                              <strong style={{ fontSize: '1rem', color: '#0f172a', fontWeight: 800 }}>{m.nombre}</strong>
+                              {m.familia_codigo && (
+                                <span style={{ fontSize: '0.7rem', backgroundColor: '#e0e7ff', color: '#4f46e5', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                                  Fam: {m.familia_codigo}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Alertas / Etiquetas activas */}
+                            {hasAlerts && (
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginBottom: '0.5rem' }}>
+                                {m.etiquetas.map((t: any) => (
+                                  <span key={t.id} style={{ fontSize: '0.7rem', backgroundColor: '#fee2e2', color: '#991b1b', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                                    {t.etiqueta?.icono || '⚠️'} {t.etiqueta?.nombre}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            <div style={{ fontSize: '0.82rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                              <span>📞 {m.telefono || 'Sin teléfono'}</span>
+                              {m.correo && <span>✉️ {m.correo}</span>}
+                            </div>
+                          </div>
+
+                          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '0.6rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.75rem', color: '#0284c7', fontWeight: 700, backgroundColor: '#f0f9ff', padding: '2px 8px', borderRadius: '6px' }}>
+                              {m.etapa?.nombre_etapa || 'Sin etapa'}
+                            </span>
+                            <Link href={`/perfil/${m.id}`} style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 700, textDecoration: 'none' }}>
+                              Ver Perfil →
+                            </Link>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           )}
 

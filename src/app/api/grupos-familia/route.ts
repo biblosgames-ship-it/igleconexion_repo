@@ -14,7 +14,12 @@ export async function GET(request: Request) {
         include: {
           personas: {
             include: {
-              etapa: true
+              etapa: true,
+              historial_tareas: true,
+              etiquetas: {
+                where: { activa: true },
+                include: { etiqueta: true }
+              }
             }
           },
           lideres_modulo: {
