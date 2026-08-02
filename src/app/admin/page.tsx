@@ -7903,9 +7903,10 @@ export default function SuperAdminPage() {
                                 </div>
                               </div>
                             );
-                          })}
                         </div>
                       )}
+                    </div>
+
                     {/* Evaluativo de Miembros por Grupo de Familia */}
                     {analyticsData.desgloseGruposFamilia && analyticsData.desgloseGruposFamilia.length > 0 && (
                       <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
