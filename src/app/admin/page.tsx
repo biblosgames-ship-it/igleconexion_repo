@@ -8592,22 +8592,32 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
               {/* Directiva del Grupo */}
               <div style={{ marginTop: '0.75rem', marginBottom: '0.75rem', padding: '0.6rem 0.85rem', background: '#f8fafc', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155' }}>👤 Directiva / Líderes:</span>
-                {gf.directiva && gf.directiva.map((lid: any) => (
-                  <span key={lid.id} style={{ fontSize: '0.78rem', backgroundColor: '#e2e8f0', color: '#0f172a', padding: '2px 8px', borderRadius: '6px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                    {lid.nombre} ({lid.telefono})
-                    <button 
-                      onClick={async () => {
-                        await fetch("/api/grupos-familia", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ action: "removeLiderGrupoFamilia", data: { lider_id: lid.id } })
-                        });
-                        fetchGruposFamilia();
-                      }}
-                      style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 'bold' }}
-                    >✕</button>
-                  </span>
-                ))}
+                {gf.lideres_modulo && gf.lideres_modulo.length > 0 ? (
+                  gf.lideres_modulo.map((lid: any) => {
+                    const nombreLider = lid.usuario?.persona?.nombre || lid.usuario?.email || "Líder Asignado";
+                    const telLider = lid.usuario?.persona?.telefono ? ` (${lid.usuario.persona.telefono})` : "";
+                    return (
+                      <span key={lid.id} style={{ fontSize: '0.78rem', backgroundColor: '#e0f2fe', color: '#0369a1', padding: '3px 8px', borderRadius: '6px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.35rem', border: '1px solid #bae6fd' }}>
+                        {nombreLider}{telLider}
+                        <button 
+                          onClick={async () => {
+                            if (!confirm(`¿Remover a ${nombreLider} como líder de este Grupo de Familia?`)) return;
+                            await fetch("/api/grupos-familia", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ action: "removeLiderGrupoFamilia", data: { lider_id: lid.id } })
+                            });
+                            fetchGruposFamilia();
+                          }}
+                          style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem', marginLeft: '2px' }}
+                          title="Quitar Líder"
+                        >✕</button>
+                      </span>
+                    );
+                  })
+                ) : (
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic' }}>Sin líderes asignados</span>
+                )}
                 <select
                   value=""
                   onChange={async (e) => {
