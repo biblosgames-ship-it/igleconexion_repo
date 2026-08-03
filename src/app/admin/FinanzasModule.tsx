@@ -25,6 +25,7 @@ export default function FinanzasModule() {
   const [dMonto, setDMonto] = useState('');
   const [dMetodo, setDMetodo] = useState('EFECTIVO');
   const [dFecha, setDFecha] = useState(new Date().toISOString().split('T')[0]);
+  const [dCuentaId, setDCuentaId] = useState('');
 
   // Form States - Cuentas (Ofrendas/Gastos/Ministerios)
   const [cNombre, setCNombre] = useState('');
@@ -587,12 +588,14 @@ export default function FinanzasModule() {
     const res = await fetch('/api/finanzas/diezmos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ persona_id: dPersonaId, monto: dMonto, fecha: dFecha, metodo_pago: dMetodo })
+      body: JSON.stringify({ persona_id: dPersonaId, monto: dMonto, fecha: dFecha, metodo_pago: dMetodo, cuenta_fondo_id: dCuentaId || null })
     });
     if (res.ok) {
       const data = await res.json();
       setDMonto('');
       loadDiezmos();
+      loadCuentas();
+      loadDashboard();
       if (confirm("Diezmo registrado con éxito. ¿Deseas imprimir el recibo ahora?")) {
         imprimirRecibo({...data, tipo: 'INGRESO', descripcion: 'Diezmo - ' + (miembros.find(m => m.id === dPersonaId)?.nombre || 'Anónimo')});
       }
@@ -1288,12 +1291,41 @@ export default function FinanzasModule() {
                   </button>
                 </div>
               </div>
-              <div style={{ flex: '1 1 120px' }}>
+              <div style={{ flex: '1 1 140px' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>📅 Fecha</label>
+                <input required type="date" value={dFecha} onChange={e=>setDFecha(e.target.value)} style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+              </div>
+              <div style={{ flex: '1 1 180px' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>Cuenta a Acreditar</label>
+                <select 
+                  value={dCuentaId} 
+                  onChange={e => setDCuentaId(e.target.value)} 
+                  style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: 'white' }}
+                >
+                  <option value="">-- Auto según Método --</option>
+                  {(finData?.cuentas || cuentas || []).map((c: any) => (
+                    <option key={c.id} value={c.id}>{c.nombre} (${c.balance.toFixed(2)})</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ flex: '1 1 140px' }}>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>Método</label>
-                <select value={dMetodo} onChange={e=>setDMetodo(e.target.value)} style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }}>
-                  <option value="EFECTIVO">Efectivo</option>
-                  <option value="TRANSFERENCIA">Transferencia</option>
-                  <option value="CHEQUE">Cheque</option>
+                <select 
+                  value={dMetodo} 
+                  onChange={e => {
+                    const val = e.target.value;
+                    setDMetodo(val);
+                    if (val === 'TRANSFERENCIA') {
+                      const lista = finData?.cuentas || cuentas || [];
+                      const banco = lista.find((c: any) => c.nombre.toLowerCase().includes('banco') || c.tipo === 'BANCO');
+                      if (banco) setDCuentaId(banco.id);
+                    }
+                  }} 
+                  style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }}
+                >
+                  <option value="EFECTIVO">💵 Efectivo</option>
+                  <option value="TRANSFERENCIA">🏦 Transferencia (Ir a Banco)</option>
+                  <option value="CHEQUE">📜 Cheque</option>
                 </select>
               </div>
               <button type="submit" style={{ padding: '0.75rem 1.5rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>Registrar</button>
@@ -1342,9 +1374,14 @@ export default function FinanzasModule() {
                 <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem' }}>
                   <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Registrar Transacción</h3>
                   <form onSubmit={registrarTransaccion} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    <select required value={tCuentaId} onChange={e=>setTCuentaId(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }}>
-                      <option value="">Seleccionar Cuenta...</option>
-                      {filtradas.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                    <select required value={tCuentaId} onChange={e=>setTCuentaId(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: 'white' }}>
+                      <option value="">Seleccionar Cuenta / Caja...</option>
+                      {filtradas.map(c => <option key={c.id} value={c.id}>{c.nombre} (${c.balance.toFixed(2)})</option>)}
+                      <optgroup label="Cajas Principales">
+                        {(finData?.cuentas || cuentas || []).filter((c:any) => ['CAJA_CHICA', 'CAJA_GENERAL', 'BANCO'].includes(c.tipo) || ['caja chica', 'caja general', 'caja de banco'].some(k => c.nombre.toLowerCase().includes(k))).map((c:any) => (
+                          <option key={c.id} value={c.id}>{c.nombre} (${c.balance.toFixed(2)})</option>
+                        ))}
+                      </optgroup>
                     </select>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                       <select required value={tTipoTransaccion} onChange={e=>setTTipoTransaccion(e.target.value)} style={{ flex: 1, padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', background: tTipoTransaccion === 'INGRESO' ? '#dcfce7' : '#fee2e2', color: tTipoTransaccion === 'INGRESO' ? '#15803d' : '#991b1b', fontWeight: 600 }}>
@@ -1359,11 +1396,19 @@ export default function FinanzasModule() {
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <select required value={tMetodoPago} onChange={e=>setTMetodoPago(e.target.value)} style={{ flex: 1, padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }}>
-                        <option value="EFECTIVO">Efectivo</option>
-                        <option value="TRANSFERENCIA">Transferencia</option>
-                        <option value="TARJETA">Tarjeta</option>
-                        <option value="CHEQUE">Cheque</option>
+                      <select required value={tMetodoPago} onChange={e=>{
+                        const val = e.target.value;
+                        setTMetodoPago(val);
+                        if (val === 'TRANSFERENCIA') {
+                          const lista = finData?.cuentas || cuentas || [];
+                          const banco = lista.find((c: any) => c.nombre.toLowerCase().includes('banco') || c.tipo === 'BANCO');
+                          if (banco) setTCuentaId(banco.id);
+                        }
+                      }} style={{ flex: 1, padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }}>
+                        <option value="EFECTIVO">💵 Efectivo</option>
+                        <option value="TRANSFERENCIA">🏦 Transferencia (Ir a Banco)</option>
+                        <option value="TARJETA">💳 Tarjeta</option>
+                        <option value="CHEQUE">📜 Cheque</option>
                       </select>
                       <input required type="date" value={tFecha} onChange={e=>setTFecha(e.target.value)} style={{ flex: 1, padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
                     </div>
