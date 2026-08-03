@@ -66,6 +66,33 @@ export default function SuperAdminPage() {
     { id: 8, label: "Soporte Técnico", title: "Soporte Técnico y Mensajería", description: "Chatea directamente con nuestro equipo de soporte técnico para resolver dudas o problemas.", icon: "/Iconos SVG/soporte.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] }
   ];
 
+const allSystemIcons = [
+  { label: "Grupo de Familia", url: "/Iconos SVG/familia-3.svg" },
+  { label: "Grupo de Conexión", url: "/Iconos SVG/Grupo 1.svg" },
+  { label: "Sociedad / Comunidad", url: "/Iconos SVG/Sociedad.svg" },
+  { label: "Identidad / Hogar", url: "/Iconos SVG/Iglesia-ID.svg" },
+  { label: "Ministerio / Servicio", url: "/Iconos SVG/servicio.svg" },
+  { label: "Miembros / Red", url: "/Iconos SVG/Miembros.svg" },
+  { label: "Crecimiento / Etapas", url: "/Iconos SVG/Etapas.svg" },
+  { label: "Educación / Biblia", url: "/Iconos SVG/Educacion Cristiana.svg" },
+  { label: "Agenda y Eventos", url: "/Iconos SVG/Agenda.svg" },
+  { label: "Anuncios / Comunicados", url: "/Iconos SVG/comunicado-2.svg" },
+  { label: "Finanzas / Mayordomía", url: "/Iconos SVG/finanzas (2).svg" },
+  { label: "Templo y Casa", url: "/Iconos SVG/templo-2.svg" },
+  { label: "Oración / Pastoral", url: "/Iconos SVG/pastoral.svg" },
+  { label: "Formularios / Encuestas", url: "/Iconos SVG/Formulario.svg" },
+  { label: "Peticiones de Oración", url: "/Iconos SVG/Peticiones.svg" },
+  { label: "Módulo / Proceso", url: "/Iconos SVG/Proceso.svg" },
+  { label: "Biblioteca Digital", url: "/Iconos SVG/biblioteca.svg" },
+  { label: "Contacto / Redes", url: "/Iconos SVG/contacto.svg" },
+  { label: "Notificaciones", url: "/Iconos SVG/notificaciones.svg" },
+  { label: "Soporte Técnico", url: "/Iconos SVG/soporte.svg" },
+  { label: "Paz", url: "/Iconos SVG/paz.svg" },
+  { label: "Paciencia", url: "/Iconos SVG/paciencia.svg" },
+  { label: "Mansedumbre", url: "/Iconos SVG/mansedumbre.svg" },
+  { label: "Templanza", url: "/Iconos SVG/templanza.svg" },
+];
+
   const visibleTabs = (() => {
     if (!currentUser) return [];
     if (currentUser.rol === "SUPERADMIN" || currentUser.rol === "ADMIN_IGLESIA") {
@@ -137,6 +164,40 @@ export default function SuperAdminPage() {
     }
   }, [activeTab]);
   
+  // Estado para Modal Selector Global de Íconos
+  const [globalIconPickerTarget, setGlobalIconPickerTarget] = useState<{
+    type: 'grupo_familia' | 'sociedad' | 'grupo_conexion' | 'modulo';
+    id?: string;
+  } | null>(null);
+
+  const handleSelectGlobalIcon = async (iconUrl: string) => {
+    if (!globalIconPickerTarget) return;
+    const { type, id } = globalIconPickerTarget;
+    try {
+      if (type === 'grupo_familia' && id) {
+        await fetch("/api/grupos-familia", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "updateGrupoFamilia", data: { id, logo_url: iconUrl } })
+        });
+        loadConfig();
+      } else if (type === 'sociedad' && id) {
+        await postAction("updateSociedadLogo", { id, logo_url: iconUrl });
+        loadConfig();
+      } else if (type === 'grupo_conexion' && id) {
+        await postAction("updateGroup", { id, logo_url: iconUrl });
+        loadConfig();
+      } else if (type === 'modulo' && id) {
+        await postAction("updateModulo", { id, icono_url: iconUrl });
+        loadConfig();
+      }
+    } catch (err) {
+      console.error("Error al actualizar icono:", err);
+    } finally {
+      setGlobalIconPickerTarget(null);
+    }
+  };
+
   // Estados de datos relacionales
   const [etapas, setEtapas] = useState<any[]>([]);
   const [modulos, setModulos] = useState<any[]>([]);
@@ -3268,23 +3329,39 @@ export default function SuperAdminPage() {
                   <div key={soc.id} className={styles.configBlock} style={{ background: 'white' }}>
                     <h3 className={styles.blockTitle} style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} title="Click en 📷 para cambiar logo">
+                        <div 
+                          onClick={() => setGlobalIconPickerTarget({ type: 'sociedad', id: soc.id })}
+                          style={{ position: 'relative', width: '36px', height: '36px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: '#f8fafc', borderRadius: '50%', padding: '2px', border: '1px solid #cbd5e1' }} 
+                          title="Hacer clic para elegir ícono de la galería"
+                        >
                           {soc.logo_url ? (
-                            <img src={soc.logo_url} alt={soc.nombre_sociedad} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #cbd5e1' }} />
+                            <img src={soc.logo_url} alt={soc.nombre_sociedad} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'contain' }} />
                           ) : (
-                            <span style={{ fontSize: '1.5rem', display: 'inline-block', padding: '2px', background: '#f1f5f9', borderRadius: '50%' }}>🛡️</span>
+                            <img src="/Iconos SVG/Sociedad.svg" alt={soc.nombre_sociedad} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'contain' }} />
                           )}
-                          <label style={{ position: 'absolute', bottom: '-4px', right: '-4px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                            <span style={{ fontSize: '10px' }}>📷</span>
-                            <input type="file" accept="image/*" onChange={(e) => handleUpdateSocLogo(soc.id, e)} style={{ display: 'none' }} />
+                          <label 
+                            onClick={(e) => e.stopPropagation()} 
+                            style={{ position: 'absolute', bottom: '-4px', right: '-4px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
+                            title="O subir una imagen/SVG propia"
+                          >
+                            <span style={{ fontSize: '9px' }}>📷</span>
+                            <input type="file" accept="image/*,.svg" onChange={(e) => handleUpdateSocLogo(soc.id, e)} style={{ display: 'none' }} />
                           </label>
                         </div>
-                        <span>
+                        <span style={{ fontWeight: 800, fontSize: '1.05rem', color: '#0f172a' }}>
                           {soc.nombre_sociedad}{" "}
                           <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>
                             (Edad: {soc.rango_edad_min || 0} a {soc.rango_edad_max || '99'} | Sexo: {soc.sexo_requerido})
                           </span>
                         </span>
+                        <button
+                          type="button"
+                          onClick={() => setGlobalIconPickerTarget({ type: 'sociedad', id: soc.id })}
+                          style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.72rem', fontWeight: 600, color: '#334155', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                          title="Elegir ícono simple de la galería"
+                        >
+                          🎨 Elegir Ícono
+                        </button>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                          <button 
@@ -3454,7 +3531,28 @@ export default function SuperAdminPage() {
                                       style={{ width: '100%', padding: '0.35rem 0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} 
                                     />
                                   ) : (
-                                    <span style={{ fontWeight: 600 }}>{g.nombre_grupo}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                      <div 
+                                        onClick={() => setGlobalIconPickerTarget({ type: 'grupo_conexion', id: g.id })}
+                                        style={{ position: 'relative', width: '28px', height: '28px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: '#f8fafc', border: '1px solid #cbd5e1', padding: '2px', flexShrink: 0 }}
+                                        title="Hacer clic para elegir ícono de la galería"
+                                      >
+                                        {g.logo_url ? (
+                                          <img src={g.logo_url} alt={g.nombre_grupo} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%' }} />
+                                        ) : (
+                                          <img src="/Iconos SVG/Grupo 1.svg" alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                        )}
+                                      </div>
+                                      <span style={{ fontWeight: 600 }}>{g.nombre_grupo}</span>
+                                      <button 
+                                        type="button" 
+                                        onClick={() => setGlobalIconPickerTarget({ type: 'grupo_conexion', id: g.id })} 
+                                        style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '4px', padding: '0.15rem 0.4rem', fontSize: '0.7rem', fontWeight: 600, color: '#334155', cursor: 'pointer' }}
+                                        title="Elegir ícono de la galería"
+                                      >
+                                        🎨
+                                      </button>
+                                    </div>
                                   )}
                                 </td>
                                 <td>
@@ -8222,6 +8320,56 @@ export default function SuperAdminPage() {
           })()}
         </nav>
 
+        {/* Modal Galería de Selección de Íconos Global */}
+        {globalIconPickerTarget && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={() => setGlobalIconPickerTarget(null)}>
+            <div style={{ background: 'white', borderRadius: '16px', maxWidth: '560px', width: '100%', padding: '1.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
+                  🎨 Elige un Ícono de la Galería
+                </h3>
+                <button onClick={() => setGlobalIconPickerTarget(null)} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#64748b' }}>✕</button>
+              </div>
+              <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: '1rem' }}>
+                Selecciona cualquiera de los íconos minimalistas de la plataforma para asignarlo directamente:
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.75rem', maxHeight: '380px', overflowY: 'auto', paddingRight: '0.25rem' }}>
+                {allSystemIcons.map((ic, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => handleSelectGlobalIcon(ic.url)}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      padding: '0.85rem 0.5rem',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '10px',
+                      background: '#f8fafc',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.borderColor = '#0284c7';
+                      e.currentTarget.style.background = '#e0f2fe';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.borderColor = '#e2e8f0';
+                      e.currentTarget.style.background = '#f8fafc';
+                    }}
+                  >
+                    <img src={ic.url} alt={ic.label} style={{ width: '38px', height: '38px', objectFit: 'contain' }} />
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#1e293b', textAlign: 'center' }}>{ic.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   </div>
@@ -8525,6 +8673,15 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
     { label: "Oración / Pastoral", url: "/Iconos SVG/pastoral.svg" },
     { label: "Formularios / Encuestas", url: "/Iconos SVG/Formulario.svg" },
     { label: "Peticiones", url: "/Iconos SVG/Peticiones.svg" },
+    { label: "Módulo / Proceso", url: "/Iconos SVG/Proceso.svg" },
+    { label: "Biblioteca Digital", url: "/Iconos SVG/biblioteca.svg" },
+    { label: "Contacto / Redes", url: "/Iconos SVG/contacto.svg" },
+    { label: "Notificaciones", url: "/Iconos SVG/notificaciones.svg" },
+    { label: "Soporte Técnico", url: "/Iconos SVG/soporte.svg" },
+    { label: "Paz", url: "/Iconos SVG/paz.svg" },
+    { label: "Paciencia", url: "/Iconos SVG/paciencia.svg" },
+    { label: "Mansedumbre", url: "/Iconos SVG/mansedumbre.svg" },
+    { label: "Templanza", url: "/Iconos SVG/templanza.svg" },
   ];
 
   // Modal Selector de Galería de Íconos

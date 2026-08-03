@@ -264,7 +264,7 @@ export async function POST(request: Request) {
       }
 
       case "addModulo": {
-        const { nombre_modulo } = data;
+        const { nombre_modulo, icono_url } = data;
         const maxModulo = await prisma.moduloConfig.findFirst({
           where: { iglesia_id: defaultIglesiaId },
           orderBy: { orden: "desc" },
@@ -275,6 +275,7 @@ export async function POST(request: Request) {
           data: {
             iglesia_id: defaultIglesiaId,
             nombre_modulo,
+            icono_url: icono_url || null,
             orden: nextOrder,
           },
         });
@@ -290,10 +291,13 @@ export async function POST(request: Request) {
       }
 
       case "updateModulo": {
-        const { id, nombre_modulo } = data;
+        const { id, nombre_modulo, icono_url } = data;
         const updated = await prisma.moduloConfig.update({
           where: { id },
-          data: { nombre_modulo },
+          data: { 
+            ...(nombre_modulo !== undefined && { nombre_modulo }),
+            ...(icono_url !== undefined && { icono_url: icono_url || null }),
+          },
         });
         return NextResponse.json(updated);
       }
@@ -550,15 +554,16 @@ export async function POST(request: Request) {
       }
 
       case "updateGroup": {
-        const { id, nombre_grupo, rango_edad_min, rango_edad_max, estado_civil_requerido, sexo } = data;
+        const { id, nombre_grupo, rango_edad_min, rango_edad_max, estado_civil_requerido, sexo, logo_url } = data;
         const updated = await prisma.grupoConexion.update({
           where: { id },
           data: {
-            nombre_grupo,
-            rango_edad_min: rango_edad_min ? parseInt(rango_edad_min) : null,
-            rango_edad_max: rango_edad_max ? parseInt(rango_edad_max) : null,
-            estado_civil_requerido: estado_civil_requerido || null,
-            sexo: sexo || null,
+            ...(nombre_grupo !== undefined && { nombre_grupo }),
+            ...(rango_edad_min !== undefined && { rango_edad_min: rango_edad_min ? parseInt(rango_edad_min) : null }),
+            ...(rango_edad_max !== undefined && { rango_edad_max: rango_edad_max ? parseInt(rango_edad_max) : null }),
+            ...(estado_civil_requerido !== undefined && { estado_civil_requerido: estado_civil_requerido || null }),
+            ...(sexo !== undefined && { sexo: sexo || null }),
+            ...(logo_url !== undefined && { logo_url: logo_url || null }),
           },
         });
         return NextResponse.json(updated);

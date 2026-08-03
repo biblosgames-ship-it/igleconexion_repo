@@ -148,10 +148,11 @@ model EtapaConfig {
 }
 
 model ModuloConfig {
-  id            String @id @default(uuid())
+  id            String  @id @default(uuid())
   iglesia_id    String
   nombre_modulo String
-  orden         Int    @default(0)
+  icono_url     String?
+  orden         Int     @default(0)
 
   iglesia Iglesia       @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
   tareas  TareaConfig[]
