@@ -1270,42 +1270,47 @@ export default function FinanzasModule() {
       )}
 
       {/* DIEZMOS */}
-      {activeSubTab === 'diezmos' && (
-        <div>
-          <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '1rem', color: '#0f172a' }}>Registrar Diezmo</h3>
-            <form onSubmit={registrarDiezmo} style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-              <div style={{ flex: '1 1 200px' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>Miembro</label>
-                <select required value={dPersonaId} onChange={e=>setDPersonaId(e.target.value)} style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }}>
-                  <option value="">Seleccionar...</option>
-                  {miembros.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
-                </select>
-              </div>
-              <div style={{ flex: '1 1 120px' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>Monto</label>
-                <div style={{ display: 'flex', gap: '0.2rem' }}>
-                  <input required type="number" step="0.01" value={dMonto} onChange={e=>setDMonto(e.target.value)} style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px 0 0 8px' }} />
-                  <button type="button" onClick={() => setShowContador(true)} style={{ padding: '0 0.75rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '0 8px 8px 0', cursor: 'pointer', fontWeight: 'bold' }} title="Contador de Dinero">
-                    🧮
-                  </button>
+      {activeSubTab === 'diezmos' && (() => {
+        const listaCuentas = finData?.cuentas || cuentas || [];
+        const cajasFisicas = listaCuentas.filter((c: any) => 
+          c.tipo === 'CAJA_CHICA' || c.tipo === 'CAJA_GENERAL' || c.tipo === 'BANCO' ||
+          c.nombre.toLowerCase() === 'caja chica' || c.nombre.toLowerCase() === 'caja general' || c.nombre.toLowerCase() === 'caja de banco'
+        );
+
+        return (
+          <div>
+            <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '1rem', color: '#0f172a' }}>Registrar Diezmo</h3>
+              <form onSubmit={registrarDiezmo} style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                <div style={{ flex: '1 1 200px' }}>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>Miembro</label>
+                  <select required value={dPersonaId} onChange={e=>setDPersonaId(e.target.value)} style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }}>
+                    <option value="">Seleccionar...</option>
+                    {miembros.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
+                  </select>
                 </div>
-              </div>
-              <div style={{ flex: '1 1 140px' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>📅 Fecha</label>
-                <input required type="date" value={dFecha} onChange={e=>setDFecha(e.target.value)} style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
-              </div>
-              <div style={{ flex: '1 1 180px' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>Cuenta a Acreditar</label>
-                <select 
-                  value={dCuentaId} 
-                  onChange={e => setDCuentaId(e.target.value)} 
-                  style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: 'white' }}
-                >
-                  <option value="">-- Auto según Método --</option>
-                  {(finData?.cuentas || cuentas || [])
-                    .filter((c: any) => ['CAJA_CHICA', 'CAJA_GENERAL', 'BANCO'].includes(c.tipo) || ['caja chica', 'caja general', 'caja de banco'].some(k => c.nombre.toLowerCase().includes(k)))
-                    .map((c: any) => {
+                <div style={{ flex: '1 1 120px' }}>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>Monto</label>
+                  <div style={{ display: 'flex', gap: '0.2rem' }}>
+                    <input required type="number" step="0.01" value={dMonto} onChange={e=>setDMonto(e.target.value)} style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px 0 0 8px' }} />
+                    <button type="button" onClick={() => setShowContador(true)} style={{ padding: '0 0.75rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '0 8px 8px 0', cursor: 'pointer', fontWeight: 'bold' }} title="Contador de Dinero">
+                      🧮
+                    </button>
+                  </div>
+                </div>
+                <div style={{ flex: '1 1 140px' }}>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>📅 Fecha</label>
+                  <input required type="date" value={dFecha} onChange={e=>setDFecha(e.target.value)} style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                </div>
+                <div style={{ flex: '1 1 200px' }}>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>Caja Destino (Acreditar)</label>
+                  <select 
+                    value={dCuentaId} 
+                    onChange={e => setDCuentaId(e.target.value)} 
+                    style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: 'white' }}
+                  >
+                    <option value="">-- Auto según Método --</option>
+                    {cajasFisicas.map((c: any) => {
                       const icon = c.nombre.toLowerCase().includes('chica') ? '💵 ' : c.nombre.toLowerCase().includes('general') ? '🏛️ ' : '🏦 ';
                       return (
                         <option key={c.id} value={c.id}>
@@ -1313,31 +1318,30 @@ export default function FinanzasModule() {
                         </option>
                       );
                     })}
-                </select>
-              </div>
-              <div style={{ flex: '1 1 140px' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>Método</label>
-                <select 
-                  value={dMetodo} 
-                  onChange={e => {
-                    const val = e.target.value;
-                    setDMetodo(val);
-                    if (val === 'TRANSFERENCIA') {
-                      const lista = finData?.cuentas || cuentas || [];
-                      const banco = lista.find((c: any) => c.nombre.toLowerCase().includes('banco') || c.tipo === 'BANCO');
-                      if (banco) setDCuentaId(banco.id);
-                    }
-                  }} 
-                  style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }}
-                >
-                  <option value="EFECTIVO">💵 Efectivo</option>
-                  <option value="TRANSFERENCIA">🏦 Transferencia (Ir a Banco)</option>
-                  <option value="CHEQUE">📜 Cheque</option>
-                </select>
-              </div>
-              <button type="submit" style={{ padding: '0.75rem 1.5rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>Registrar</button>
-            </form>
-          </div>
+                  </select>
+                </div>
+                <div style={{ flex: '1 1 140px' }}>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>Método de Pago</label>
+                  <select 
+                    value={dMetodo} 
+                    onChange={e => {
+                      const val = e.target.value;
+                      setDMetodo(val);
+                      if (val === 'TRANSFERENCIA') {
+                        const banco = cajasFisicas.find((c: any) => c.nombre.toLowerCase().includes('banco') || c.tipo === 'BANCO');
+                        if (banco) setDCuentaId(banco.id);
+                      }
+                    }} 
+                    style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }}
+                  >
+                    <option value="EFECTIVO">💵 Efectivo</option>
+                    <option value="TRANSFERENCIA">🏦 Transferencia (Ir a Banco)</option>
+                    <option value="CHEQUE">📜 Cheque</option>
+                  </select>
+                </div>
+                <button type="submit" style={{ padding: '0.75rem 1.5rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>Registrar</button>
+              </form>
+            </div>
           
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', background: 'white', borderRadius: '12px', overflow: 'hidden' }}>
             <thead style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
@@ -1366,7 +1370,8 @@ export default function FinanzasModule() {
             </tbody>
           </table>
         </div>
-      )}
+        );
+      })()}
 
       {/* OFRENDAS E INGRESOS / GASTOS / MINISTERIOS */}
       {['ofrendas', 'gastos', 'ministerios'].includes(activeSubTab) && (() => {
