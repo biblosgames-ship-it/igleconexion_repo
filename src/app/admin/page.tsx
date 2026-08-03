@@ -51,7 +51,7 @@ export default function SuperAdminPage() {
     { id: 12, label: "Dashboard", title: "Reporte y Dashboard Analítico", description: "Estado y crecimiento congregacional a la luz del avance por etapas.", icon: "/Iconos SVG/dashboard.png", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 1, label: "Mi Iglesia", title: "Mi Iglesia y Configuración General", description: "Gestiona los datos, colores, agenda y recursos disponibles para los miembros.", icon: "/Iconos SVG/Identidad-2.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 2, label: "Sociedades", title: "Estructura de Sociedades y Grupos", description: "Crea las Sociedades principales y subdivídelas en Grupos de Conexión.", icon: "/Iconos SVG/Sociedad.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
-    { id: 18, label: "Grupos de Familias", title: "Grupos de Familias de Hogar", description: "Administra los Macro Grupos de familias mixtos de la iglesia, sus directivas, cultos de hogar y necesidades de familias.", icon: "🏡", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
+    { id: 18, label: "Grupos de Familias", title: "Grupos de Familias de Hogar", description: "Administra los Macro Grupos de familias mixtos de la iglesia, sus directivas, cultos de hogar y necesidades de familias.", icon: "/Iconos SVG/familia.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 3, label: "Etapas de Crecimiento", title: "Estructura de la Ruta de Crecimiento", description: "Configura las Etapas del camino de crecimiento del miembro y mapea sus procesos.", icon: "/Iconos SVG/Etapas.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 4, label: "Módulos de Procesos", title: "Catálogo de Módulos y Procesos", description: "Crea los Módulos correspondientes a los departamentos de trabajo y registra las tareas.", icon: "/Iconos SVG/Proceso.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 5, label: "Liderazgo y Permisos", title: "Consola de Liderazgo y Permisos (RBAC)", description: "Organiza y clasifica a los líderes por áreas, personaliza sus categorías y crea sus directivas.", icon: "/Iconos SVG/servicio.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
@@ -8516,6 +8516,62 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
     }
   };
 
+  const handleUpdateGrupoFamiliaLogo = async (gfId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type === "image/svg+xml") {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const svgContent = event.target?.result as string;
+        const finalUrl = svgContent.startsWith("data:") ? svgContent : `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgContent)))}`;
+        await fetch("/api/grupos-familia", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "updateGrupoFamilia",
+            data: { id: gfId, logo_url: finalUrl }
+          })
+        });
+        fetchGruposFamilia();
+      };
+      reader.readAsText(file);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 120;
+        canvas.height = 120;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.clearRect(0, 0, 120, 120);
+          const scale = Math.min(120 / img.width, 120 / img.height);
+          const x = (120 - img.width * scale) / 2;
+          const y = (120 - img.height * scale) / 2;
+          const width = img.width * scale;
+          const height = img.height * scale;
+          ctx.drawImage(img, x, y, width, height);
+          const compressedBase64 = canvas.toDataURL("image/png");
+          await fetch("/api/grupos-familia", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "updateGrupoFamilia",
+              data: { id: gfId, logo_url: compressedBase64 }
+            })
+          });
+          fetchGruposFamilia();
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div>
       {/* Formulario Crear Grupo de Familia */}
@@ -8588,14 +8644,18 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
             <div key={gf.id} style={{ background: 'white', borderRadius: '12px', border: '1px solid #cbd5e1', padding: '1.25rem', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                  <div style={{ width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {gf.logo_url && gf.logo_url.startsWith('/') ? (
-                      <img src={gf.logo_url} alt={gf.nombre_grupo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  <div style={{ position: 'relative', width: '32px', height: '32px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} title="Click en 📷 para cambiar ícono / logo del Grupo">
+                    {gf.logo_url && (gf.logo_url.startsWith('/') || gf.logo_url.startsWith('data:')) ? (
+                      <img src={gf.logo_url} alt={gf.nombre_grupo} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%' }} />
                     ) : gf.logo_url ? (
                       <span style={{ fontSize: '1.2rem' }}>{gf.logo_url}</span>
                     ) : (
                       <img src="/Iconos SVG/familia.svg" alt={gf.nombre_grupo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     )}
+                    <label style={{ position: 'absolute', bottom: '-4px', right: '-4px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                      <span style={{ fontSize: '9px' }}>📷</span>
+                      <input type="file" accept="image/*,.svg" onChange={(e) => handleUpdateGrupoFamiliaLogo(gf.id, e)} style={{ display: 'none' }} />
+                    </label>
                   </div>
                   <span style={{ fontSize: '0.75rem', backgroundColor: '#dcfce7', color: '#166534', fontWeight: 800, padding: '2px 8px', borderRadius: '12px' }}>
                     Grupo #{gf.numero_grupo}
