@@ -166,7 +166,7 @@ function GrupoFamiliaContent() {
     );
   }
 
-  const iconDisplay = grupoData.logo_url || "/Iconos SVG/familia.svg";
+  const iconDisplay = grupoData.logo_url || "/Iconos SVG/familia-3.svg";
 
   return (
     <div className={styles.container}>

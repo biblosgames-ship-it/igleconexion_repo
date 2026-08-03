@@ -48,19 +48,19 @@ export default function SuperAdminPage() {
   };
 
   const allTabs = [
-    { id: 12, label: "Dashboard", title: "Reporte y Dashboard Analítico", description: "Estado y crecimiento congregacional a la luz del avance por etapas.", icon: "/Iconos SVG/dashboard.png", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
-    { id: 1, label: "Mi Iglesia", title: "Mi Iglesia y Configuración General", description: "Gestiona los datos, colores, agenda y recursos disponibles para los miembros.", icon: "/Iconos SVG/Identidad-2.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
+    { id: 12, label: "Dashboard", title: "Reporte y Dashboard Analítico", description: "Estado y crecimiento congregacional a la luz del avance por etapas.", icon: "/Iconos SVG/dashboard.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
+    { id: 1, label: "Mi Iglesia", title: "Mi Iglesia y Configuración General", description: "Gestiona los datos, colores, agenda y recursos disponibles para los miembros.", icon: "/Iconos SVG/Iglesia-ID.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 2, label: "Sociedades", title: "Estructura de Sociedades y Grupos", description: "Crea las Sociedades principales y subdivídelas en Grupos de Conexión.", icon: "/Iconos SVG/Sociedad.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
-    { id: 18, label: "Grupos de Familias", title: "Grupos de Familias de Hogar", description: "Administra los Macro Grupos de familias mixtos de la iglesia, sus directivas, cultos de hogar y necesidades de familias.", icon: "/Iconos SVG/familia.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
+    { id: 18, label: "Grupos de Familias", title: "Grupos de Familias de Hogar", description: "Administra los Macro Grupos de familias mixtos de la iglesia, sus directivas, cultos de hogar y necesidades de familias.", icon: "/Iconos SVG/familia-3.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 3, label: "Etapas de Crecimiento", title: "Estructura de la Ruta de Crecimiento", description: "Configura las Etapas del camino de crecimiento del miembro y mapea sus procesos.", icon: "/Iconos SVG/Etapas.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 4, label: "Módulos de Procesos", title: "Catálogo de Módulos y Procesos", description: "Crea los Módulos correspondientes a los departamentos de trabajo y registra las tareas.", icon: "/Iconos SVG/Proceso.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 5, label: "Liderazgo y Permisos", title: "Consola de Liderazgo y Permisos (RBAC)", description: "Organiza y clasifica a los líderes por áreas, personaliza sus categorías y crea sus directivas.", icon: "/Iconos SVG/servicio.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 6, label: "Agenda y Eventos", title: "Agenda de Actividades de la Iglesia", description: "Programa actividades semanales regulares y eventos especiales.", icon: "/Iconos SVG/Agenda.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 7, label: "Miembros", title: "Administración General de Miembros", description: "Busca, edita y gestiona la información y etapas de crecimiento de todos los miembros registrados en la iglesia.", icon: "/Iconos SVG/Miembros.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
-    { id: 9, label: "Comunicados", title: "Comunicados Oficiales", description: "Publica anuncios oficiales para toda la iglesia, sociedades específicas o grupos de líderes.", icon: "/Iconos SVG/comunicado.png", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
-    { id: 10, label: "Finanzas", title: "Módulo de Finanzas", description: "Gestión completa de ingresos, egresos, fondos y nómina de la iglesia.", icon: "/Iconos SVG/finanzas.png", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
+    { id: 9, label: "Comunicados", title: "Comunicados Oficiales", description: "Publica anuncios oficiales para toda la iglesia, sociedades específicas o grupos de líderes.", icon: "/Iconos SVG/comunicado.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
+    { id: 10, label: "Finanzas", title: "Módulo de Finanzas", description: "Gestión completa de ingresos, egresos, fondos y nómina de la iglesia.", icon: "/Iconos SVG/finanzas.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 11, label: "Pastoral", title: "Módulo Pastoral", description: "Gestión de peticiones de oración y bitácora de seguimiento pastoral.", icon: "/Iconos SVG/pastoral.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
-    { id: 17, label: "Templo", title: "Administración del Templo y Planta Física", description: "Administra el inventario de bienes, programar mantenimiento, control de préstamos de artículos y reservas de salones.", icon: "/Iconos SVG/templo.png", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
+    { id: 17, label: "Templo", title: "Administración del Templo y Planta Física", description: "Administra el inventario de bienes, programar mantenimiento, control de préstamos de artículos y reservas de salones.", icon: "/Iconos SVG/templo-2.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 14, label: "Eventos y Cursos", title: "Gestión de Eventos y Cursos", description: "Administra eventos, cursos de crecimiento y check-in de asistencia.", icon: "/Iconos SVG/Ebento.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 16, label: "Formularios y Encuestas", title: "Encuestas y Formularios", description: "Crea y gestiona formularios, encuestas y recopila respuestas de los miembros.", icon: "/Iconos SVG/Formulario.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 8, label: "Soporte Técnico", title: "Soporte Técnico y Mensajería", description: "Chatea directamente con nuestro equipo de soporte técnico para resolver dudas o problemas.", icon: "/Iconos SVG/soporte.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] }
@@ -2186,7 +2186,7 @@ export default function SuperAdminPage() {
               </Link>
             )}
             <Link href="/hub" style={{ fontSize: '0.8rem', fontWeight: 600, color: '#0284c7', textDecoration: 'none', background: '#e0f2fe', padding: '0.35rem 0.75rem', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-              <img src="/Iconos SVG/iglesia.png" alt="Mi Iglesia" style={{ width: 14, height: 14, objectFit: 'contain' }} /> Ver Mi Iglesia
+              <img src="/Iconos SVG/Iglesia-ID.svg" alt="Mi Iglesia" style={{ width: 14, height: 14, objectFit: 'contain' }} /> Ver Mi Iglesia
             </Link>
             <Link href="/perfil" style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569', textDecoration: 'none', background: '#f1f5f9', padding: '0.35rem 0.75rem', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
               <img src="/Iconos SVG/perfil.svg" alt="Perfil" style={{ width: 14, height: 14, objectFit: 'contain' }} /> Mi Perfil
@@ -8406,15 +8406,15 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
   // Formulario nuevo grupo
   const [numGrupo, setNumGrupo] = useState("");
   const [nombreGrupo, setNombreGrupo] = useState("");
-  const [iconoGrupo, setIconoGrupo] = useState("/Iconos SVG/familia.svg");
+  const [iconoGrupo, setIconoGrupo] = useState("/Iconos SVG/familia-3.svg");
   const [descripcionGrupo, setDescripcionGrupo] = useState("");
 
   // Galería de Íconos Sugeridos Minimalistas
   const availableIcons = [
-    { label: "Grupo de Familia", url: "/Iconos SVG/familia.svg" },
-    { label: "Grupo de Conexión", url: "/Iconos SVG/grupo.svg" },
+    { label: "Grupo de Familia", url: "/Iconos SVG/familia-3.svg" },
+    { label: "Grupo de Conexión", url: "/Iconos SVG/Grupo 1.svg" },
     { label: "Sociedad / Comunidad", url: "/Iconos SVG/Sociedad.svg" },
-    { label: "Identidad / Hogar", url: "/Iconos SVG/Identidad-2.svg" },
+    { label: "Identidad / Hogar", url: "/Iconos SVG/Iglesia-ID.svg" },
     { label: "Ministerio / Servicio", url: "/Iconos SVG/servicio.svg" },
     { label: "Miembros / Red", url: "/Iconos SVG/Miembros.svg" },
     { label: "Crecimiento / Etapas", url: "/Iconos SVG/Etapas.svg" },
@@ -8650,7 +8650,7 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
                     ) : gf.logo_url ? (
                       <span style={{ fontSize: '1.2rem' }}>{gf.logo_url}</span>
                     ) : (
-                      <img src="/Iconos SVG/familia.svg" alt={gf.nombre_grupo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                      <img src="/Iconos SVG/familia-3.svg" alt={gf.nombre_grupo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     )}
                     <label style={{ position: 'absolute', bottom: '-4px', right: '-4px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
                       <span style={{ fontSize: '9px' }}>📷</span>

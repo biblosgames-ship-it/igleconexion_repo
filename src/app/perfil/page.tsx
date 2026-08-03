@@ -474,7 +474,7 @@ export default function Perfil() {
       <header className={styles.header}>
         <div className={styles.headerLeft}>
           <Link href="/hub" className={styles.backBtn} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-            <img src="/Iconos SVG/iglesia.png" alt="Mi Iglesia" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> <span className={styles.backBtnText}>Volver a Mi Iglesia</span>
+            <img src="/Iconos SVG/Iglesia-ID.svg" alt="Mi Iglesia" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> <span className={styles.backBtnText}>Volver a Mi Iglesia</span>
           </Link>
 
         </div>
@@ -989,19 +989,19 @@ export default function Perfil() {
               <div className={styles.leaderBadges} style={{ paddingBottom: '1rem' }}>
                 {currentUser.rol === "ADMIN_IGLESIA" && (
                   <Link href="/admin" className={styles.leaderBadge} title="Configurar Iglesia">
-                    <span className={styles.badgeIcon}><img src="/Iconos SVG/dashboard.png" alt="" /></span>
+                    <span className={styles.badgeIcon}><img src="/Iconos SVG/dashboard.svg" alt="" /></span>
                     <span className={styles.badgeText}>Admin Iglesia</span>
                   </Link>
                 )}
                 {currentUser.rol === "LIDER" && currentUser.paginas_acceso && (
                   <Link href="/admin" className={styles.leaderBadge} title="Panel de Administración">
-                    <span className={styles.badgeIcon}><img src="/Iconos SVG/dashboard.png" alt="" /></span>
+                    <span className={styles.badgeIcon}><img src="/Iconos SVG/dashboard.svg" alt="" /></span>
                     <span className={styles.badgeText}>Liderazgo</span>
                   </Link>
                 )}
                 {currentUser.rol === "SUPERADMIN" && (
                   <Link href="/admin" className={styles.leaderBadge} title="Configurar esta Iglesia">
-                    <span className={styles.badgeIcon}><img src="/Iconos SVG/dashboard.png" alt="" /></span>
+                    <span className={styles.badgeIcon}><img src="/Iconos SVG/dashboard.svg" alt="" /></span>
                     <span className={styles.badgeText}>Config Iglesia</span>
                   </Link>
                 )}
@@ -1018,7 +1018,7 @@ export default function Perfil() {
                   </Link>
                 )}
                 <Link href="/grupo" className={styles.leaderBadge} title="Mi Grupo de Conexión">
-                  <span className={styles.badgeIcon}><img src="/Iconos SVG/Grupo de conexion.svg" alt="" /></span>
+                  <span className={styles.badgeIcon}><img src="/Iconos SVG/Grupo 1.svg" alt="" /></span>
                   <span className={styles.badgeText}>Mi Grupo</span>
                 </Link>
 

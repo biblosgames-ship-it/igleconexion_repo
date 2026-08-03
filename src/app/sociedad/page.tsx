@@ -79,7 +79,7 @@ export default function SociedadPage() {
       <div className={styles.container}>
         <header className={styles.header}>
           <Link href="/hub" className={styles.backBtn} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-            <img src="/Iconos SVG/iglesia.png" alt="Mi Iglesia" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> Volver a Mi Iglesia
+            <img src="/Iconos SVG/Iglesia-ID.svg" alt="Mi Iglesia" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> Volver a Mi Iglesia
           </Link>
         </header>
         <main className={styles.main}>
@@ -219,7 +219,7 @@ export default function SociedadPage() {
       <header className={styles.header}>
         <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
           <Link href="/hub" className={styles.backBtn} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-            <img src="/Iconos SVG/iglesia.png" alt="Mi Iglesia" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> Volver a Mi Iglesia
+            <img src="/Iconos SVG/Iglesia-ID.svg" alt="Mi Iglesia" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> Volver a Mi Iglesia
           </Link>
           <div className={styles.headerTitle}>
             📊 Panorama de Sociedades
@@ -239,7 +239,7 @@ export default function SociedadPage() {
             </p>
             <div style={{ display: "flex", justifyContent: "center" }}>
               <Link href="/hub" className={styles.actionBtn} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: "0.6rem 1.25rem" }}>
-                <img src="/Iconos SVG/iglesia.png" alt="Mi Iglesia" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> Volver a Mi Iglesia
+                <img src="/Iconos SVG/Iglesia-ID.svg" alt="Mi Iglesia" style={{ width: '16px', height: '16px', objectFit: 'contain' }} /> Volver a Mi Iglesia
               </Link>
             </div>
           </div>

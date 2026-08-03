@@ -524,7 +524,7 @@ export default function Hub() {
             {logo ? (
               <img src={logo} alt="Logo" style={{ width: '18px', height: '18px', objectFit: 'contain', borderRadius: '50%' }} />
             ) : (
-              <img src="/Iconos SVG/Identidad-2.svg" alt="Quiénes Somos" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
+              <img src="/Iconos SVG/Iglesia-ID.svg" alt="Quiénes Somos" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
             )}
             <span>Quiénes Somos</span>
           </button>
@@ -539,7 +539,7 @@ export default function Hub() {
               title="Comunicados Oficiales"
               style={{ position: 'relative' }}
             >
-              <img src="/Iconos SVG/comunicado.png" alt="Comunicados" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+              <img src="/Iconos SVG/comunicado.svg" alt="Comunicados" style={{ width: 22, height: 22, objectFit: 'contain' }} />
               {comunicadosList.some(c => !c.leido) && (
                 <span style={{
                   position: 'absolute',
@@ -592,7 +592,7 @@ export default function Hub() {
             {(userRole === "SUPERADMIN" || userRole === "ADMIN_IGLESIA" || userRole === "LIDER") && (
               <Link href={userRole === "SUPERADMIN" ? "/superadmin" : "/admin"} title="Configuración">
                 <button className={styles.navIcon} type="button" onClick={() => setMobileNavOpen(false)}>
-                  <img src="/Iconos SVG/dashboard.png" alt="Configuración" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                  <img src="/Iconos SVG/dashboard.svg" alt="Configuración" style={{ width: 22, height: 22, objectFit: 'contain' }} />
                   <span className={styles.navIconLabel}>Config</span>
                 </button>
               </Link>
@@ -1184,7 +1184,7 @@ export default function Hub() {
               <h2 className={styles.sectionTitle}>🏡 Mi Grupo de Familia</h2>
               <div className={styles.societiesGrid}>
                 {displayedGruposFamilia.map((gf: any) => {
-                  const iconDisplay = gf.logo_url || "/Iconos SVG/familia.svg";
+                  const iconDisplay = gf.logo_url || "/Iconos SVG/familia-3.svg";
                   return (
                     <Link 
                       key={gf.id} 
