@@ -50,8 +50,8 @@ export default function SuperAdminPage() {
   const allTabs = [
     { id: 12, label: "Dashboard", title: "Reporte y Dashboard Analítico", description: "Estado y crecimiento congregacional a la luz del avance por etapas.", icon: "/Iconos SVG/dashboard.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 1, label: "Mi Iglesia", title: "Mi Iglesia y Configuración General", description: "Gestiona los datos, colores, agenda y recursos disponibles para los miembros.", icon: "/Iconos SVG/Iglesia-ID.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
-    { id: 2, label: "Sociedades", title: "Estructura de Sociedades y Grupos", description: "Crea las Sociedades principales y subdivídelas en Grupos de Conexión.", icon: "/Iconos SVG/Sociedad.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
-    { id: 18, label: "Grupos de Familias", title: "Grupos de Familias de Hogar", description: "Administra los Macro Grupos de familias mixtos de la iglesia, sus directivas, cultos de hogar y necesidades de familias.", icon: "/Iconos SVG/familia-3.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
+    { id: 2, label: "Sociedades y Grupos", title: "Estructura de Sociedades y Grupos", description: "Crea las Sociedades principales y subdivídelas en Grupos de Conexión.", icon: "/Iconos SVG/Sociedad.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
+    { id: 18, label: "Familia", title: "Grupos de Familias de Hogar", description: "Administra los Macro Grupos de familias mixtos de la iglesia, sus directivas, cultos de hogar y necesidades de familias.", icon: "/Iconos SVG/familia-3.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 3, label: "Etapas de Crecimiento", title: "Estructura de la Ruta de Crecimiento", description: "Configura las Etapas del camino de crecimiento del miembro y mapea sus procesos.", icon: "/Iconos SVG/Etapas.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 4, label: "Módulos de Procesos", title: "Catálogo de Módulos y Procesos", description: "Crea los Módulos correspondientes a los departamentos de trabajo y registra las tareas.", icon: "/Iconos SVG/Proceso.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
     { id: 5, label: "Liderazgo y Permisos", title: "Consola de Liderazgo y Permisos (RBAC)", description: "Organiza y clasifica a los líderes por áreas, personaliza sus categorías y crea sus directivas.", icon: "/Iconos SVG/servicio.svg", roles: ["SUPERADMIN", "ADMIN_IGLESIA"] },
@@ -2177,6 +2177,49 @@ export default function SuperAdminPage() {
           >
             {sidebarCollapsed ? "▶" : "◀"}
           </button>
+          
+          {currentUser && (
+            <div 
+              style={{ 
+                padding: sidebarCollapsed ? '0.4rem' : '0.5rem 0.75rem', 
+                marginBottom: '0.5rem', 
+                background: '#f1f5f9', 
+                borderRadius: '8px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.5rem',
+                justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+                overflow: 'hidden'
+              }}
+              title={`Usuario registrado: ${currentUser.persona?.nombre || currentUser.email}`}
+            >
+              <div style={{ 
+                width: '28px', 
+                height: '28px', 
+                borderRadius: '50%', 
+                background: '#0284c7', 
+                color: '#ffffff', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                fontWeight: 700, 
+                fontSize: '0.75rem',
+                flexShrink: 0 
+              }}>
+                {(currentUser.persona?.nombre || currentUser.email || 'U').charAt(0).toUpperCase()}
+              </div>
+              {!sidebarCollapsed && (
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {currentUser.persona?.nombre || currentUser.email}
+                  </span>
+                  <span style={{ fontSize: '0.68rem', color: '#64748b', whiteSpace: 'nowrap' }}>
+                    {currentUser.rol === 'SUPERADMIN' ? 'Super Admin' : currentUser.rol === 'ADMIN_IGLESIA' ? 'Admin Iglesia' : 'Líder'}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
           
           <button
             type="button"
@@ -8097,6 +8140,21 @@ export default function SuperAdminPage() {
                   </button>
                 ))}
                 <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '1rem 0' }} />
+                {currentUser && (
+                  <div style={{ padding: '0.5rem 0.75rem', marginBottom: '0.5rem', background: '#f1f5f9', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#0284c7', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0 }}>
+                      {(currentUser.persona?.nombre || currentUser.email || 'U').charAt(0).toUpperCase()}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {currentUser.persona?.nombre || currentUser.email}
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                        {currentUser.rol === 'SUPERADMIN' ? 'Super Admin' : currentUser.rol === 'ADMIN_IGLESIA' ? 'Admin Iglesia' : 'Líder'}
+                      </span>
+                    </div>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={handleLogout}
