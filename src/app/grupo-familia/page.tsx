@@ -166,7 +166,7 @@ function GrupoFamiliaContent() {
     );
   }
 
-  const iconDisplay = grupoData.logo_url || "/Iconos SVG/Grupo de conexion.svg";
+  const iconDisplay = grupoData.logo_url || "/Iconos SVG/familia.svg";
 
   return (
     <div className={styles.container}>

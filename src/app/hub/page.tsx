@@ -1184,7 +1184,7 @@ export default function Hub() {
               <h2 className={styles.sectionTitle}>🏡 Mi Grupo de Familia</h2>
               <div className={styles.societiesGrid}>
                 {displayedGruposFamilia.map((gf: any) => {
-                  const iconDisplay = gf.logo_url || "/Iconos SVG/Grupo de conexion.svg";
+                  const iconDisplay = gf.logo_url || "/Iconos SVG/familia.svg";
                   return (
                     <Link 
                       key={gf.id} 

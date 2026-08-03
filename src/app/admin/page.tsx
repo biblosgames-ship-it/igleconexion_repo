@@ -8406,12 +8406,13 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
   // Formulario nuevo grupo
   const [numGrupo, setNumGrupo] = useState("");
   const [nombreGrupo, setNombreGrupo] = useState("");
-  const [iconoGrupo, setIconoGrupo] = useState("/Iconos SVG/Grupo de conexion.svg");
+  const [iconoGrupo, setIconoGrupo] = useState("/Iconos SVG/familia.svg");
   const [descripcionGrupo, setDescripcionGrupo] = useState("");
 
   // Galería de Íconos Sugeridos Minimalistas
   const availableIcons = [
-    { label: "Familia / Grupo", url: "/Iconos SVG/Grupo de conexion.svg" },
+    { label: "Grupo de Familia", url: "/Iconos SVG/familia.svg" },
+    { label: "Grupo de Conexión", url: "/Iconos SVG/grupo.svg" },
     { label: "Sociedad / Comunidad", url: "/Iconos SVG/Sociedad.svg" },
     { label: "Identidad / Hogar", url: "/Iconos SVG/Identidad-2.svg" },
     { label: "Ministerio / Servicio", url: "/Iconos SVG/servicio.svg" },
@@ -8590,8 +8591,10 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
                   <div style={{ width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {gf.logo_url && gf.logo_url.startsWith('/') ? (
                       <img src={gf.logo_url} alt={gf.nombre_grupo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    ) : gf.logo_url ? (
+                      <span style={{ fontSize: '1.2rem' }}>{gf.logo_url}</span>
                     ) : (
-                      <span style={{ fontSize: '1.2rem' }}>{gf.logo_url || "👨‍👩‍👧‍👦"}</span>
+                      <img src="/Iconos SVG/familia.svg" alt={gf.nombre_grupo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     )}
                   </div>
                   <span style={{ fontSize: '0.75rem', backgroundColor: '#dcfce7', color: '#166534', fontWeight: 800, padding: '2px 8px', borderRadius: '12px' }}>
