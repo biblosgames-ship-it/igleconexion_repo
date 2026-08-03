@@ -35,24 +35,33 @@
 }
 
 .sidebarLogo {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   object-fit: contain;
-  border-radius: 6px;
+  border-radius: 8px;
+  background-color: #ffffff;
+  padding: 3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   flex-shrink: 0;
 }
 
 .sidebarLogoPlaceholder {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   flex-shrink: 0;
-  width: 32px;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
 }
 
 .sidebarTitle {
   font-weight: 800;
   font-size: 0.95rem;
-  color: #38bdf8;
+  color: #ffffff;
   overflow: hidden;
   text-overflow: ellipsis;
 }
