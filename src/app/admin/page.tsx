@@ -2145,7 +2145,16 @@ export default function SuperAdminPage() {
           ) : (
             <span className={styles.sidebarLogoPlaceholder}>⛪</span>
           )}
-          {!sidebarCollapsed && <span className={styles.sidebarTitle}>{churchName || "Configuración"}</span>}
+          {!sidebarCollapsed && (
+            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+              <span className={styles.sidebarTitle}>{churchName || "Configuración"}</span>
+              {churchSlogan && (
+                <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {churchSlogan}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         <nav className={styles.sidebarMenu}>
