@@ -18,7 +18,31 @@ export async function GET(request: Request) {
   try {
     const iglesiaId = await getActiveChurchId();
     const { searchParams } = new URL(request.url);
-    const tipo = searchParams.get('tipo'); // OFRENDA, GASTO, DEPARTAMENTO
+    const tipo = searchParams.get('tipo'); // OFRENDA, GASTO, DEPARTAMENTO, CAJA_CHICA, CAJA_GENERAL, BANCO
+
+    // Garantizar que las 3 cuentas principales existan
+    const defaultCuentas = [
+      { nombre: 'Caja Chica', tipo: 'CAJA_CHICA', descripcion: 'Entradas diarias y egresos menores' },
+      { nombre: 'Caja General', tipo: 'CAJA_GENERAL', descripcion: 'Fondo consolidado de caja central' },
+      { nombre: 'Caja de Banco', tipo: 'BANCO', descripcion: 'Cuenta bancaria para depósitos y transferencias' },
+    ];
+
+    for (const def of defaultCuentas) {
+      const exists = await prisma.cuentaFondo.findFirst({
+        where: { iglesia_id: iglesiaId, nombre: def.nombre }
+      });
+      if (!exists) {
+        await prisma.cuentaFondo.create({
+          data: {
+            iglesia_id: iglesiaId,
+            nombre: def.nombre,
+            tipo: def.tipo,
+            descripcion: def.descripcion,
+            balance: 0.0
+          }
+        });
+      }
+    }
 
     const whereClause: any = { iglesia_id: iglesiaId };
     if (tipo) whereClause.tipo = tipo;
@@ -67,6 +91,66 @@ export async function POST(request: Request) {
         data: { nombre, descripcion }
       });
       return NextResponse.json(actualizada);
+    }
+
+    if (action === 'transferir_fondos') {
+      const { cuenta_origen_id, cuenta_destino_id, monto, fecha, descripcion } = data;
+      if (!cuenta_origen_id || !cuenta_destino_id || !monto || parseFloat(monto) <= 0) {
+        throw new Error("Monto o cuentas de transferencia inválidas");
+      }
+      if (cuenta_origen_id === cuenta_destino_id) {
+        throw new Error("La cuenta origen y destino deben ser distintas");
+      }
+
+      const origen = await prisma.cuentaFondo.findUnique({ where: { id: cuenta_origen_id } });
+      const destino = await prisma.cuentaFondo.findUnique({ where: { id: cuenta_destino_id } });
+      if (!origen || !destino) throw new Error("Cuentas no encontradas");
+
+      const fechaMov = fecha ? new Date(fecha) : new Date();
+      const numMonto = parseFloat(monto);
+
+      await prisma.$transaction([
+        prisma.transaccionFinanciera.create({
+          data: {
+            iglesia_id: iglesiaId,
+            cuenta_fondo_id: cuenta_origen_id,
+            tipo: 'EGRESO',
+            monto: numMonto,
+            descripcion: `Transferencia hacia ${destino.nombre}: ${descripcion || 'Traslado de fondos'}`,
+            fecha: fechaMov,
+            categoria: 'TRANSFERENCIA',
+            clasificacion: 'OTRO',
+            metodo_pago: origen.tipo === 'BANCO' ? 'TRANSFERENCIA' : 'EFECTIVO',
+            registrado_por: usuario.id,
+            usuario_creo_id: usuario.id
+          }
+        }),
+        prisma.transaccionFinanciera.create({
+          data: {
+            iglesia_id: iglesiaId,
+            cuenta_fondo_id: cuenta_destino_id,
+            tipo: 'INGRESO',
+            monto: numMonto,
+            descripcion: `Transferencia desde ${origen.nombre}: ${descripcion || 'Traslado de fondos'}`,
+            fecha: fechaMov,
+            categoria: 'TRANSFERENCIA',
+            clasificacion: 'OTRO',
+            metodo_pago: destino.tipo === 'BANCO' ? 'TRANSFERENCIA' : 'EFECTIVO',
+            registrado_por: usuario.id,
+            usuario_creo_id: usuario.id
+          }
+        }),
+        prisma.cuentaFondo.update({
+          where: { id: cuenta_origen_id },
+          data: { balance: origen.balance - numMonto }
+        }),
+        prisma.cuentaFondo.update({
+          where: { id: cuenta_destino_id },
+          data: { balance: destino.balance + numMonto }
+        })
+      ]);
+
+      return NextResponse.json({ success: true });
     }
 
     if (action === 'registrar_transaccion') {

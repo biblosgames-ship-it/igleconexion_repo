@@ -92,6 +92,59 @@ export default function FinanzasModule() {
   const denominaciones = [2000, 1000, 500, 200, 100, 50, 25, 10, 5, 1];
   const totalContador = denominaciones.reduce((acc, den) => acc + (contadorValores[den] * den), 0);
 
+  // Cajas Principales & Transferencias
+  const [tCategoria, setTCategoria] = useState('OFRENDA_GENERAL');
+  const [showMovimientoModal, setShowMovimientoModal] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [trOrigenId, setTrOrigenId] = useState('');
+  const [trDestinoId, setTrDestinoId] = useState('');
+  const [trMonto, setTrMonto] = useState('');
+  const [trFecha, setTrFecha] = useState(new Date().toISOString().substring(0, 10));
+  const [trDesc, setTrDesc] = useState('');
+
+  const ejecutarTransferencia = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!trOrigenId || !trDestinoId || !trMonto || parseFloat(trMonto) <= 0) {
+      alert("Ingresa origen, destino y un monto válido.");
+      return;
+    }
+    if (trOrigenId === trDestinoId) {
+      alert("La cuenta de origen y destino no pueden ser iguales.");
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/finanzas/cuentas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'transferir_fondos',
+          data: {
+            cuenta_origen_id: trOrigenId,
+            cuenta_destino_id: trDestinoId,
+            monto: trMonto,
+            fecha: trFecha,
+            descripcion: trDesc
+          }
+        })
+      });
+
+      if (res.ok) {
+        alert("Transferencia realizada exitosamente.");
+        setShowTransferModal(false);
+        setTrMonto('');
+        setTrDesc('');
+        loadCuentas();
+        loadDashboard();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Error al transferir");
+      }
+    } catch (e) {
+      alert("Error de conexión");
+    }
+  };
+
   useEffect(() => {
     loadDashboard();
     loadMiembros();
@@ -116,6 +169,7 @@ export default function FinanzasModule() {
       const res = await fetch(`/api/finanzas?periodo=${dashPeriodoValor}`);
       const data = await res.json();
       setFinData(data);
+      if (data.cuentas) setCuentas(data.cuentas);
 
       await loadPresupuestosMin(pmPeriodoFiltro, pmAnioFiltro);
     } catch (error) {
@@ -859,6 +913,196 @@ export default function FinanzasModule() {
               <p style={{ fontSize: '2.2rem', fontWeight: 800, color: '#0369a1', margin: 0 }}>${finData?.balanceGeneral?.toFixed(2)}</p>
             </div>
           </div>
+
+          {/* SECCIÓN DE TRES CAJAS CONTABLES PRINCIPALES */}
+          {(() => {
+            const listaCuentas = finData?.cuentas || cuentas || [];
+            const cajaChica = listaCuentas.find((c: any) => c.nombre.toLowerCase().includes('chica') || c.tipo === 'CAJA_CHICA');
+            const cajaGeneral = listaCuentas.find((c: any) => c.nombre.toLowerCase().includes('general') || c.tipo === 'CAJA_GENERAL');
+            const cajaBanco = listaCuentas.find((c: any) => c.nombre.toLowerCase().includes('banco') || c.tipo === 'BANCO');
+
+            return (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                    🏛️ Cuentas y Cajas Contables Principales
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setTrOrigenId(cajaChica?.id || '');
+                      setTrDestinoId(cajaGeneral?.id || '');
+                      setShowTransferModal(true);
+                    }}
+                    style={{ background: '#e0f2fe', color: '#0284c7', border: '1px solid #bae6fd', borderRadius: '8px', padding: '0.4rem 0.85rem', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                  >
+                    🔄 Nueva Transferencia Entre Cajas
+                  </button>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+                  
+                  {/* CAJA CHICA */}
+                  <div style={{ background: 'white', border: '1px solid #cbd5e1', borderRadius: '14px', padding: '1.25rem', boxShadow: '0 2px 4px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span style={{ fontWeight: 800, color: '#0369a1', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          💵 Caja Chica
+                        </span>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', background: '#e0f2fe', color: '#0284c7' }}>
+                          Entradas / Salidas Diarias
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 0.75rem 0' }}>
+                        Para entradas diarias, asignaciones rápidas y gastos menores.
+                      </p>
+                      <p style={{ fontSize: '2rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                        ${(cajaChica?.balance || 0).toFixed(2)}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => {
+                          setTCuentaId(cajaChica?.id || '');
+                          setTTipoTransaccion('INGRESO');
+                          setShowMovimientoModal(true);
+                        }}
+                        style={{ flex: 1, padding: '0.45rem 0.5rem', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        + Ingreso
+                      </button>
+                      <button
+                        onClick={() => {
+                          setTCuentaId(cajaChica?.id || '');
+                          setTTipoTransaccion('EGRESO');
+                          setShowMovimientoModal(true);
+                        }}
+                        style={{ flex: 1, padding: '0.45rem 0.5rem', background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        - Gasto
+                      </button>
+                      <button
+                        onClick={() => {
+                          setTrOrigenId(cajaChica?.id || '');
+                          setTrDestinoId(cajaGeneral?.id || '');
+                          setShowTransferModal(true);
+                        }}
+                        style={{ width: '100%', padding: '0.45rem 0.5rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        🔄 Transferir a Caja General / Banco
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* CAJA GENERAL */}
+                  <div style={{ background: 'white', border: '1px solid #cbd5e1', borderRadius: '14px', padding: '1.25rem', boxShadow: '0 2px 4px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span style={{ fontWeight: 800, color: '#15803d', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          🏛️ Caja General
+                        </span>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', background: '#dcfce7', color: '#166534' }}>
+                          Fondo Central
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 0.75rem 0' }}>
+                        Resguardo central de fondos recolectados y traslados.
+                      </p>
+                      <p style={{ fontSize: '2rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                        ${(cajaGeneral?.balance || 0).toFixed(2)}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => {
+                          setTCuentaId(cajaGeneral?.id || '');
+                          setTTipoTransaccion('INGRESO');
+                          setShowMovimientoModal(true);
+                        }}
+                        style={{ flex: 1, padding: '0.45rem 0.5rem', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        + Ingreso
+                      </button>
+                      <button
+                        onClick={() => {
+                          setTCuentaId(cajaGeneral?.id || '');
+                          setTTipoTransaccion('EGRESO');
+                          setShowMovimientoModal(true);
+                        }}
+                        style={{ flex: 1, padding: '0.45rem 0.5rem', background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        - Gasto
+                      </button>
+                      <button
+                        onClick={() => {
+                          setTrOrigenId(cajaGeneral?.id || '');
+                          setTrDestinoId(cajaBanco?.id || '');
+                          setShowTransferModal(true);
+                        }}
+                        style={{ width: '100%', padding: '0.45rem 0.5rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        🔄 Depósito a Banco / Caja Chica
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* CAJA DE BANCO */}
+                  <div style={{ background: 'white', border: '1px solid #cbd5e1', borderRadius: '14px', padding: '1.25rem', boxShadow: '0 2px 4px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span style={{ fontWeight: 800, color: '#6b21a8', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          🏦 Caja de Banco
+                        </span>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', background: '#f3e8ff', color: '#7e22ce' }}>
+                          Banco & Transferencias
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 0.75rem 0' }}>
+                        Recepción de depósitos bancarios y transferencias.
+                      </p>
+                      <p style={{ fontSize: '2rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                        ${(cajaBanco?.balance || 0).toFixed(2)}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => {
+                          setTCuentaId(cajaBanco?.id || '');
+                          setTTipoTransaccion('INGRESO');
+                          setTMetodoPago('TRANSFERENCIA');
+                          setShowMovimientoModal(true);
+                        }}
+                        style={{ flex: 1, padding: '0.45rem 0.5rem', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        + Depósito
+                      </button>
+                      <button
+                        onClick={() => {
+                          setTCuentaId(cajaBanco?.id || '');
+                          setTTipoTransaccion('EGRESO');
+                          setTMetodoPago('TRANSFERENCIA');
+                          setShowMovimientoModal(true);
+                        }}
+                        style={{ flex: 1, padding: '0.45rem 0.5rem', background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        - Pago Banco
+                      </button>
+                      <button
+                        onClick={() => {
+                          setTrOrigenId(cajaBanco?.id || '');
+                          setTrDestinoId(cajaGeneral?.id || '');
+                          setShowTransferModal(true);
+                        }}
+                        style={{ width: '100%', padding: '0.45rem 0.5rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        🔄 Transferir a Caja General / Chica
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            );
+          })()}
 
           {/* GRÁFICOS */}
           <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' }}>
@@ -2135,6 +2379,161 @@ export default function FinanzasModule() {
                 Usar este total
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL REGISTRAR MOVIMIENTO (INGRESO / GASTO) CON FECHA SELECCIONABLE */}
+      {showMovimientoModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={() => setShowMovimientoModal(false)}>
+          <div style={{ background: 'white', borderRadius: '16px', maxWidth: '520px', width: '100%', padding: '1.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: tTipoTransaccion === 'INGRESO' ? '#15803d' : '#b91c1c' }}>
+                {tTipoTransaccion === 'INGRESO' ? '💰 Registrar Nuevo Ingreso' : '📉 Registrar Nuevo Gasto'}
+              </h3>
+              <button onClick={() => setShowMovimientoModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#64748b' }}>✕</button>
+            </div>
+
+            <form onSubmit={async (e) => {
+              await registrarTransaccion(e);
+              setShowMovimientoModal(false);
+            }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>Tipo de Movimiento</label>
+                <select value={tTipoTransaccion} onChange={e => setTTipoTransaccion(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 600 }}>
+                  <option value="INGRESO">💰 Ingreso / Entrada</option>
+                  <option value="EGRESO">📉 Gasto / Salida</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>Cuenta / Caja Contable</label>
+                <select value={tCuentaId} onChange={e => setTCuentaId(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} required>
+                  <option value="">-- Selecciona Caja / Cuenta --</option>
+                  {(finData?.cuentas || cuentas || []).map((c: any) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nombre} (Balance: ${c.balance.toFixed(2)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>Monto ($)</label>
+                  <input type="number" step="0.01" min="0.01" placeholder="0.00" value={tMonto} onChange={e => setTMonto(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', fontWeight: 700 }} required />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>📅 Fecha Deseada</label>
+                  <input type="date" value={tFecha} onChange={e => setTFecha(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} required />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>Categoría / Concepto</label>
+                <select value={tCategoria} onChange={e => setTCategoria(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                  <option value="DIEZMO">Diezmo</option>
+                  <option value="OFRENDA_GENERAL">Ofrenda General</option>
+                  <option value="OFRENDA_MISIONERA">Ofrenda Misionera</option>
+                  <option value="DONACION_ESPECIAL">Pro-Templo / Proyectos</option>
+                  <option value="INGRESO_MINISTERIAL">Ingreso Ministerial / Eventos</option>
+                  <option value="GASTO_MINISTERIAL">Gasto Ministerial / Actividades</option>
+                  <option value="SERVICIOS">Servicios Públicos / Mantenimiento</option>
+                  <option value="SALARIO">Nómina / Salarios</option>
+                  <option value="BENEFICENCIA">Ayuda Social / Beneficencia</option>
+                  <option value="OTRO">Otro Concepto</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>Método de Pago</label>
+                <select value={tMetodoPago} onChange={e => setTMetodoPago(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                  <option value="EFECTIVO">💵 Efectivo</option>
+                  <option value="TRANSFERENCIA">🏦 Transferencia Bancaria</option>
+                  <option value="CHEQUE">📜 Cheque</option>
+                  <option value="TARJETA">💳 Tarjeta / POS</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>Descripción / Detalle</label>
+                <input type="text" placeholder="Ej: Registro diario ofrenda de servicio..." value={tDesc} onChange={e => setTDesc(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} />
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                <button type="button" onClick={() => setShowMovimientoModal(false)} style={{ padding: '0.5rem 1rem', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>Cancelar</button>
+                <button type="submit" style={{ padding: '0.5rem 1.25rem', background: tTipoTransaccion === 'INGRESO' ? '#16a34a' : '#dc2626', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700 }}>
+                  Guardar Movimiento
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL TRANSFERENCIA ENTRE CAJAS CON FECHA SELECCIONABLE */}
+      {showTransferModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={() => setShowTransferModal(false)}>
+          <div style={{ background: 'white', borderRadius: '16px', maxWidth: '520px', width: '100%', padding: '1.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0284c7' }}>
+                🔄 Traslado / Transferencia Entre Cajas
+              </h3>
+              <button onClick={() => setShowTransferModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#64748b' }}>✕</button>
+            </div>
+
+            <form onSubmit={ejecutarTransferencia} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>Caja / Cuenta Origen (Desde)</label>
+                <select value={trOrigenId} onChange={e => setTrOrigenId(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} required>
+                  <option value="">-- Selecciona Origen --</option>
+                  {(finData?.cuentas || cuentas || []).map((c: any) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nombre} (Balance: ${c.balance.toFixed(2)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>Caja / Cuenta Destino (Hacia)</label>
+                <select value={trDestinoId} onChange={e => setTrDestinoId(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} required>
+                  <option value="">-- Selecciona Destino --</option>
+                  {(finData?.cuentas || cuentas || []).map((c: any) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nombre} (Balance: ${c.balance.toFixed(2)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>Monto a Trasladar ($)</label>
+                  <input type="number" step="0.01" min="0.01" placeholder="0.00" value={trMonto} onChange={e => setTrMonto(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', fontWeight: 700 }} required />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>📅 Fecha de Transferencia</label>
+                  <input type="date" value={trFecha} onChange={e => setTrFecha(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} required />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>Motivo / Referencia</label>
+                <input type="text" placeholder="Ej: Depósito diario de Caja Chica a Caja General..." value={trDesc} onChange={e => setTrDesc(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} />
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                <button type="button" onClick={() => setShowTransferModal(false)} style={{ padding: '0.5rem 1rem', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>Cancelar</button>
+                <button type="submit" style={{ padding: '0.5rem 1.25rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700 }}>
+                  Confirmar Transferencia
+                </button>
+              </div>
+
+            </form>
           </div>
         </div>
       )}

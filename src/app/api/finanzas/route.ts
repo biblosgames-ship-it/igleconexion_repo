@@ -59,6 +59,30 @@ export async function GET(request: Request) {
       }
     }
 
+    // Garantizar que las 3 cuentas principales existan
+    const defaultCuentas = [
+      { nombre: 'Caja Chica', tipo: 'CAJA_CHICA', descripcion: 'Entradas diarias y egresos menores' },
+      { nombre: 'Caja General', tipo: 'CAJA_GENERAL', descripcion: 'Fondo consolidado de caja central' },
+      { nombre: 'Caja de Banco', tipo: 'BANCO', descripcion: 'Cuenta bancaria para depósitos y transferencias' },
+    ];
+
+    for (const def of defaultCuentas) {
+      const exists = await prisma.cuentaFondo.findFirst({
+        where: { iglesia_id: iglesiaId, nombre: def.nombre }
+      });
+      if (!exists) {
+        await prisma.cuentaFondo.create({
+          data: {
+            iglesia_id: iglesiaId,
+            nombre: def.nombre,
+            tipo: def.tipo,
+            descripcion: def.descripcion,
+            balance: 0.0
+          }
+        });
+      }
+    }
+
     // Queries en paralelo
     const [cuentas, transaccionesPeriodo, diezmosPeriodo, transaccionesRecientes, iglesia] = await Promise.all([
       prisma.cuentaFondo.findMany({ where: { iglesia_id: iglesiaId } }),
