@@ -1303,9 +1303,16 @@ export default function FinanzasModule() {
                   style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: 'white' }}
                 >
                   <option value="">-- Auto según Método --</option>
-                  {(finData?.cuentas || cuentas || []).map((c: any) => (
-                    <option key={c.id} value={c.id}>{c.nombre} (${c.balance.toFixed(2)})</option>
-                  ))}
+                  {(finData?.cuentas || cuentas || [])
+                    .filter((c: any) => ['CAJA_CHICA', 'CAJA_GENERAL', 'BANCO'].includes(c.tipo) || ['caja chica', 'caja general', 'caja de banco'].some(k => c.nombre.toLowerCase().includes(k)))
+                    .map((c: any) => {
+                      const icon = c.nombre.toLowerCase().includes('chica') ? '💵 ' : c.nombre.toLowerCase().includes('general') ? '🏛️ ' : '🏦 ';
+                      return (
+                        <option key={c.id} value={c.id}>
+                          {icon}{c.nombre} (${c.balance.toFixed(2)})
+                        </option>
+                      );
+                    })}
                 </select>
               </div>
               <div style={{ flex: '1 1 140px' }}>
