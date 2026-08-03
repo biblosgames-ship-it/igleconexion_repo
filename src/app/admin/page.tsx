@@ -8518,7 +8518,17 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
     { label: "Miembros / Red", url: "/Iconos SVG/Miembros.svg" },
     { label: "Crecimiento / Etapas", url: "/Iconos SVG/Etapas.svg" },
     { label: "Educación / Biblia", url: "/Iconos SVG/Educacion Cristiana.svg" },
+    { label: "Agenda y Eventos", url: "/Iconos SVG/Agenda.svg" },
+    { label: "Anuncios / Comunicados", url: "/Iconos SVG/comunicado-2.svg" },
+    { label: "Finanzas / Mayordomía", url: "/Iconos SVG/finanzas (2).svg" },
+    { label: "Templo y Casa", url: "/Iconos SVG/templo-2.svg" },
+    { label: "Oración / Pastoral", url: "/Iconos SVG/pastoral.svg" },
+    { label: "Formularios / Encuestas", url: "/Iconos SVG/Formulario.svg" },
+    { label: "Peticiones", url: "/Iconos SVG/Peticiones.svg" },
   ];
+
+  // Modal Selector de Galería de Íconos
+  const [iconPickerGrupoId, setIconPickerGrupoId] = useState<string | null>(null);
 
   // Modal Asignación de Integrante
   const [assignGrupoId, setAssignGrupoId] = useState<string | null>(null);
@@ -8671,6 +8681,23 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
     reader.readAsDataURL(file);
   };
 
+  const handleSelectGrupoFamiliaIcon = async (gfId: string, iconUrl: string) => {
+    try {
+      await fetch("/api/grupos-familia", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "updateGrupoFamilia",
+          data: { id: gfId, logo_url: iconUrl }
+        })
+      });
+      setIconPickerGrupoId(null);
+      fetchGruposFamilia();
+    } catch (err) {
+      alert("Error al guardar ícono.");
+    }
+  };
+
   return (
     <div>
       {/* Formulario Crear Grupo de Familia */}
@@ -8743,7 +8770,11 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
             <div key={gf.id} style={{ background: 'white', borderRadius: '12px', border: '1px solid #cbd5e1', padding: '1.25rem', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                  <div style={{ position: 'relative', width: '32px', height: '32px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} title="Click en 📷 para cambiar ícono / logo del Grupo">
+                  <div 
+                    onClick={() => setIconPickerGrupoId(gf.id)}
+                    style={{ position: 'relative', width: '36px', height: '36px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: '#f8fafc', borderRadius: '50%', padding: '2px', border: '1px solid #cbd5e1' }} 
+                    title="Hacer clic para elegir ícono de la galería"
+                  >
                     {gf.logo_url && (gf.logo_url.startsWith('/') || gf.logo_url.startsWith('data:')) ? (
                       <img src={gf.logo_url} alt={gf.nombre_grupo} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%' }} />
                     ) : gf.logo_url ? (
@@ -8751,7 +8782,11 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
                     ) : (
                       <img src="/Iconos SVG/familia-3.svg" alt={gf.nombre_grupo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     )}
-                    <label style={{ position: 'absolute', bottom: '-4px', right: '-4px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                    <label 
+                      onClick={(e) => e.stopPropagation()} 
+                      style={{ position: 'absolute', bottom: '-4px', right: '-4px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
+                      title="O subir una imagen/SVG propia"
+                    >
                       <span style={{ fontSize: '9px' }}>📷</span>
                       <input type="file" accept="image/*,.svg" onChange={(e) => handleUpdateGrupoFamiliaLogo(gf.id, e)} style={{ display: 'none' }} />
                     </label>
@@ -8760,6 +8795,14 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
                     Grupo #{gf.numero_grupo}
                   </span>
                   <strong style={{ fontSize: '1.1rem', color: '#0f172a' }}>{gf.nombre_grupo}</strong>
+                  <button
+                    type="button"
+                    onClick={() => setIconPickerGrupoId(gf.id)}
+                    style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.72rem', fontWeight: 600, color: '#334155', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                    title="Elegir ícono simple de la galería"
+                  >
+                    🎨 Elegir Ícono
+                  </button>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   <button 
@@ -8908,6 +8951,56 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
               <button onClick={() => setAssignGrupoId(null)} style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '0.5rem 1rem', borderRadius: '6px', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}>Cancelar</button>
               <button onClick={handleAssignPersona} style={{ background: '#0284c7', color: 'white', border: 'none', padding: '0.5rem 1.25rem', borderRadius: '6px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}>Guardar Asignación</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Galería de Selección de Íconos para Grupos de Familia */}
+      {iconPickerGrupoId && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={() => setIconPickerGrupoId(null)}>
+          <div style={{ background: 'white', borderRadius: '16px', maxWidth: '520px', width: '100%', padding: '1.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
+                🎨 Elige un Ícono para el Grupo de Familia
+              </h3>
+              <button onClick={() => setIconPickerGrupoId(null)} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#64748b' }}>✕</button>
+            </div>
+            <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: '1rem' }}>
+              Selecciona cualquiera de los íconos minimalistas de la galería sin necesidad de subir archivos desde tu ordenador:
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(135px, 1fr))', gap: '0.75rem', maxHeight: '360px', overflowY: 'auto', paddingRight: '0.25rem' }}>
+              {availableIcons.map((ic, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => handleSelectGrupoFamiliaIcon(iconPickerGrupoId, ic.url)}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    padding: '0.85rem 0.5rem',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '10px',
+                    background: '#f8fafc',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.borderColor = '#0284c7';
+                    e.currentTarget.style.background = '#e0f2fe';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.borderColor = '#e2e8f0';
+                    e.currentTarget.style.background = '#f8fafc';
+                  }}
+                >
+                  <img src={ic.url} alt={ic.label} style={{ width: '38px', height: '38px', objectFit: 'contain' }} />
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#1e293b', textAlign: 'center' }}>{ic.label}</span>
+                </button>
+              ))}
             </div>
           </div>
         </div>
