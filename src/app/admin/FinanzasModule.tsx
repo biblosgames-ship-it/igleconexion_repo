@@ -94,6 +94,8 @@ export default function FinanzasModule() {
   const totalContador = denominaciones.reduce((acc, den) => acc + (contadorValores[den] * den), 0);
 
   // Cajas Principales & Transferencias
+  const [diezmoOfrendaSubTab, setDiezmoOfrendaSubTab] = useState<'diezmos' | 'ofrendas'>('diezmos');
+  const [ingresoGastoSubTab, setIngresoGastoSubTab] = useState<'ingreso' | 'gasto'>('ingreso');
   const [tCategoria, setTCategoria] = useState('OFRENDA_GENERAL');
   const [showMovimientoModal, setShowMovimientoModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
@@ -152,8 +154,8 @@ export default function FinanzasModule() {
   }, []);
 
   useEffect(() => {
-    if (activeSubTab === 'diezmos') loadDiezmos();
-    if (['ofrendas', 'gastos', 'ministerios', 'reportes'].includes(activeSubTab)) loadCuentas();
+    if (['diezmos', 'diezmos_ofrendas'].includes(activeSubTab)) loadDiezmos();
+    if (['ofrendas', 'gastos', 'ministerios', 'diezmos_ofrendas', 'ingresos_gastos', 'reportes'].includes(activeSubTab)) loadCuentas();
     if (activeSubTab === 'nomina') loadEmpleados();
     if (activeSubTab === 'reportes') loadReportes();
     if (activeSubTab === 'conciliacion') loadConciliacion();
@@ -803,9 +805,8 @@ export default function FinanzasModule() {
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '0.5rem', borderBottom: '2px solid #e2e8f0' }}>
         {[
           { id: 'dashboard', label: '📊 Dashboard' },
-          { id: 'diezmos', label: '🤲 Diezmos' },
-          { id: 'ofrendas', label: '💰 Ofrendas e Ingresos' },
-          { id: 'gastos', label: '📉 Gastos Generales' },
+          { id: 'diezmos_ofrendas', label: '🤲 Diezmos y Ofrendas' },
+          { id: 'ingresos_gastos', label: '⚖️ Ingresos y Gastos' },
           { id: 'ministerios', label: '🏛️ Fondos Min.' },
           { id: 'presupuestos_min', label: '📋 Presupuestos Min.' },
           { id: 'nomina', label: '👥 Nómina' },
@@ -817,8 +818,14 @@ export default function FinanzasModule() {
             key={tab.id}
             onClick={() => {
               setActiveSubTab(tab.id);
-              if (tab.id === 'gastos') setTTipoTransaccion('EGRESO');
-              else if (tab.id === 'ofrendas') setTTipoTransaccion('INGRESO');
+              if (tab.id === 'diezmos_ofrendas') {
+                loadDiezmos();
+                loadCuentas();
+              } else if (tab.id === 'ingresos_gastos') {
+                loadCuentas();
+                if (ingresoGastoSubTab === 'gasto') setTTipoTransaccion('EGRESO');
+                else setTTipoTransaccion('INGRESO');
+              }
             }}
             style={{
               padding: '0.5rem 1rem', border: 'none',
@@ -1269,139 +1276,406 @@ export default function FinanzasModule() {
         </div>
       )}
 
-      {/* DIEZMOS */}
-      {activeSubTab === 'diezmos' && (() => {
+      {/* PESTAÑA COMBINADA: DIEZMOS Y OFRENDAS */}
+      {activeSubTab === 'diezmos_ofrendas' && (() => {
+        const listaCuentas = finData?.cuentas || cuentas || [];
+        const cajasFisicas = listaCuentas.filter((c: any) => 
+          c.tipo === 'CAJA_CHICA' || c.tipo === 'CAJA_GENERAL' || c.tipo === 'BANCO' ||
+          c.nombre.toLowerCase() === 'caja chica' || c.nombre.toLowerCase() === 'caja general' || c.nombre.toLowerCase() === 'caja de banco'
+        );
+        const cuentasOfrendas = cuentas.filter(c => c.tipo === 'OFRENDA');
+
+        return (
+          <div>
+            {/* BOTONES DE ALTERNANCIA SUPERIOR */}
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', background: '#f1f5f9', padding: '0.4rem', borderRadius: '12px', width: 'fit-content' }}>
+              <button
+                type="button"
+                onClick={() => setDiezmoOfrendaSubTab('diezmos')}
+                style={{
+                  padding: '0.5rem 1.25rem', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem',
+                  background: diezmoOfrendaSubTab === 'diezmos' ? '#0284c7' : 'transparent',
+                  color: diezmoOfrendaSubTab === 'diezmos' ? 'white' : '#475569',
+                  boxShadow: diezmoOfrendaSubTab === 'diezmos' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
+                }}
+              >
+                💵 Registro de Diezmos
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDiezmoOfrendaSubTab('ofrendas');
+                  setTTipoTransaccion('INGRESO');
+                }}
+                style={{
+                  padding: '0.5rem 1.25rem', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem',
+                  background: diezmoOfrendaSubTab === 'ofrendas' ? '#16a34a' : 'transparent',
+                  color: diezmoOfrendaSubTab === 'ofrendas' ? 'white' : '#475569',
+                  boxShadow: diezmoOfrendaSubTab === 'ofrendas' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
+                }}
+              >
+                🎁 Registro de Ofrendas
+              </button>
+            </div>
+
+            {/* SECCIÓN DIEZMOS */}
+            {diezmoOfrendaSubTab === 'diezmos' && (
+              <div>
+                <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' }}>
+                  <h3 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '1rem', color: '#0f172a' }}>Registrar Diezmo</h3>
+                  <form onSubmit={registrarDiezmo} style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                    <div style={{ flex: '1 1 200px' }}>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>Miembro</label>
+                      <select required value={dPersonaId} onChange={e=>setDPersonaId(e.target.value)} style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }}>
+                        <option value="">Seleccionar...</option>
+                        {miembros.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ flex: '1 1 120px' }}>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>Monto</label>
+                      <div style={{ display: 'flex', gap: '0.2rem' }}>
+                        <input required type="number" step="0.01" value={dMonto} onChange={e=>setDMonto(e.target.value)} style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px 0 0 8px' }} />
+                        <button type="button" onClick={() => setShowContador(true)} style={{ padding: '0 0.75rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '0 8px 8px 0', cursor: 'pointer', fontWeight: 'bold' }} title="Contador de Dinero">
+                          🧮
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{ flex: '1 1 140px' }}>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>📅 Fecha</label>
+                      <input required type="date" value={dFecha} onChange={e=>setDFecha(e.target.value)} style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                    </div>
+                    <div style={{ flex: '1 1 200px' }}>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>Caja Destino (Acreditar)</label>
+                      <select 
+                        value={dCuentaId} 
+                        onChange={e => setDCuentaId(e.target.value)} 
+                        style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: 'white' }}
+                      >
+                        <option value="">-- Auto según Método --</option>
+                        {cajasFisicas.map((c: any) => {
+                          const icon = c.nombre.toLowerCase().includes('chica') ? '💵 ' : c.nombre.toLowerCase().includes('general') ? '🏛️ ' : '🏦 ';
+                          return (
+                            <option key={c.id} value={c.id}>
+                              {icon}{c.nombre} (${c.balance.toFixed(2)})
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                    <div style={{ flex: '1 1 140px' }}>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>Método de Pago</label>
+                      <select 
+                        value={dMetodo} 
+                        onChange={e => {
+                          const val = e.target.value;
+                          setDMetodo(val);
+                          if (val === 'TRANSFERENCIA') {
+                            const banco = cajasFisicas.find((c: any) => c.nombre.toLowerCase().includes('banco') || c.tipo === 'BANCO');
+                            if (banco) setDCuentaId(banco.id);
+                          }
+                        }} 
+                        style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }}
+                      >
+                        <option value="EFECTIVO">💵 Efectivo</option>
+                        <option value="TRANSFERENCIA">🏦 Transferencia (Ir a Banco)</option>
+                        <option value="CHEQUE">📜 Cheque</option>
+                      </select>
+                    </div>
+                    <button type="submit" style={{ padding: '0.75rem 1.5rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>Registrar Diezmo</button>
+                  </form>
+                </div>
+              
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', background: 'white', borderRadius: '12px', overflow: 'hidden' }}>
+                  <thead style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                    <tr>
+                      <th style={{ padding: '1rem', textAlign: 'left', color: '#475569' }}>Fecha</th>
+                      <th style={{ padding: '1rem', textAlign: 'left', color: '#475569' }}>Miembro</th>
+                      <th style={{ padding: '1rem', textAlign: 'left', color: '#475569' }}>Monto</th>
+                      <th style={{ padding: '1rem', textAlign: 'left', color: '#475569' }}>Método</th>
+                      <th style={{ padding: '1rem', textAlign: 'center', color: '#475569' }}>Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {diezmos.map(d => (
+                      <tr key={d.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '1rem' }}>{new Date(d.fecha).toLocaleDateString()}</td>
+                        <td style={{ padding: '1rem', fontWeight: 600 }}>{d.persona?.nombre || 'Anónimo'}</td>
+                        <td style={{ padding: '1rem', color: '#0284c7', fontWeight: 700 }}>${d.monto.toFixed(2)}</td>
+                        <td style={{ padding: '1rem' }}>{d.metodo_pago}</td>
+                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                          <button onClick={() => imprimirRecibo({...d, tipo: 'INGRESO', descripcion: 'Diezmo - ' + (d.persona?.nombre || 'Anónimo')})} style={{ background: '#f8fafc', border: '1px solid #cbd5e1', color: '#475569', padding: '0.3rem 0.6rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }} title="Imprimir Recibo">
+                            🖨️
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* SECCIÓN OFRENDAS */}
+            {diezmoOfrendaSubTab === 'ofrendas' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem' }}>
+                    <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Registrar Ofrenda</h3>
+                    <form onSubmit={registrarTransaccion} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: '0.2rem' }}>Caja Contable (Destino Físico)</label>
+                      <select required value={tCuentaId} onChange={e=>setTCuentaId(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: 'white', fontWeight: 600 }}>
+                        <option value="">-- Seleccionar Caja Contable --</option>
+                        {cajasFisicas.map((c: any) => (
+                          <option key={c.id} value={c.id}>
+                            {c.nombre.toLowerCase().includes('chica') ? '💵 ' : c.nombre.toLowerCase().includes('general') ? '🏛️ ' : '🏦 '}
+                            {c.nombre} (${c.balance.toFixed(2)})
+                          </option>
+                        ))}
+                      </select>
+
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <div style={{ flex: 1, display: 'flex', gap: '0.2rem' }}>
+                          <input required type="number" step="0.01" placeholder="Monto ($)" value={tMonto} onChange={e=>setTMonto(e.target.value)} style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px 0 0 8px' }} />
+                          <button type="button" onClick={() => setShowContador(true)} style={{ padding: '0 0.75rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '0 8px 8px 0', cursor: 'pointer', fontWeight: 'bold' }} title="Contador de Dinero">
+                            🧮
+                          </button>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <select required value={tMetodoPago} onChange={e=>{
+                          const val = e.target.value;
+                          setTMetodoPago(val);
+                          if (val === 'TRANSFERENCIA') {
+                            const banco = cajasFisicas.find((c: any) => c.nombre.toLowerCase().includes('banco') || c.tipo === 'BANCO');
+                            if (banco) setTCuentaId(banco.id);
+                          }
+                        }} style={{ flex: 1, padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }}>
+                          <option value="EFECTIVO">💵 Efectivo</option>
+                          <option value="TRANSFERENCIA">🏦 Transferencia (Ir a Banco)</option>
+                          <option value="TARJETA">💳 Tarjeta</option>
+                          <option value="CHEQUE">📜 Cheque</option>
+                        </select>
+                        <input required type="date" value={tFecha} onChange={e=>setTFecha(e.target.value)} style={{ flex: 1, padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                      </div>
+
+                      <input placeholder="Descripción / Detalle (Ej: Ofrenda Culto Dominical...)" value={tDesc} onChange={e=>setTDesc(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                      <button type="submit" style={{ padding: '0.65rem', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700 }}>Registrar Ofrenda</button>
+                    </form>
+                  </div>
+
+                  <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem' }}>
+                    <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Crear Nueva Cuenta de Ofrenda</h3>
+                    <form onSubmit={e => crearCuenta(e, 'OFRENDA')} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <input required placeholder="Nombre (Ej: Ofrenda Misionera, Pro-Templo...)" value={cNombre} onChange={e=>setCNombre(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                      <input placeholder="Descripción breve" value={cDesc} onChange={e=>setCDesc(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                      <button type="submit" style={{ padding: '0.65rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700 }}>+ Crear Cuenta de Ofrenda</button>
+                    </form>
+                  </div>
+                </div>
+
+                {/* Lista de Cuentas de Ofrenda */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {cuentasOfrendas.map(c => (
+                    <div key={c.id} style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.1rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          🎁 {c.nombre}
+                          <button onClick={() => editarCuenta(c)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: '#0284c7' }}>✏️ Editar</button>
+                        </h4>
+                        <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>{c.descripcion || 'Sin descripción'}</p>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase' }}>Balance Recaudado</p>
+                        <p style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, color: c.balance >= 0 ? '#16a34a' : '#dc2626' }}>${c.balance.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {cuentasOfrendas.length === 0 && (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', border: '1px dashed #cbd5e1', borderRadius: '12px', background: 'white' }}>
+                      No hay cuentas de ofrenda creadas aún. Puedes crear una a la izquierda.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* PESTAÑA COMBINADA: INGRESOS Y GASTOS */}
+      {activeSubTab === 'ingresos_gastos' && (() => {
         const listaCuentas = finData?.cuentas || cuentas || [];
         const cajasFisicas = listaCuentas.filter((c: any) => 
           c.tipo === 'CAJA_CHICA' || c.tipo === 'CAJA_GENERAL' || c.tipo === 'BANCO' ||
           c.nombre.toLowerCase() === 'caja chica' || c.nombre.toLowerCase() === 'caja general' || c.nombre.toLowerCase() === 'caja de banco'
         );
 
+        const tipoFiltrado = ingresoGastoSubTab === 'ingreso' ? 'OFRENDA' : 'GASTO';
+        const filtradas = cuentas.filter(c => c.tipo === tipoFiltrado);
+
         return (
           <div>
-            <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' }}>
-              <h3 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '1rem', color: '#0f172a' }}>Registrar Diezmo</h3>
-              <form onSubmit={registrarDiezmo} style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                <div style={{ flex: '1 1 200px' }}>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>Miembro</label>
-                  <select required value={dPersonaId} onChange={e=>setDPersonaId(e.target.value)} style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }}>
-                    <option value="">Seleccionar...</option>
-                    {miembros.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
-                  </select>
-                </div>
-                <div style={{ flex: '1 1 120px' }}>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>Monto</label>
-                  <div style={{ display: 'flex', gap: '0.2rem' }}>
-                    <input required type="number" step="0.01" value={dMonto} onChange={e=>setDMonto(e.target.value)} style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px 0 0 8px' }} />
-                    <button type="button" onClick={() => setShowContador(true)} style={{ padding: '0 0.75rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '0 8px 8px 0', cursor: 'pointer', fontWeight: 'bold' }} title="Contador de Dinero">
-                      🧮
-                    </button>
-                  </div>
-                </div>
-                <div style={{ flex: '1 1 140px' }}>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>📅 Fecha</label>
-                  <input required type="date" value={dFecha} onChange={e=>setDFecha(e.target.value)} style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
-                </div>
-                <div style={{ flex: '1 1 200px' }}>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>Caja Destino (Acreditar)</label>
-                  <select 
-                    value={dCuentaId} 
-                    onChange={e => setDCuentaId(e.target.value)} 
-                    style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: 'white' }}
-                  >
-                    <option value="">-- Auto según Método --</option>
-                    {cajasFisicas.map((c: any) => {
-                      const icon = c.nombre.toLowerCase().includes('chica') ? '💵 ' : c.nombre.toLowerCase().includes('general') ? '🏛️ ' : '🏦 ';
-                      return (
-                        <option key={c.id} value={c.id}>
-                          {icon}{c.nombre} (${c.balance.toFixed(2)})
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
-                <div style={{ flex: '1 1 140px' }}>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.3rem' }}>Método de Pago</label>
-                  <select 
-                    value={dMetodo} 
-                    onChange={e => {
-                      const val = e.target.value;
-                      setDMetodo(val);
-                      if (val === 'TRANSFERENCIA') {
-                        const banco = cajasFisicas.find((c: any) => c.nombre.toLowerCase().includes('banco') || c.tipo === 'BANCO');
-                        if (banco) setDCuentaId(banco.id);
-                      }
-                    }} 
-                    style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }}
-                  >
-                    <option value="EFECTIVO">💵 Efectivo</option>
-                    <option value="TRANSFERENCIA">🏦 Transferencia (Ir a Banco)</option>
-                    <option value="CHEQUE">📜 Cheque</option>
-                  </select>
-                </div>
-                <button type="submit" style={{ padding: '0.75rem 1.5rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>Registrar</button>
-              </form>
+            {/* BOTONES DE ALTERNANCIA SUPERIOR */}
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', background: '#f1f5f9', padding: '0.4rem', borderRadius: '12px', width: 'fit-content' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIngresoGastoSubTab('ingreso');
+                  setTTipoTransaccion('INGRESO');
+                }}
+                style={{
+                  padding: '0.5rem 1.25rem', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem',
+                  background: ingresoGastoSubTab === 'ingreso' ? '#16a34a' : 'transparent',
+                  color: ingresoGastoSubTab === 'ingreso' ? 'white' : '#475569',
+                  boxShadow: ingresoGastoSubTab === 'ingreso' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
+                }}
+              >
+                💰 Registro de Ingresos / Entradas
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIngresoGastoSubTab('gasto');
+                  setTTipoTransaccion('EGRESO');
+                }}
+                style={{
+                  padding: '0.5rem 1.25rem', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem',
+                  background: ingresoGastoSubTab === 'gasto' ? '#dc2626' : 'transparent',
+                  color: ingresoGastoSubTab === 'gasto' ? 'white' : '#475569',
+                  boxShadow: ingresoGastoSubTab === 'gasto' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
+                }}
+              >
+                📉 Registro de Gastos / Salidas
+              </button>
             </div>
-          
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', background: 'white', borderRadius: '12px', overflow: 'hidden' }}>
-            <thead style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-              <tr>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#475569' }}>Fecha</th>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#475569' }}>Miembro</th>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#475569' }}>Monto</th>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#475569' }}>Método</th>
-                <th style={{ padding: '1rem', textAlign: 'center', color: '#475569' }}>Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {diezmos.map(d => (
-                <tr key={d.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '1rem' }}>{new Date(d.fecha).toLocaleDateString()}</td>
-                  <td style={{ padding: '1rem', fontWeight: 600 }}>{d.persona?.nombre || 'Anónimo'}</td>
-                  <td style={{ padding: '1rem', color: '#0284c7', fontWeight: 700 }}>${d.monto.toFixed(2)}</td>
-                  <td style={{ padding: '1rem' }}>{d.metodo_pago}</td>
-                  <td style={{ padding: '1rem', textAlign: 'center' }}>
-                    <button onClick={() => imprimirRecibo({...d, tipo: 'INGRESO', descripcion: 'Diezmo - ' + (d.persona?.nombre || 'Anónimo')})} style={{ background: '#f8fafc', border: '1px solid #cbd5e1', color: '#475569', padding: '0.3rem 0.6rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }} title="Imprimir Recibo">
-                      🖨️
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        );
-      })()}
 
-      {/* OFRENDAS E INGRESOS / GASTOS / MINISTERIOS */}
-      {['ofrendas', 'gastos', 'ministerios'].includes(activeSubTab) && (() => {
-        const tipoActual = activeSubTab === 'ofrendas' ? 'OFRENDA' : activeSubTab === 'gastos' ? 'GASTO' : 'DEPARTAMENTO';
-        const filtradas = cuentas.filter(c => c.tipo === tipoActual);
-
-        return (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
-            {/* Panel Izquierdo: Registrar Transacción / Crear Cuenta */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              {filtradas.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
+              {/* Panel Izquierdo: Registrar Transacción / Crear Cuenta */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem' }}>
-                  <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Registrar Transacción</h3>
+                  <h3 style={{ fontSize: '1rem', marginBottom: '1rem', color: ingresoGastoSubTab === 'ingreso' ? '#15803d' : '#b91c1c' }}>
+                    {ingresoGastoSubTab === 'ingreso' ? '💰 Registrar Nuevo Ingreso' : '📉 Registrar Nuevo Gasto'}
+                  </h3>
                   <form onSubmit={registrarTransaccion} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: '0.2rem' }}>Caja Contable (Origen/Destino)</label>
                     <select required value={tCuentaId} onChange={e=>setTCuentaId(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: 'white', fontWeight: 600 }}>
                       <option value="">-- Seleccionar Caja Contable --</option>
-                      {(finData?.cuentas || cuentas || [])
-                        .filter((c: any) => c.tipo === 'CAJA_CHICA' || c.tipo === 'CAJA_GENERAL' || c.tipo === 'BANCO' || c.nombre.toLowerCase() === 'caja chica' || c.nombre.toLowerCase() === 'caja general' || c.nombre.toLowerCase() === 'caja de banco')
-                        .map((c: any) => (
-                          <option key={c.id} value={c.id}>
-                            {c.nombre.toLowerCase().includes('chica') ? '💵 ' : c.nombre.toLowerCase().includes('general') ? '🏛️ ' : '🏦 '}
-                            {c.nombre} (${c.balance.toFixed(2)})
-                          </option>
-                        ))}
+                      {cajasFisicas.map((c: any) => (
+                        <option key={c.id} value={c.id}>
+                          {c.nombre.toLowerCase().includes('chica') ? '💵 ' : c.nombre.toLowerCase().includes('general') ? '🏛️ ' : '🏦 '}
+                          {c.nombre} (${c.balance.toFixed(2)})
+                        </option>
+                      ))}
+                    </select>
+
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <div style={{ flex: 1, display: 'flex', gap: '0.2rem' }}>
+                        <input required type="number" step="0.01" placeholder="Monto ($)" value={tMonto} onChange={e=>setTMonto(e.target.value)} style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px 0 0 8px' }} />
+                        <button type="button" onClick={() => setShowContador(true)} style={{ padding: '0 0.75rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '0 8px 8px 0', cursor: 'pointer', fontWeight: 'bold' }} title="Contador de Dinero">
+                          🧮
+                        </button>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <select required value={tMetodoPago} onChange={e=>{
+                        const val = e.target.value;
+                        setTMetodoPago(val);
+                        if (val === 'TRANSFERENCIA') {
+                          const banco = cajasFisicas.find((c: any) => c.nombre.toLowerCase().includes('banco') || c.tipo === 'BANCO');
+                          if (banco) setTCuentaId(banco.id);
+                        }
+                      }} style={{ flex: 1, padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }}>
+                        <option value="EFECTIVO">💵 Efectivo</option>
+                        <option value="TRANSFERENCIA">🏦 Transferencia (Ir a Banco)</option>
+                        <option value="TARJETA">💳 Tarjeta</option>
+                        <option value="CHEQUE">📜 Cheque</option>
+                      </select>
+                      <input required type="date" value={tFecha} onChange={e=>setTFecha(e.target.value)} style={{ flex: 1, padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                    </div>
+
+                    <input placeholder="Descripción / Detalle del movimiento..." value={tDesc} onChange={e=>setTDesc(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                    <button type="submit" style={{ padding: '0.65rem', background: ingresoGastoSubTab === 'ingreso' ? '#16a34a' : '#dc2626', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700 }}>
+                      {ingresoGastoSubTab === 'ingreso' ? 'Guardar Ingreso' : 'Guardar Gasto'}
+                    </button>
+                  </form>
+                </div>
+
+                <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem' }}>
+                  <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>
+                    Crear Cuenta de {ingresoGastoSubTab === 'ingreso' ? 'Ingreso / Concepto' : 'Gasto / Egreso'}
+                  </h3>
+                  <form onSubmit={e => crearCuenta(e, tipoFiltrado)} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <input required placeholder={`Nombre (Ej: ${ingresoGastoSubTab === 'ingreso' ? 'Eventos Especiales' : 'Luz y Agua'})`} value={cNombre} onChange={e=>setCNombre(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                    <input placeholder="Descripción breve" value={cDesc} onChange={e=>setCDesc(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                    <button type="submit" style={{ padding: '0.65rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700 }}>
+                      + Crear Cuenta de {ingresoGastoSubTab === 'ingreso' ? 'Ingreso' : 'Gasto'}
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              {/* Panel Derecho: Lista de Cuentas del Tipo Seleccionado */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem', color: '#0f172a' }}>
+                  Cuentas Registradas ({ingresoGastoSubTab === 'ingreso' ? 'Ingresos' : 'Gastos'})
+                </h3>
+                {filtradas.map(c => (
+                  <div key={c.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.1rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          {c.nombre}
+                          <button onClick={() => editarCuenta(c)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: '#0284c7' }}>✏️ Editar</button>
+                        </h4>
+                        <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>{c.descripcion || 'Sin descripción'}</p>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase' }}>Balance Acumulado</p>
+                        <p style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, color: c.balance >= 0 ? '#0284c7' : '#dc2626' }}>${c.balance.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {filtradas.length === 0 && <p style={{ color: '#94a3b8' }}>No hay cuentas creadas para esta categoría.</p>}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* PESTAÑA: FONDOS DE DEPARTAMENTOS Y MINISTERIOS */}
+      {activeSubTab === 'ministerios' && (() => {
+        const listaCuentas = finData?.cuentas || cuentas || [];
+        const cajasFisicas = listaCuentas.filter((c: any) => 
+          c.tipo === 'CAJA_CHICA' || c.tipo === 'CAJA_GENERAL' || c.tipo === 'BANCO' ||
+          c.nombre.toLowerCase() === 'caja chica' || c.nombre.toLowerCase() === 'caja general' || c.nombre.toLowerCase() === 'caja de banco'
+        );
+
+        const filtradas = cuentas.filter(c => c.tipo === 'DEPARTAMENTO');
+
+        return (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
+            {/* Panel Izquierdo */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {filtradas.length > 0 && (
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem' }}>
+                  <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Registrar Movimiento Ministerial</h3>
+                  <form onSubmit={registrarTransaccion} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: '0.2rem' }}>Caja Contable (Origen/Destino)</label>
+                    <select required value={tCuentaId} onChange={e=>setTCuentaId(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: 'white', fontWeight: 600 }}>
+                      <option value="">-- Seleccionar Caja Contable --</option>
+                      {cajasFisicas.map((c: any) => (
+                        <option key={c.id} value={c.id}>
+                          {c.nombre.toLowerCase().includes('chica') ? '💵 ' : c.nombre.toLowerCase().includes('general') ? '🏛️ ' : '🏦 '}
+                          {c.nombre} (${c.balance.toFixed(2)})
+                        </option>
+                      ))}
                     </select>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                       <select required value={tTipoTransaccion} onChange={e=>setTTipoTransaccion(e.target.value)} style={{ flex: 1, padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', background: tTipoTransaccion === 'INGRESO' ? '#dcfce7' : '#fee2e2', color: tTipoTransaccion === 'INGRESO' ? '#15803d' : '#991b1b', fontWeight: 600 }}>
-                        {activeSubTab !== 'gastos' && <option value="INGRESO">Ingreso (+)</option>}
-                        {activeSubTab !== 'ofrendas' && <option value="EGRESO">Egreso (-)</option>}
+                        <option value="INGRESO">Ingreso (+)</option>
+                        <option value="EGRESO">Egreso (-)</option>
                       </select>
                       <div style={{ flex: 1, display: 'flex', gap: '0.2rem' }}>
                         <input required type="number" step="0.01" placeholder="Monto" value={tMonto} onChange={e=>setTMonto(e.target.value)} style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px 0 0 8px' }} />
@@ -1415,8 +1689,7 @@ export default function FinanzasModule() {
                         const val = e.target.value;
                         setTMetodoPago(val);
                         if (val === 'TRANSFERENCIA') {
-                          const lista = finData?.cuentas || cuentas || [];
-                          const banco = lista.find((c: any) => c.nombre.toLowerCase().includes('banco') || c.tipo === 'BANCO');
+                          const banco = cajasFisicas.find((c: any) => c.nombre.toLowerCase().includes('banco') || c.tipo === 'BANCO');
                           if (banco) setTCuentaId(banco.id);
                         }
                       }} style={{ flex: 1, padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }}>
@@ -1427,41 +1700,42 @@ export default function FinanzasModule() {
                       </select>
                       <input required type="date" value={tFecha} onChange={e=>setTFecha(e.target.value)} style={{ flex: 1, padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
                     </div>
-                    <input placeholder="Descripción (Opcional)" value={tDesc} onChange={e=>setTDesc(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
-                    <button type="submit" style={{ padding: '0.65rem', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700 }}>Registrar Transacción</button>
+                    <input placeholder="Descripción (Ej: Presupuesto Actividad Jóvenes...)" value={tDesc} onChange={e=>setTDesc(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                    <button type="submit" style={{ padding: '0.65rem', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700 }}>Registrar Movimiento</button>
                   </form>
                 </div>
               )}
 
               <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem' }}>
-                <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Crear {activeSubTab === 'ministerios' ? 'Fondo Departamental' : 'Cuenta de ' + activeSubTab}</h3>
-                <form onSubmit={e => crearCuenta(e, tipoActual)} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <input required placeholder="Nombre (Ej: Pro-Templo)" value={cNombre} onChange={e=>setCNombre(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Crear Fondo Departamental / Ministerial</h3>
+                <form onSubmit={e => crearCuenta(e, 'DEPARTAMENTO')} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <input required placeholder="Nombre (Ej: Ministerio de Jóvenes, Damas...)" value={cNombre} onChange={e=>setCNombre(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
                   <input placeholder="Descripción breve" value={cDesc} onChange={e=>setCDesc(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
-                  <button type="submit" style={{ padding: '0.65rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700 }}>+ Crear</button>
+                  <button type="submit" style={{ padding: '0.65rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700 }}>+ Crear Fondo Ministerial</button>
                 </form>
               </div>
             </div>
 
-            {/* Panel Derecho: Lista de Cuentas */}
+            {/* Panel Derecho */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem', color: '#0f172a' }}>Fondos Ministeriales Registrados</h3>
               {filtradas.map(c => (
                 <div key={c.id} style={{ display: 'flex', flexDirection: 'column' }}>
                   <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.1rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        {c.nombre}
+                        🏛️ {c.nombre}
                         <button onClick={() => editarCuenta(c)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: '#0284c7' }}>✏️ Editar</button>
                       </h4>
                       <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>{c.descripcion || 'Sin descripción'}</p>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase' }}>Balance Actual</p>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase' }}>Balance Disponible</p>
                       <p style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, color: c.balance >= 0 ? '#0284c7' : '#dc2626' }}>${c.balance.toFixed(2)}</p>
                     </div>
                   </div>
                   {c.transacciones && c.transacciones.length > 0 && (
-                    <div style={{ background: '#f8fafc', padding: '1rem', borderTop: 'none', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', borderBottomLeftRadius: '12px', borderBottomRightRadius: '12px', marginTop: '-1rem' }}>
+                    <div style={{ background: '#f8fafc', padding: '1rem', borderTop: 'none', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', borderBottomLeftRadius: '12px', borderBottomRightRadius: '12px' }}>
                       <h5 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', color: '#64748b' }}>Últimos registros</h5>
                       <ul style={{ margin: 0, padding: 0, listStyle: 'none', fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                         {c.transacciones.map((tr: any) => (
@@ -1477,15 +1751,8 @@ export default function FinanzasModule() {
                               <button 
                                 onClick={() => eliminarTransaccion(tr.id)} 
                                 style={{ 
-                                  background: 'none',
-                                  border: 'none',
-                                  color: '#f43f5e',
-                                  cursor: 'pointer',
-                                  padding: '4px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  transition: 'color 0.2s',
+                                  background: 'none', border: 'none', color: '#f43f5e', cursor: 'pointer', padding: '4px',
+                                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'color 0.2s'
                                 }}
                                 onMouseEnter={(e) => e.currentTarget.style.color = '#e11d48'}
                                 onMouseLeave={(e) => e.currentTarget.style.color = '#f43f5e'}
