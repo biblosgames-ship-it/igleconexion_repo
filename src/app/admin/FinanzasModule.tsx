@@ -1386,14 +1386,17 @@ export default function FinanzasModule() {
                 <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem' }}>
                   <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Registrar Transacción</h3>
                   <form onSubmit={registrarTransaccion} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    <select required value={tCuentaId} onChange={e=>setTCuentaId(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: 'white' }}>
-                      <option value="">Seleccionar Cuenta / Caja...</option>
-                      {filtradas.map(c => <option key={c.id} value={c.id}>{c.nombre} (${c.balance.toFixed(2)})</option>)}
-                      <optgroup label="Cajas Principales">
-                        {(finData?.cuentas || cuentas || []).filter((c:any) => ['CAJA_CHICA', 'CAJA_GENERAL', 'BANCO'].includes(c.tipo) || ['caja chica', 'caja general', 'caja de banco'].some(k => c.nombre.toLowerCase().includes(k))).map((c:any) => (
-                          <option key={c.id} value={c.id}>{c.nombre} (${c.balance.toFixed(2)})</option>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: '0.2rem' }}>Caja Contable (Origen/Destino)</label>
+                    <select required value={tCuentaId} onChange={e=>setTCuentaId(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: 'white', fontWeight: 600 }}>
+                      <option value="">-- Seleccionar Caja Contable --</option>
+                      {(finData?.cuentas || cuentas || [])
+                        .filter((c: any) => c.tipo === 'CAJA_CHICA' || c.tipo === 'CAJA_GENERAL' || c.tipo === 'BANCO' || c.nombre.toLowerCase() === 'caja chica' || c.nombre.toLowerCase() === 'caja general' || c.nombre.toLowerCase() === 'caja de banco')
+                        .map((c: any) => (
+                          <option key={c.id} value={c.id}>
+                            {c.nombre.toLowerCase().includes('chica') ? '💵 ' : c.nombre.toLowerCase().includes('general') ? '🏛️ ' : '🏦 '}
+                            {c.nombre} (${c.balance.toFixed(2)})
+                          </option>
                         ))}
-                      </optgroup>
                     </select>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                       <select required value={tTipoTransaccion} onChange={e=>setTTipoTransaccion(e.target.value)} style={{ flex: 1, padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', background: tTipoTransaccion === 'INGRESO' ? '#dcfce7' : '#fee2e2', color: tTipoTransaccion === 'INGRESO' ? '#15803d' : '#991b1b', fontWeight: 600 }}>
@@ -2465,14 +2468,17 @@ export default function FinanzasModule() {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>Cuenta / Caja Contable</label>
-                <select value={tCuentaId} onChange={e => setTCuentaId(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} required>
-                  <option value="">-- Selecciona Caja / Cuenta --</option>
-                  {(finData?.cuentas || cuentas || []).map((c: any) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nombre} (Balance: ${c.balance.toFixed(2)})
-                    </option>
-                  ))}
+                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>Caja Contable (Origen / Destino Físico)</label>
+                <select value={tCuentaId} onChange={e => setTCuentaId(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 600 }} required>
+                  <option value="">-- Selecciona Caja Contable --</option>
+                  {(finData?.cuentas || cuentas || [])
+                    .filter((c: any) => c.tipo === 'CAJA_CHICA' || c.tipo === 'CAJA_GENERAL' || c.tipo === 'BANCO' || c.nombre.toLowerCase() === 'caja chica' || c.nombre.toLowerCase() === 'caja general' || c.nombre.toLowerCase() === 'caja de banco')
+                    .map((c: any) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nombre.toLowerCase().includes('chica') ? '💵 ' : c.nombre.toLowerCase().includes('general') ? '🏛️ ' : '🏦 '}
+                        {c.nombre} (Balance: ${c.balance.toFixed(2)})
+                      </option>
+                    ))}
                 </select>
               </div>
 
@@ -2488,18 +2494,29 @@ export default function FinanzasModule() {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>Categoría / Concepto</label>
+                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', color: '#475569', marginBottom: '0.25rem' }}>
+                  {tTipoTransaccion === 'INGRESO' ? 'Concepto / Cuenta de Ingreso (Acreditar)' : 'Concepto / Cuenta de Gasto (Debitar)'}
+                </label>
                 <select value={tCategoria} onChange={e => setTCategoria(e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                  <option value="DIEZMO">Diezmo</option>
-                  <option value="OFRENDA_GENERAL">Ofrenda General</option>
-                  <option value="OFRENDA_MISIONERA">Ofrenda Misionera</option>
-                  <option value="DONACION_ESPECIAL">Pro-Templo / Proyectos</option>
-                  <option value="INGRESO_MINISTERIAL">Ingreso Ministerial / Eventos</option>
-                  <option value="GASTO_MINISTERIAL">Gasto Ministerial / Actividades</option>
-                  <option value="SERVICIOS">Servicios Públicos / Mantenimiento</option>
-                  <option value="SALARIO">Nómina / Salarios</option>
-                  <option value="BENEFICENCIA">Ayuda Social / Beneficencia</option>
-                  <option value="OTRO">Otro Concepto</option>
+                  {tTipoTransaccion === 'INGRESO' ? (
+                    <>
+                      <option value="OFRENDA_GENERAL">Ofrenda General</option>
+                      <option value="DIEZMO">Diezmo</option>
+                      <option value="OFRENDA_MISIONERA">Ofrenda Misionera</option>
+                      <option value="DONACION_ESPECIAL">Pro-Templo / Proyectos</option>
+                      <option value="INGRESO_MINISTERIAL">Ingreso Ministerial / Eventos</option>
+                      <option value="OTRO">Otro Ingreso</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="GASTO_MINISTERIAL">Gasto Ministerial / Actividades</option>
+                      <option value="SERVICIOS">Servicios Públicos / Mantenimiento</option>
+                      <option value="SALARIO">Nómina / Salarios</option>
+                      <option value="BENEFICENCIA">Ayuda Social / Beneficencia</option>
+                      <option value="ALQUILER">Alquiler / Arrendamiento</option>
+                      <option value="OTRO">Otro Egreso</option>
+                    </>
+                  )}
                 </select>
               </div>
 
