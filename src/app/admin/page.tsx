@@ -89,9 +89,41 @@ export default function SuperAdminPage() {
     }
   }, [currentUser, visibleTabs, activeTab]);
 
-  // Restore last visited tab from recentTabs
+  // Lee pestaña especificada por parametro de URL (?tab=1, ?tab=iglesia, ?tab=18, etc.)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam) {
+        const numericId = parseInt(tabParam, 10);
+        if (!isNaN(numericId) && allTabs.some(t => t.id === numericId)) {
+          setActiveTab(numericId);
+          return;
+        }
+        const lower = tabParam.toLowerCase();
+        const found = allTabs.find(t => 
+          t.label.toLowerCase().includes(lower) || 
+          t.title.toLowerCase().includes(lower) ||
+          (lower === 'iglesia' && t.id === 1) ||
+          (lower === 'familias' && t.id === 18) ||
+          (lower === 'finanzas' && t.id === 10) ||
+          (lower === 'comunicados' && t.id === 9) ||
+          (lower === 'templo' && t.id === 17) ||
+          (lower === 'dashboard' && t.id === 12)
+        );
+        if (found) {
+          setActiveTab(found.id);
+        }
+      }
+    }
+  }, []);
+
+  // Restore last visited tab from recentTabs si no se especifico parametro en la URL
   useEffect(() => {
     if (recentTabs.length > 0 && visibleTabs.length > 0) {
+      if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('tab')) {
+        return; // Si la URL traia ?tab=, respetarla y no sobrescribir
+      }
       const lastRecent = recentTabs.find(id => visibleTabs.some(t => t.id === id));
       if (lastRecent && activeTab === 12) {
         setActiveTab(lastRecent);
