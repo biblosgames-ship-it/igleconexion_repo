@@ -627,10 +627,14 @@ export default function FinanzasModule() {
 
     let nuevoTipo = cuenta.tipo;
     if (!['CAJA_CHICA', 'CAJA_GENERAL', 'BANCO'].includes(cuenta.tipo)) {
-      const tipoOpt = prompt("Categoría de la cuenta:\n1 = Ofrenda\n2 = Gasto / Egreso\n3 = Fondo Ministerial", cuenta.tipo === 'OFRENDA' ? '1' : cuenta.tipo === 'GASTO' ? '2' : '3');
+      const tipoOpt = prompt(
+        "Sección / Categoría de la cuenta:\n1 = Ofrenda (Pestaña Diezmos y Ofrendas)\n2 = Ingreso General (Pestaña Ingresos)\n3 = Gasto / Egreso (Pestaña Gastos)\n4 = Fondo Ministerial (Pestaña Fondos Ministeriales)",
+        cuenta.tipo === 'OFRENDA' ? '1' : cuenta.tipo === 'INGRESO' ? '2' : cuenta.tipo === 'GASTO' ? '3' : '4'
+      );
       if (tipoOpt === '1') nuevoTipo = 'OFRENDA';
-      else if (tipoOpt === '2') nuevoTipo = 'GASTO';
-      else if (tipoOpt === '3') nuevoTipo = 'DEPARTAMENTO';
+      else if (tipoOpt === '2') nuevoTipo = 'INGRESO';
+      else if (tipoOpt === '3') nuevoTipo = 'GASTO';
+      else if (tipoOpt === '4') nuevoTipo = 'DEPARTAMENTO';
     }
 
     const res = await fetch('/api/finanzas/cuentas', {
@@ -1564,7 +1568,7 @@ export default function FinanzasModule() {
           c.nombre.toLowerCase() === 'caja chica' || c.nombre.toLowerCase() === 'caja general' || c.nombre.toLowerCase() === 'caja de banco'
         );
 
-        const tipoFiltrado = ingresoGastoSubTab === 'ingreso' ? 'OFRENDA' : 'GASTO';
+        const tipoFiltrado = ingresoGastoSubTab === 'ingreso' ? 'INGRESO' : 'GASTO';
         const filtradas = cuentas.filter(c => c.tipo === tipoFiltrado);
 
         return (
@@ -1611,7 +1615,23 @@ export default function FinanzasModule() {
                     {ingresoGastoSubTab === 'ingreso' ? '💰 Registrar Nuevo Ingreso' : '📉 Registrar Nuevo Gasto'}
                   </h3>
                   <form onSubmit={registrarTransaccion} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: '0.2rem' }}>Caja Contable (Origen/Destino)</label>
+                    {filtradas.length > 0 && (
+                      <>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: '0.2rem' }}>
+                          Cuenta de {ingresoGastoSubTab === 'ingreso' ? 'Ingreso / Concepto' : 'Gasto / Egreso'}
+                        </label>
+                        <select required value={tOfrendaCuentaId} onChange={e=>setTOfrendaCuentaId(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: 'white', fontWeight: 600 }}>
+                          <option value="">-- Seleccionar Cuenta ({ingresoGastoSubTab === 'ingreso' ? 'Ingreso' : 'Gasto'}) --</option>
+                          {filtradas.map((c: any) => (
+                            <option key={c.id} value={c.id}>
+                              {c.nombre} (${c.balance.toFixed(2)})
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: '0.2rem' }}>Caja Contable (Origen/Destino Físico)</label>
                     <select required value={tCuentaId} onChange={e=>setTCuentaId(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: 'white', fontWeight: 600 }}>
                       <option value="">-- Seleccionar Caja Contable --</option>
                       {cajasFisicas.map((c: any) => (
