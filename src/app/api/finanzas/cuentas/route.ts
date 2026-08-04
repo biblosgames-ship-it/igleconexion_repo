@@ -252,6 +252,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
+    if (action === 'reset_finanzas') {
+      await prisma.$transaction([
+        prisma.transaccionFinanciera.deleteMany({ where: { iglesia_id: iglesiaId } }),
+        prisma.historialDiezmo.deleteMany({ where: { iglesia_id: iglesiaId } }),
+        prisma.cuentaFondo.updateMany({
+          where: { iglesia_id: iglesiaId },
+          data: { balance: 0.0 }
+        })
+      ]);
+
+      return NextResponse.json({ success: true });
+    }
+
     return NextResponse.json({ error: 'Acción no válida' }, { status: 400 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

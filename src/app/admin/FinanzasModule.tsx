@@ -712,6 +712,24 @@ export default function FinanzasModule() {
     }
   };
 
+  const resetFinanzasData = async () => {
+    if (!confirm("⚠️ ¿Estás seguro de que deseas eliminar TODOS los datos financieros registrados? Esto borrará todas las transacciones, diezmos y reiniciará los balances de las cuentas a $0.00.")) return;
+    if (!confirm("CONFIRMACIÓN FINAL: Esta acción eliminará permanentemente todas las transacciones de prueba. ¿Continuar?")) return;
+
+    const res = await fetch('/api/finanzas/cuentas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'reset_finanzas', data: {} })
+    });
+    if (res.ok) {
+      alert("✅ Todos los datos financieros han sido vaciados y los balances restablecidos a $0.00.");
+      loadCuentas();
+      loadDashboard();
+    } else {
+      alert("Error al limpiar los datos financieros.");
+    }
+  };
+
   const pagarNomina = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!confirm("¿Ejecutar pago de nómina para todos los empleados activos?")) return;
@@ -953,6 +971,9 @@ export default function FinanzasModule() {
             </button>
             <button onClick={() => window.print()} style={{ padding: '0.5rem 1rem', background: 'white', color: '#0f172a', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               🖨️ Imprimir
+            </button>
+            <button onClick={resetFinanzasData} style={{ padding: '0.5rem 1rem', background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: 'auto' }} title="Vaciar todas las transacciones de prueba y resetear balances a 0">
+              🗑️ Vaciar / Reiniciar Datos Financieros
             </button>
           </div>
 
