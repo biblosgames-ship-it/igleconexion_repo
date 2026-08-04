@@ -5763,20 +5763,20 @@ const allSystemIcons = [
                 }
               `}} />
 
-              {/* DESGLOSE DEMOGRÁFICO COMPACTO */}
-              <div className={styles.configBlock} style={{ background: '#ffffff', border: '1px solid rgba(226, 232, 240, 0.6)', borderRadius: '24px', padding: '1rem 1.5rem', marginBottom: '1rem', boxShadow: 'var(--shadow-xl)' }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
-                  <div style={{ padding: '0.4rem 0.85rem', background: 'var(--color-primary-light)', borderRadius: '10px', display: 'inline-flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', color: 'var(--color-primary)' }}>Total</span>
-                    <span style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--color-primary-dark)', fontFamily: 'var(--font-mono)' }}>{miembros.length}</span>
+              {/* DESGLOSE DEMOGRÁFICO MINIMALISTA */}
+              <div className={styles.configBlock} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '0.65rem 1rem', marginBottom: '0.85rem', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
+                  <div style={{ padding: '0.3rem 0.65rem', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: '#0369a1' }}>Total Miembros:</span>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0284c7' }}>{miembros.length}</span>
                   </div>
-                  <div style={{ padding: '0.4rem 0.85rem', background: '#ecfdf5', borderRadius: '10px', display: 'inline-flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', color: '#10b981' }}>Familias</span>
-                    <span style={{ fontSize: '1.3rem', fontWeight: 900, color: '#065f46', fontFamily: 'var(--font-mono)' }}>{new Set(miembros.map(m => m.familia_codigo).filter(Boolean)).size}</span>
+                  <div style={{ padding: '0.3rem 0.65rem', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: '#15803d' }}>Familias:</span>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#16a34a' }}>{new Set(miembros.map(m => m.familia_codigo).filter(Boolean)).size}</span>
                   </div>
-                  <div style={{ padding: '0.4rem 0.85rem', background: '#fffbeb', borderRadius: '10px', display: 'inline-flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', color: '#d97706' }}>Sin Grupo</span>
-                    <span style={{ fontSize: '1.3rem', fontWeight: 900, color: '#92400e', fontFamily: 'var(--font-mono)' }}>{miembros.filter(m => !m.familia_codigo).length}</span>
+                  <div style={{ padding: '0.3rem 0.65rem', background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: '#b45309' }}>Sin Grupo:</span>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#d97706' }}>{miembros.filter(m => !m.familia_codigo).length}</span>
                   </div>
                   {(Object.entries(
                     miembros.reduce((acc, m) => {
@@ -5785,9 +5785,9 @@ const allSystemIcons = [
                       return acc;
                     }, {} as Record<string, number>)
                   ) as [string, number][]).map(([socName, count]) => (
-                    <div key={socName} style={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '10px', padding: '0.35rem 0.7rem', display: 'inline-flex', flexDirection: 'column', background: '#f8fafc' }}>
-                      <span style={{ fontSize: '0.55rem', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100px' }}>{socName}</span>
-                      <span style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', fontFamily: 'var(--font-mono)' }}>{count}</span>
+                    <div key={socName} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.3rem 0.6rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: '#f8fafc' }}>
+                      <span style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100px' }}>{socName}:</span>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f172a' }}>{count}</span>
                     </div>
                   ))}
                 </div>
@@ -7954,37 +7954,22 @@ const allSystemIcons = [
                 }
               `}} />
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '0.75rem' }}>
                 <div className="no-print" style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button 
-                    onClick={() => window.print()}
-                    style={{ 
-                      padding: '0.6rem 1.2rem', 
-                      background: '#0284c7', 
-                      color: 'white', 
-                      border: 'none', 
-                      borderRadius: '8px', 
-                      fontWeight: 600, 
-                      fontSize: '0.85rem', 
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.4rem'
-                    }}
-                  >
-                    🖨️ Imprimir / Guardar PDF
-                  </button>
                   <button 
                     onClick={loadAnalytics}
                     style={{ 
-                      padding: '0.6rem 1.2rem', 
+                      padding: '0.4rem 0.85rem', 
                       background: '#f1f5f9', 
                       border: '1px solid #cbd5e1', 
                       borderRadius: '8px', 
                       fontWeight: 600, 
-                      fontSize: '0.85rem', 
+                      fontSize: '0.78rem', 
                       cursor: 'pointer',
-                      color: '#374151'
+                      color: '#374151',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.3rem'
                     }}
                   >
                     🔄 Actualizar
@@ -7993,53 +7978,54 @@ const allSystemIcons = [
               </div>
 
               {analyticsLoading ? (
-                <p style={{ color: '#64748b', textAlign: 'center', padding: '3rem' }}>Calculando datos...</p>
+                <p style={{ color: '#64748b', textAlign: 'center', padding: '2rem' }}>Calculando datos...</p>
               ) : analyticsData ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-                  {/* Tarjetas de métricas clave */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.85rem' }}>
+                  {/* Tarjetas de métricas clave - Estilo Minimalista y Moderno */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '0.65rem' }}>
                     {[
-                      { label: 'Total Miembros', value: analyticsData.totalMiembros, icon: '👥', color: 'var(--color-primary)' },
-                      { label: 'Familias Registradas', value: analyticsData.totalFamilias || 0, icon: '👨‍👩‍👧‍👦', color: 'var(--success)' },
-                      { label: 'Líderes Activos', value: analyticsData.totalLideres || 0, icon: '👨‍💼', color: 'var(--color-spiritual)' },
-                      { label: 'Grupos de Conexión', value: analyticsData.totalGrupos, icon: '🌐', color: '#0ea5e9' },
-                      { label: 'Grupos de Familias', value: analyticsData.totalGruposFamilia || 0, icon: '🏡', color: '#16a34a' },
-                      { label: 'Departamentos', value: analyticsData.totalDepartamentos || 0, icon: '🏢', color: 'var(--warning)' },
-                      { label: 'Ministerios', value: analyticsData.totalMinisterios || 0, icon: '⛪', color: 'var(--color-event)' },
-                      { label: 'Instituciones', value: analyticsData.totalInstituciones || 0, icon: '🏫', color: '#06b6d4' },
-                      { label: 'Cobertura Pastoral', value: `${analyticsData.coberturaPastoral || 0} pers.`, icon: '🐑', color: '#10b981' },
-                      { label: 'Oraciones Activas', value: analyticsData.totalOracionActivas || 0, icon: '🙏', color: 'var(--danger)' }
+                      { label: 'Total Miembros', value: analyticsData.totalMiembros, icon: '👥', color: '#0284c7', bg: '#f0f9ff' },
+                      { label: 'Familias Registradas', value: analyticsData.totalFamilias || 0, icon: '👨‍👩‍👧‍👦', color: '#16a34a', bg: '#f0fdf4' },
+                      { label: 'Líderes Activos', value: analyticsData.totalLideres || 0, icon: '👨‍💼', color: '#7c3aed', bg: '#f5f3ff' },
+                      { label: 'Grupos Conexión', value: analyticsData.totalGrupos, icon: '🌐', color: '#0284c7', bg: '#f0f9ff' },
+                      { label: 'Grupos Familia', value: analyticsData.totalGruposFamilia || 0, icon: '🏡', color: '#16a34a', bg: '#f0fdf4' },
+                      { label: 'Departamentos', value: analyticsData.totalDepartamentos || 0, icon: '🏢', color: '#d97706', bg: '#fffbeb' },
+                      { label: 'Ministerios', value: analyticsData.totalMinisterios || 0, icon: '⛪', color: '#ea580c', bg: '#fff7ed' },
+                      { label: 'Instituciones', value: analyticsData.totalInstituciones || 0, icon: '🏫', color: '#0891b2', bg: '#ecfeff' },
+                      { label: 'Cobertura Pastoral', value: `${analyticsData.coberturaPastoral || 0} pers.`, icon: '🐑', color: '#059669', bg: '#ecfdf5' },
+                      { label: 'Oraciones Activas', value: analyticsData.totalOracionActivas || 0, icon: '🙏', color: '#dc2626', bg: '#fef2f2' }
                     ].map(card => (
                       <div 
                         key={card.label} 
                         style={{ 
                           background: 'white', 
-                          border: '1px solid rgba(226, 232, 240, 0.6)', 
-                          borderRadius: '16px', 
-                          padding: '0.75rem 1rem', 
-                          boxShadow: 'var(--shadow-sm)',
+                          border: '1px solid #e2e8f0', 
+                          borderRadius: '12px', 
+                          padding: '0.5rem 0.75rem', 
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '0.75rem',
+                          gap: '0.6rem',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
                         }}
                       >
                         <div style={{ 
-                          fontSize: '1.25rem', 
-                          backgroundColor: `${card.color === 'var(--color-primary)' ? '#4f46e5' : card.color === 'var(--color-spiritual)' ? '#8b5cf6' : card.color === 'var(--success)' ? '#10b981' : card.color === 'var(--warning)' ? '#f59e0b' : card.color === 'var(--color-event)' ? '#f97316' : card.color === 'var(--danger)' ? '#f43f5e' : card.color}18`, 
-                          borderRadius: '12px', 
+                          fontSize: '1rem', 
+                          backgroundColor: card.bg, 
+                          color: card.color,
+                          borderRadius: '8px', 
                           display: 'flex', 
                           alignItems: 'center', 
                           justifyContent: 'center', 
-                          width: '38px', 
-                          height: '38px',
+                          width: '32px', 
+                          height: '32px',
                           flexShrink: 0
                         }}>
                           {card.icon}
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0 }}>
-                          <div style={{ fontSize: '1.2rem', fontWeight: 900, color: card.color, fontFamily: 'var(--font-mono)', lineHeight: 1.1 }}>{card.value}</div>
-                          <div style={{ fontSize: '0.64rem', color: 'var(--text-secondary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '0.1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>{card.label}</div>
+                          <div style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.1 }}>{card.value}</div>
+                          <div style={{ fontSize: '0.62rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.02em', marginTop: '0.1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>{card.label}</div>
                         </div>
                       </div>
                     ))}
