@@ -114,33 +114,41 @@ export default function TemploModule() {
     const vu = valorUnitarioBien ? parseFloat(valorUnitarioBien) : null;
     const ve = vu ? cant * vu : (valorBien ? parseFloat(valorBien) : null);
 
-    const res = await fetch('/api/bienes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nombre: nombreBien,
-        descripcion: descBien,
-        categoria: catBien,
-        ubicacion: ubBien,
-        fecha_adquisicion: fechaAdqBien,
-        cantidad: cant,
-        valor_unitario: vu,
-        valor_estimado: ve,
-        notas: notasBien
-      })
-    });
-    if (res.ok) {
-      setNombreBien('');
-      setDescBien('');
-      setCatBien('Electrónica');
-      setUbBien('');
-      setFechaAdqBien('');
-      setCantidadBien('1');
-      setValorUnitarioBien('');
-      setValorBien('');
-      setNotasBien('');
-      setBienView('LIST');
-      loadAllData();
+    try {
+      const res = await fetch('/api/bienes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: nombreBien,
+          descripcion: descBien,
+          categoria: catBien,
+          ubicacion: ubBien,
+          fecha_adquisicion: fechaAdqBien,
+          cantidad: cant,
+          valor_unitario: vu,
+          valor_estimado: ve,
+          notas: notasBien
+        })
+      });
+      if (res.ok) {
+        setNombreBien('');
+        setDescBien('');
+        setCatBien('Electrónica');
+        setUbBien('');
+        setFechaAdqBien('');
+        setCantidadBien('1');
+        setValorUnitarioBien('');
+        setValorBien('');
+        setNotasBien('');
+        setBienView('LIST');
+        await loadAllData();
+        alert("✅ Artículo guardado exitosamente en el inventario.");
+      } else {
+        const err = await res.json();
+        alert("Error al guardar el artículo: " + (err.error || "no se pudo guardar"));
+      }
+    } catch (err: any) {
+      alert("Error de conexión al guardar: " + err.message);
     }
   };
 
@@ -386,6 +394,69 @@ export default function TemploModule() {
     });
     if (res.ok) {
       loadAllData();
+    }
+  };
+
+  const aprobarReserva = async (id: string) => {
+    if (!confirm("¿Aprobar esta reserva de espacio? Se enviará una notificación a todos los miembros.")) return;
+    const res = await fetch('/api/reservas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'aprobar', data: { id } })
+    });
+    if (res.ok) {
+      alert("✅ Reserva aprobada y reunión confirmada.");
+      loadAllData();
+    } else {
+      const err = await res.json();
+      alert("Error al aprobar: " + err.error);
+    }
+  };
+
+  const moverReserva = async (r: any) => {
+    const listadoSalones = salones.map((s, idx) => `${idx + 1}. ${s.nombre} (${s.ubicacion || 'N/A'}) - ID: ${s.id}`).join('\n');
+    const nuevoSalonId = prompt(`Selecciona el nuevo salón ingresando su ID o déjalo en blanco para mantener el salón actual (${r.salon?.nombre}):\n\n${listadoSalones}`, r.salon_id);
+    if (nuevoSalonId === null) return;
+
+    const nota = prompt("Nota explicativa para los miembros sobre el cambio de salón:", "Reubicado por el Administrador del Templo.");
+    if (nota === null) return;
+
+    const res = await fetch('/api/reservas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'mover',
+        data: {
+          id: r.id,
+          nuevo_salon_id: nuevoSalonId.trim() || r.salon_id,
+          notas_admin: nota
+        }
+      })
+    });
+    if (res.ok) {
+      alert("🔄 Reserva reubicada y miembros notificados del nuevo espacio.");
+      loadAllData();
+    } else {
+      const err = await res.json();
+      alert("Error al reubicar: " + err.error);
+    }
+  };
+
+  const rechazarReserva = async (id: string) => {
+    const motivo = prompt("Motivo del rechazo de la reserva:", "Conflicto de espacio o mantenimiento del salón.");
+    if (motivo === null) return;
+
+    const res = await fetch('/api/reservas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'rechazar', data: { id, notas_admin: motivo } })
+    });
+    if (res.ok) {
+      alert("❌ Reserva rechazada.");
+      loadAllData();
+    } else {
+      const err = await res.json();
+      alert("Error al rechazar: " + err.error);
     }
   };
 
@@ -1240,59 +1311,120 @@ export default function TemploModule() {
                         <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                           <th style={{ padding: '0.75rem', color: '#64748b', fontWeight: 700 }}>Salón</th>
                           <th style={{ padding: '0.75rem', color: '#64748b', fontWeight: 700 }}>Reservado Por</th>
-                          <th style={{ padding: '0.75rem', color: '#64748b', fontWeight: 700 }}>Horario</th>
-                          <th style={{ padding: '0.75rem', color: '#64748b', fontWeight: 700 }}>Día/Fecha</th>
-                          <th style={{ padding: '0.75rem', color: '#64748b', fontWeight: 700, textAlign: 'center' }}>Acciones</th>
+                          <th style={{ padding: '0.75rem', color: '#64748b', fontWeight: 700 }}>Estado</th>
+                          <th style={{ padding: '0.75rem', color: '#64748b', fontWeight: 700 }}>Horario / Fecha</th>
+                          <th style={{ padding: '0.75rem', color: '#64748b', fontWeight: 700, textAlign: 'center' }}>Acciones Admin</th>
                         </tr>
                       </thead>
                       <tbody>
                         {reservas.length === 0 ? (
                           <tr>
-                            <td colSpan={5} style={{ padding: '1.5rem', textAlign: 'center', color: '#94a3b8' }}>No hay reservas activas.</td>
+                            <td colSpan={5} style={{ padding: '1.5rem', textAlign: 'center', color: '#94a3b8' }}>No hay reservas de espacio registradas.</td>
                           </tr>
                         ) : (
-                          reservas.map(r => (
-                            <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                              <td style={{ padding: '0.75rem', fontWeight: 600 }}>{r.salon?.nombre}</td>
-                              <td style={{ padding: '0.75rem' }}>
-                                <span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>{r.reservado_por}</span>
-                                {r.proposito && <span style={{ display: 'block', fontSize: '0.75rem', color: '#64748b' }}>{r.proposito}</span>}
-                              </td>
-                              <td style={{ padding: '0.75rem' }}>⏰ {r.hora_inicio} - {r.hora_fin}</td>
-                              <td style={{ padding: '0.75rem' }}>
-                                {r.dia_semana ? (
-                                  <span style={{ fontSize: '0.8rem', background: '#e0f2fe', color: '#0369a1', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
-                                    Recurrente: {r.dia_semana}
-                                  </span>
-                                ) : (
-                                  <span style={{ fontSize: '0.8rem', background: '#f1f5f9', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
-                                    Única: {r.fecha_especifica ? new Date(r.fecha_especifica).toLocaleDateString() : 'N/A'}
-                                  </span>
-                                )}
-                              </td>
-                              <td style={{ padding: '0.75rem', textAlign: 'center' }}>
-                                <button 
-                                  onClick={() => deleteReserva(r.id)} 
-                                  style={{ 
-                                    background: 'none',
-                                    border: 'none',
-                                    color: '#f43f5e',
-                                    cursor: 'pointer',
-                                    padding: '4px',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    transition: 'color 0.2s',
-                                  }}
-                                  onMouseEnter={(e) => e.currentTarget.style.color = '#e11d48'}
-                                  onMouseLeave={(e) => e.currentTarget.style.color = '#f43f5e'}
-                                  title="Cancelar Reserva"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-                                </button>
-                              </td>
-                            </tr>
-                          ))
+                          reservas.map(r => {
+                            const isPending = r.estado === 'PENDIENTE' || !r.estado;
+                            const isApproved = r.estado === 'APROBADO';
+                            const isRejected = r.estado === 'RECHAZADO';
+
+                            return (
+                              <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                <td style={{ padding: '0.75rem', fontWeight: 600 }}>
+                                  {r.salon?.nombre || 'Templo'}
+                                  {r.notas_admin && (
+                                    <span style={{ display: 'block', fontSize: '0.7rem', color: '#0284c7', marginTop: '0.2rem' }}>
+                                      📌 {r.notas_admin}
+                                    </span>
+                                  )}
+                                </td>
+                                <td style={{ padding: '0.75rem' }}>
+                                  <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>{r.reservado_por}</span>
+                                  {r.proposito && <span style={{ display: 'block', fontSize: '0.75rem', color: '#64748b' }}>{r.proposito}</span>}
+                                </td>
+                                <td style={{ padding: '0.75rem' }}>
+                                  {isPending && (
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '12px', background: '#fffbeb', color: '#b45309', border: '1px solid #fef3c7' }}>
+                                      ⏳ Pendiente
+                                    </span>
+                                  )}
+                                  {isApproved && (
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '12px', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' }}>
+                                      ✅ Aprobado
+                                    </span>
+                                  )}
+                                  {isRejected && (
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '12px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
+                                      ❌ Rechazado
+                                    </span>
+                                  )}
+                                </td>
+                                <td style={{ padding: '0.75rem' }}>
+                                  <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>⏰ {r.hora_inicio} - {r.hora_fin}</div>
+                                  <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.15rem' }}>
+                                    {r.dia_semana ? `Recurrente: ${r.dia_semana}` : (r.fecha_especifica ? new Date(r.fecha_especifica).toLocaleDateString() : 'N/A')}
+                                  </div>
+                                </td>
+                                <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                                  <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                    {isPending && (
+                                      <>
+                                        <button
+                                          onClick={() => aprobarReserva(r.id)}
+                                          style={{ padding: '0.35rem 0.6rem', background: '#16a34a', color: 'white', border: 'none', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
+                                          title="Aprobar reserva de salón"
+                                        >
+                                          ✓ Aprobar
+                                        </button>
+                                        <button
+                                          onClick={() => moverReserva(r)}
+                                          style={{ padding: '0.35rem 0.6rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
+                                          title="Reubicar de salón o cambiar horario"
+                                        >
+                                          🔄 Reubicar
+                                        </button>
+                                        <button
+                                          onClick={() => rechazarReserva(r.id)}
+                                          style={{ padding: '0.35rem 0.6rem', background: '#f87171', color: 'white', border: 'none', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
+                                          title="Rechazar solicitud"
+                                        >
+                                          ✕ Rechazar
+                                        </button>
+                                      </>
+                                    )}
+
+                                    {isApproved && (
+                                      <>
+                                        <button
+                                          onClick={() => moverReserva(r)}
+                                          style={{ padding: '0.35rem 0.6rem', background: '#e0f2fe', color: '#0284c7', border: '1px solid #bae6fd', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
+                                          title="Reubicar a otro salón"
+                                        >
+                                          🔄 Mover Salón
+                                        </button>
+                                        <button
+                                          onClick={() => deleteReserva(r.id)}
+                                          style={{ padding: '0.35rem 0.6rem', background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
+                                          title="Cancelar reserva"
+                                        >
+                                          🗑️ Cancelar
+                                        </button>
+                                      </>
+                                    )}
+
+                                    {isRejected && (
+                                      <button
+                                        onClick={() => deleteReserva(r.id)}
+                                        style={{ padding: '0.35rem 0.6rem', background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
+                                        title="Eliminar registro"
+                                      >
+                                        🗑️ Eliminar
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
                         )}
                       </tbody>
                     </table>

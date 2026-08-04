@@ -1172,7 +1172,11 @@ model ReservaEspacio {
   hora_inicio      String       // Ej: "09:00"
   hora_fin         String       // Ej: "11:00"
   reservado_por    String       // Ministerio, Grupo de Conexión, Departamento
+  grupo_id         String?
+  grupo_tipo       String?
+  estado           String       @default("PENDIENTE") // PENDIENTE, APROBADO, RECHAZADO
   proposito        String?
+  notas_admin      String?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 }
