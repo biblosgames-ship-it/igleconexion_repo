@@ -25,6 +25,8 @@ export default function TemploModule() {
   const [catBien, setCatBien] = useState('Electrónica');
   const [ubBien, setUbBien] = useState('');
   const [fechaAdqBien, setFechaAdqBien] = useState('');
+  const [cantidadBien, setCantidadBien] = useState('1');
+  const [valorUnitarioBien, setValorUnitarioBien] = useState('');
   const [valorBien, setValorBien] = useState('');
   const [notasBien, setNotasBien] = useState('');
 
@@ -108,6 +110,10 @@ export default function TemploModule() {
   // Bienes CRUD
   const submitCreateBien = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cant = parseInt(cantidadBien) || 1;
+    const vu = valorUnitarioBien ? parseFloat(valorUnitarioBien) : null;
+    const ve = vu ? cant * vu : (valorBien ? parseFloat(valorBien) : null);
+
     const res = await fetch('/api/bienes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -117,12 +123,55 @@ export default function TemploModule() {
         categoria: catBien,
         ubicacion: ubBien,
         fecha_adquisicion: fechaAdqBien,
-        valor_estimado: valorBien,
+        cantidad: cant,
+        valor_unitario: vu,
+        valor_estimado: ve,
         notas: notasBien
       })
     });
     if (res.ok) {
+      setNombreBien('');
+      setDescBien('');
+      setCatBien('Electrónica');
+      setUbBien('');
+      setFechaAdqBien('');
+      setCantidadBien('1');
+      setValorUnitarioBien('');
+      setValorBien('');
+      setNotasBien('');
       setBienView('LIST');
+      loadAllData();
+    }
+  };
+
+  const editarBien = async (b: any) => {
+    const nuevoNombre = prompt("Nombre del artículo:", b.nombre);
+    if (nuevoNombre === null || !nuevoNombre.trim()) return;
+    
+    const nuevaCantStr = prompt("Cantidad de unidades:", String(b.cantidad || 1));
+    if (nuevaCantStr === null) return;
+    const nuevaCant = parseInt(nuevaCantStr) || 1;
+
+    const nuevoVuStr = prompt("Precio por Unidad ($):", b.valor_unitario ? String(b.valor_unitario) : (b.valor_estimado ? String((b.valor_estimado / (b.cantidad || 1)).toFixed(2)) : ''));
+    if (nuevoVuStr === null) return;
+    const nuevoVu = nuevoVuStr.trim() ? parseFloat(nuevoVuStr) : null;
+
+    const nuevaUb = prompt("Ubicación en el Templo:", b.ubicacion || '');
+    if (nuevaUb === null) return;
+
+    const res = await fetch(`/api/bienes/${b.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nombre: nuevoNombre.trim(),
+        cantidad: nuevaCant,
+        valor_unitario: nuevoVu,
+        ubicacion: nuevaUb
+      })
+    });
+
+    if (res.ok) {
+      loadBienDetail(b.id);
       loadAllData();
     }
   };
@@ -446,25 +495,52 @@ export default function TemploModule() {
                     </div>
                   ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
-                      {bienes.map(b => (
-                        <div key={b.id} onClick={() => { setSelectedBien(b); setBienView('DETAIL'); }} style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem', cursor: 'pointer', position: 'relative', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'transform 0.15s' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.5rem', borderRadius: '999px', background: `${getEstadoColor(b.estado)}15`, color: getEstadoColor(b.estado) }}>
-                              {b.estado}
-                            </span>
-                            <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>{b.categoria}</span>
+                      {bienes.map(b => {
+                        const cant = b.cantidad || 1;
+                        const vu = b.valor_unitario !== null && b.valor_unitario !== undefined 
+                          ? b.valor_unitario 
+                          : (b.valor_estimado ? b.valor_estimado / cant : null);
+                        const vt = b.valor_estimado !== null && b.valor_estimado !== undefined 
+                          ? b.valor_estimado 
+                          : (vu ? vu * cant : null);
+
+                        return (
+                          <div key={b.id} onClick={() => { setSelectedBien(b); setBienView('DETAIL'); }} style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem', cursor: 'pointer', position: 'relative', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'transform 0.15s' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.5rem', borderRadius: '999px', background: `${getEstadoColor(b.estado)}15`, color: getEstadoColor(b.estado) }}>
+                                {b.estado}
+                              </span>
+                              <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>{b.categoria}</span>
+                            </div>
+                            <h3 style={{ margin: '0 0 0.25rem 0', color: '#0f172a' }}>{b.nombre}</h3>
+                            <p style={{ margin: '0 0 0.75rem 0', color: '#64748b', fontSize: '0.9rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{b.descripcion || 'Sin descripción'}</p>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.85rem', color: '#475569', background: '#f8fafc', padding: '0.75rem', borderRadius: '8px', marginBottom: '0.5rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span>📦 Cantidad:</span>
+                                <strong>{cant} {cant === 1 ? 'unidad' : 'unidades'}</strong>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span>🏷️ Precio Unitario:</span>
+                                <strong>{vu !== null ? `$${vu.toFixed(2)} c/u` : 'N/A'}</strong>
+                              </div>
+                              {vt !== null && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #cbd5e1', paddingTop: '0.25rem', marginTop: '0.1rem', color: '#0284c7' }}>
+                                  <span>💵 Valor Total:</span>
+                                  <strong style={{ fontSize: '0.95rem' }}>${vt.toFixed(2)}</strong>
+                                </div>
+                              )}
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.85rem', color: '#475569' }}>
+                              <span>📍 Ubicación: <strong>{b.ubicacion || 'N/A'}</strong></span>
+                              {b.mantenimientos?.filter((m: any) => m.estado === 'PENDIENTE').length > 0 && (
+                                <span style={{ color: '#ef4444', fontWeight: 600, marginTop: '0.25rem' }}>⚠️ Mantenimiento Pendiente</span>
+                              )}
+                            </div>
                           </div>
-                          <h3 style={{ margin: '0 0 0.25rem 0', color: '#0f172a' }}>{b.nombre}</h3>
-                          <p style={{ margin: '0 0 1rem 0', color: '#64748b', fontSize: '0.9rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{b.descripcion || 'Sin descripción'}</p>
-                          
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.85rem', color: '#475569' }}>
-                            <span>📍 Ubicación: <strong>{b.ubicacion || 'N/A'}</strong></span>
-                            {b.mantenimientos?.filter((m: any) => m.estado === 'PENDIENTE').length > 0 && (
-                              <span style={{ color: '#ef4444', fontWeight: 600, marginTop: '0.5rem' }}>⚠️ Mantenimiento Pendiente</span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </>
@@ -475,8 +551,8 @@ export default function TemploModule() {
                   <button onClick={() => setBienView('LIST')} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', marginBottom: '1rem', fontWeight: 600 }}>← Volver</button>
                   <h2 style={{ marginTop: 0 }}>Registrar Nuevo Artículo</h2>
                   <form onSubmit={submitCreateBien} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <input required placeholder="Nombre (Ej: Consola de Sonido Yamaha)" value={nombreBien} onChange={e=>setNombreBien(e.target.value)} style={{ padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
-                    <textarea placeholder="Descripción o detalles técnicos..." value={descBien} onChange={e=>setDescBien(e.target.value)} style={{ padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '8px', minHeight: '80px' }} />
+                    <input required placeholder="Nombre (Ej: Sillas Plegables Templo)" value={nombreBien} onChange={e=>setNombreBien(e.target.value)} style={{ padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                    <textarea placeholder="Descripción o detalles técnicos..." value={descBien} onChange={e=>setDescBien(e.target.value)} style={{ padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '8px', minHeight: '70px' }} />
                     
                     <div style={{ display: 'flex', gap: '1rem' }}>
                       <select value={catBien} onChange={e=>setCatBien(e.target.value)} style={{ flex: 1, padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '8px' }}>
@@ -491,84 +567,119 @@ export default function TemploModule() {
 
                     <div style={{ display: 'flex', gap: '1rem' }}>
                       <div style={{ flex: 1 }}>
-                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '0.25rem' }}>Fecha de Adquisición</label>
-                        <input type="date" value={fechaAdqBien} onChange={e=>setFechaAdqBien(e.target.value)} style={{ width: '100%', padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '0.25rem' }}>Cantidad de Unidades</label>
+                        <input required type="number" min="1" placeholder="Ej: 10" value={cantidadBien} onChange={e=>setCantidadBien(e.target.value)} style={{ width: '100%', padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 600 }} />
                       </div>
                       <div style={{ flex: 1 }}>
-                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '0.25rem' }}>Valor Estimado ($)</label>
-                        <input type="number" step="0.01" placeholder="Ej: 500.00" value={valorBien} onChange={e=>setValorBien(e.target.value)} style={{ width: '100%', padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '0.25rem' }}>Precio por Unidad ($)</label>
+                        <input type="number" step="0.01" placeholder="Ej: 25.00 por unidad" value={valorUnitarioBien} onChange={e=>setValorUnitarioBien(e.target.value)} style={{ width: '100%', padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 600 }} />
                       </div>
                     </div>
 
-                    <textarea placeholder="Notas adicionales, seriales, estado inicial..." value={notasBien} onChange={e=>setNotasBien(e.target.value)} style={{ padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '8px', minHeight: '80px' }} />
+                    {valorUnitarioBien && parseFloat(valorUnitarioBien) > 0 && (
+                      <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: '0.75rem', borderRadius: '8px', color: '#0369a1', fontSize: '0.9rem' }}>
+                        💵 <strong>Valor Total Calculado:</strong> ${( (parseInt(cantidadBien) || 1) * parseFloat(valorUnitarioBien) ).toFixed(2)} ({cantidadBien || 1} unidades × ${parseFloat(valorUnitarioBien).toFixed(2)} c/u)
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '0.25rem' }}>Fecha de Adquisición</label>
+                        <input type="date" value={fechaAdqBien} onChange={e=>setFechaAdqBien(e.target.value)} style={{ width: '100%', padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                      </div>
+                    </div>
+
+                    <textarea placeholder="Notas adicionales, seriales, estado inicial..." value={notasBien} onChange={e=>setNotasBien(e.target.value)} style={{ padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '8px', minHeight: '70px' }} />
                     
-                    <button type="submit" style={{ padding: '0.75rem', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', marginTop: '1rem' }}>Guardar en Inventario</button>
+                    <button type="submit" style={{ padding: '0.75rem', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', marginTop: '0.5rem' }}>Guardar en Inventario</button>
                   </form>
                 </div>
               )}
 
-              {bienView === 'DETAIL' && selectedBien && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                    <button onClick={() => {setBienView('LIST'); loadAllData();}} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontWeight: 600 }}>← Volver</button>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      <select value={selectedBien.estado} onChange={e => updateEstadoBien(selectedBien.id, e.target.value)} style={{ padding: '0.5rem', border: `2px solid ${getEstadoColor(selectedBien.estado)}`, color: getEstadoColor(selectedBien.estado), borderRadius: '8px', fontWeight: 800, background: 'white' }}>
-                        <option value="ACTIVO">ESTADO: ACTIVO</option>
-                        <option value="AVERIADO">ESTADO: AVERIADO</option>
-                        <option value="EN_MANTENIMIENTO">ESTADO: EN MANTENIMIENTO</option>
-                        <option value="DADO_DE_BAJA">ESTADO: DADO DE BAJA</option>
-                      </select>
-                      <button 
-                        onClick={() => deleteBien(selectedBien.id)} 
-                        style={{ 
-                          background: 'none',
-                          border: 'none',
-                          color: '#f43f5e',
-                          cursor: 'pointer',
-                          padding: '8px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          transition: 'color 0.2s',
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.color = '#e11d48'}
-                        onMouseLeave={(e) => e.currentTarget.style.color = '#f43f5e'}
-                        title="Eliminar Artículo"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-                      </button>
-                    </div>
-                  </div>
+              {bienView === 'DETAIL' && selectedBien && (() => {
+                const cant = selectedBien.cantidad || 1;
+                const vu = selectedBien.valor_unitario !== null && selectedBien.valor_unitario !== undefined 
+                  ? selectedBien.valor_unitario 
+                  : (selectedBien.valor_estimado ? selectedBien.valor_estimado / cant : null);
+                const vt = selectedBien.valor_estimado !== null && selectedBien.valor_estimado !== undefined 
+                  ? selectedBien.valor_estimado 
+                  : (vu ? vu * cant : null);
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem' }}>
-                    
-                    {/* Info Panel */}
-                    <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #e2e8f0', height: 'fit-content' }}>
-                      <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>{selectedBien.categoria}</span>
-                      <h2 style={{ margin: '0.5rem 0 1rem 0', color: '#0f172a' }}>{selectedBien.nombre}</h2>
-                      <p style={{ color: '#475569', lineHeight: 1.6, marginBottom: '2rem' }}>{selectedBien.descripcion || 'Sin descripción'}</p>
-                      
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
-                        <div>
-                          <span style={{ color: '#64748b', fontSize: '0.8rem', display: 'block' }}>Ubicación</span>
-                          <strong style={{ color: '#0f172a' }}>{selectedBien.ubicacion || 'No especificada'}</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: '#64748b', fontSize: '0.8rem', display: 'block' }}>Valor Estimado</span>
-                          <strong style={{ color: '#0f172a' }}>{selectedBien.valor_estimado ? `$${selectedBien.valor_estimado}` : 'No definido'}</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: '#64748b', fontSize: '0.8rem', display: 'block' }}>Fecha Adquisición</span>
-                          <strong style={{ color: '#0f172a' }}>{selectedBien.fecha_adquisicion ? new Date(selectedBien.fecha_adquisicion).toLocaleDateString() : 'Desconocida'}</strong>
-                        </div>
-                        {selectedBien.notas && (
-                          <div>
-                            <span style={{ color: '#64748b', fontSize: '0.8rem', display: 'block' }}>Notas / Serial</span>
-                            <strong style={{ color: '#0f172a' }}>{selectedBien.notas}</strong>
-                          </div>
-                        )}
+                return (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                      <button onClick={() => {setBienView('LIST'); loadAllData();}} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontWeight: 600 }}>← Volver</button>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <button 
+                          onClick={() => editarBien(selectedBien)}
+                          style={{ padding: '0.5rem 0.85rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}>
+                          ✏️ Editar Artículo
+                        </button>
+                        <select value={selectedBien.estado} onChange={e => updateEstadoBien(selectedBien.id, e.target.value)} style={{ padding: '0.5rem', border: `2px solid ${getEstadoColor(selectedBien.estado)}`, color: getEstadoColor(selectedBien.estado), borderRadius: '8px', fontWeight: 800, background: 'white' }}>
+                          <option value="ACTIVO">ESTADO: ACTIVO</option>
+                          <option value="AVERIADO">ESTADO: AVERIADO</option>
+                          <option value="EN_MANTENIMIENTO">ESTADO: EN MANTENIMIENTO</option>
+                          <option value="DADO_DE_BAJA">ESTADO: DADO DE BAJA</option>
+                        </select>
+                        <button 
+                          onClick={() => deleteBien(selectedBien.id)} 
+                          style={{ 
+                            background: 'none',
+                            border: 'none',
+                            color: '#f43f5e',
+                            cursor: 'pointer',
+                            padding: '8px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'color 0.2s',
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.color = '#e11d48'}
+                          onMouseLeave={(e) => e.currentTarget.style.color = '#f43f5e'}
+                          title="Eliminar Artículo"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                        </button>
                       </div>
                     </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem' }}>
+                      
+                      {/* Info Panel */}
+                      <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #e2e8f0', height: 'fit-content' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>{selectedBien.categoria}</span>
+                        <h2 style={{ margin: '0.5rem 0 1rem 0', color: '#0f172a' }}>{selectedBien.nombre}</h2>
+                        <p style={{ color: '#475569', lineHeight: 1.6, marginBottom: '2rem' }}>{selectedBien.descripcion || 'Sin descripción'}</p>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
+                          <div>
+                            <span style={{ color: '#64748b', fontSize: '0.8rem', display: 'block' }}>Cantidad de Unidades</span>
+                            <strong style={{ color: '#0f172a', fontSize: '1.1rem' }}>📦 {cant} {cant === 1 ? 'unidad' : 'unidades'}</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: '#64748b', fontSize: '0.8rem', display: 'block' }}>Precio por Unidad ($)</span>
+                            <strong style={{ color: '#0f172a' }}>{vu !== null ? `$${vu.toFixed(2)} por unidad` : 'No definido'}</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: '#64748b', fontSize: '0.8rem', display: 'block' }}>Valor Total Calculado</span>
+                            <strong style={{ color: '#0284c7', fontSize: '1.2rem' }}>{vt !== null ? `$${vt.toFixed(2)}` : 'No definido'}</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: '#64748b', fontSize: '0.8rem', display: 'block' }}>Ubicación</span>
+                            <strong style={{ color: '#0f172a' }}>{selectedBien.ubicacion || 'No especificada'}</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: '#64748b', fontSize: '0.8rem', display: 'block' }}>Fecha Adquisición</span>
+                            <strong style={{ color: '#0f172a' }}>{selectedBien.fecha_adquisicion ? new Date(selectedBien.fecha_adquisicion).toLocaleDateString() : 'Desconocida'}</strong>
+                          </div>
+                          {selectedBien.notas && (
+                            <div>
+                              <span style={{ color: '#64748b', fontSize: '0.8rem', display: 'block' }}>Notas / Serial</span>
+                              <strong style={{ color: '#0f172a' }}>{selectedBien.notas}</strong>
+                            </div>
+                          )}
+                        </div>
+                      </div>
 
                     {/* Maintenance Panel */}
                     <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
@@ -672,7 +783,8 @@ export default function TemploModule() {
                     </div>
                   </div>
                 </div>
-              )}
+              );
+            })()}
             </div>
           )}
 

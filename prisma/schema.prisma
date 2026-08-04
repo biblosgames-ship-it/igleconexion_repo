@@ -1009,6 +1009,8 @@ model BienInventario {
   categoria         String // Ej: Electrónica, Mobiliario, Instrumentos
   ubicacion         String? // Dónde se encuentra (Ej: Templo, Oficina)
   fecha_adquisicion DateTime?
+  cantidad          Int       @default(1)
+  valor_unitario    Float?
   valor_estimado    Float?
   estado            String    @default("ACTIVO") // ACTIVO, AVERIADO, EN_MANTENIMIENTO, DADO_DE_BAJA
   notas             String?

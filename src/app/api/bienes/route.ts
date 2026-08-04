@@ -38,6 +38,10 @@ export async function POST(request: Request) {
 
     const data = await request.json();
 
+    const numCantidad = data.cantidad ? parseInt(data.cantidad) : 1;
+    const numValorUnitario = data.valor_unitario ? parseFloat(data.valor_unitario) : (data.valor_estimado ? parseFloat(data.valor_estimado) : null);
+    const numValorEstimado = numValorUnitario ? numCantidad * numValorUnitario : (data.valor_estimado ? parseFloat(data.valor_estimado) : null);
+
     const bien = await prisma.bienInventario.create({
       data: {
         iglesia_id: iglesiaId,
@@ -46,7 +50,9 @@ export async function POST(request: Request) {
         categoria: data.categoria,
         ubicacion: data.ubicacion,
         fecha_adquisicion: data.fecha_adquisicion ? new Date(data.fecha_adquisicion) : null,
-        valor_estimado: data.valor_estimado ? parseFloat(data.valor_estimado) : null,
+        cantidad: numCantidad,
+        valor_unitario: numValorUnitario,
+        valor_estimado: numValorEstimado,
         estado: data.estado || 'ACTIVO',
         notas: data.notas
       }

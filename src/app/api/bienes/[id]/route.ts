@@ -28,6 +28,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     const data = await request.json();
 
+    const numCantidad = data.cantidad !== undefined ? parseInt(data.cantidad) : undefined;
+    const numValorUnitario = data.valor_unitario !== undefined ? (data.valor_unitario ? parseFloat(data.valor_unitario) : null) : undefined;
+    
+    let numValorEstimado = data.valor_estimado !== undefined ? (data.valor_estimado ? parseFloat(data.valor_estimado) : null) : undefined;
+    if (numCantidad !== undefined && numValorUnitario !== undefined && numValorUnitario !== null) {
+      numValorEstimado = numCantidad * numValorUnitario;
+    }
+
     const actualizado = await prisma.bienInventario.update({
       where: { id: (await params).id },
       data: {
@@ -36,7 +44,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         categoria: data.categoria,
         ubicacion: data.ubicacion,
         fecha_adquisicion: data.fecha_adquisicion ? new Date(data.fecha_adquisicion) : undefined,
-        valor_estimado: data.valor_estimado ? parseFloat(data.valor_estimado) : undefined,
+        cantidad: numCantidad,
+        valor_unitario: numValorUnitario,
+        valor_estimado: numValorEstimado,
         estado: data.estado,
         notas: data.notas
       }
