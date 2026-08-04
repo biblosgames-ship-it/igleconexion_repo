@@ -85,12 +85,32 @@ export async function POST(request: Request) {
     }
     
     if (action === 'editar_cuenta') {
-      const { id, nombre, descripcion } = data;
+      const { id, nombre, descripcion, tipo } = data;
+      const updateData: any = { nombre, descripcion };
+      if (tipo) updateData.tipo = tipo;
       const actualizada = await prisma.cuentaFondo.update({
         where: { id },
-        data: { nombre, descripcion }
+        data: updateData
       });
       return NextResponse.json(actualizada);
+    }
+
+    if (action === 'eliminar_cuenta') {
+      const { id } = data;
+      const cuenta = await prisma.cuentaFondo.findUnique({ where: { id } });
+      if (!cuenta) throw new Error("Cuenta no encontrada");
+
+      if (['CAJA_CHICA', 'CAJA_GENERAL', 'BANCO'].includes(cuenta.tipo) ||
+          ['caja chica', 'caja general', 'caja de banco'].includes(cuenta.nombre.toLowerCase())) {
+        throw new Error("No se pueden eliminar las cajas contables físicas predeterminadas.");
+      }
+
+      await prisma.$transaction([
+        prisma.transaccionFinanciera.deleteMany({ where: { cuenta_fondo_id: id } }),
+        prisma.cuentaFondo.delete({ where: { id } })
+      ]);
+
+      return NextResponse.json({ success: true });
     }
 
     if (action === 'transferir_fondos') {
@@ -154,37 +174,52 @@ export async function POST(request: Request) {
     }
 
     if (action === 'registrar_transaccion') {
-      const { cuenta_fondo_id, tipo, monto, descripcion, fecha, categoria, clasificacion, metodo_pago } = data;
-      
-      // Update balance
+      const { cuenta_fondo_id, caja_fisica_id, tipo, monto, descripcion, fecha, categoria, clasificacion, metodo_pago } = data;
+      const numMonto = parseFloat(monto);
+      const fechaMov = new Date(fecha);
+
       const cuenta = await prisma.cuentaFondo.findUnique({ where: { id: cuenta_fondo_id } });
       if (!cuenta) throw new Error("Cuenta no encontrada");
 
-      const nuevoBalance = tipo === 'INGRESO' ? cuenta.balance + monto : cuenta.balance - monto;
+      const nuevoBalanceCuenta = tipo === 'INGRESO' ? cuenta.balance + numMonto : cuenta.balance - numMonto;
       
-      const transaccion = await prisma.$transaction([
+      const transactionOps: any[] = [
         prisma.transaccionFinanciera.create({
           data: {
             iglesia_id: iglesiaId,
             cuenta_fondo_id,
             tipo,
-            monto,
+            monto: numMonto,
             descripcion,
-            fecha: new Date(fecha),
+            fecha: fechaMov,
             categoria: categoria || 'OTRO',
             clasificacion: clasificacion || 'OTRO',
             metodo_pago: metodo_pago || 'EFECTIVO',
-            registrado_por: usuario.id, // we save user ID instead of name for better traceability
+            registrado_por: usuario.id,
             usuario_creo_id: usuario.id
           }
         }),
         prisma.cuentaFondo.update({
           where: { id: cuenta_fondo_id },
-          data: { balance: nuevoBalance }
+          data: { balance: nuevoBalanceCuenta }
         })
-      ]);
+      ];
 
-      return NextResponse.json(transaccion);
+      if (caja_fisica_id && caja_fisica_id !== cuenta_fondo_id) {
+        const cajaFisica = await prisma.cuentaFondo.findUnique({ where: { id: caja_fisica_id } });
+        if (cajaFisica) {
+          const nuevoBalanceCaja = tipo === 'INGRESO' ? cajaFisica.balance + numMonto : cajaFisica.balance - numMonto;
+          transactionOps.push(
+            prisma.cuentaFondo.update({
+              where: { id: caja_fisica_id },
+              data: { balance: nuevoBalanceCaja }
+            })
+          );
+        }
+      }
+
+      const transaccion = await prisma.$transaction(transactionOps);
+      return NextResponse.json(transaccion[0] || transaccion);
     }
 
     if (action === 'eliminar_transaccion') {

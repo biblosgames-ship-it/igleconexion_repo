@@ -96,6 +96,8 @@ export default function FinanzasModule() {
   // Cajas Principales & Transferencias
   const [diezmoOfrendaSubTab, setDiezmoOfrendaSubTab] = useState<'diezmos' | 'ofrendas'>('diezmos');
   const [ingresoGastoSubTab, setIngresoGastoSubTab] = useState<'ingreso' | 'gasto'>('ingreso');
+  const [ministeriosSubTab, setMinisteriosSubTab] = useState<'fondos' | 'presupuestos'>('fondos');
+  const [tOfrendaCuentaId, setTOfrendaCuentaId] = useState('');
   const [tCategoria, setTCategoria] = useState('OFRENDA_GENERAL');
   const [showMovimientoModal, setShowMovimientoModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
@@ -618,35 +620,74 @@ export default function FinanzasModule() {
   };
 
   const editarCuenta = async (cuenta: any) => {
-    const nuevoNombre = prompt("Nuevo nombre de la cuenta:", cuenta.nombre);
-    if (nuevoNombre === null) return;
-    const nuevaDesc = prompt("Nueva descripción:", cuenta.descripcion || '');
+    const nuevoNombre = prompt("Nombre de la cuenta:", cuenta.nombre);
+    if (nuevoNombre === null || !nuevoNombre.trim()) return;
+    const nuevaDesc = prompt("Descripción:", cuenta.descripcion || '');
     if (nuevaDesc === null) return;
+
+    let nuevoTipo = cuenta.tipo;
+    if (!['CAJA_CHICA', 'CAJA_GENERAL', 'BANCO'].includes(cuenta.tipo)) {
+      const tipoOpt = prompt("Categoría de la cuenta:\n1 = Ofrenda\n2 = Gasto / Egreso\n3 = Fondo Ministerial", cuenta.tipo === 'OFRENDA' ? '1' : cuenta.tipo === 'GASTO' ? '2' : '3');
+      if (tipoOpt === '1') nuevoTipo = 'OFRENDA';
+      else if (tipoOpt === '2') nuevoTipo = 'GASTO';
+      else if (tipoOpt === '3') nuevoTipo = 'DEPARTAMENTO';
+    }
 
     const res = await fetch('/api/finanzas/cuentas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'editar_cuenta', data: { id: cuenta.id, nombre: nuevoNombre, descripcion: nuevaDesc } })
+      body: JSON.stringify({ action: 'editar_cuenta', data: { id: cuenta.id, nombre: nuevoNombre.trim(), descripcion: nuevaDesc, tipo: nuevoTipo } })
     });
     if (res.ok) {
       loadCuentas();
     }
   };
 
+  const eliminarCuenta = async (cuenta: any) => {
+    if (['CAJA_CHICA', 'CAJA_GENERAL', 'BANCO'].includes(cuenta.tipo) ||
+        ['caja chica', 'caja general', 'caja de banco'].includes(cuenta.nombre.toLowerCase())) {
+      return alert("No se pueden eliminar las Cajas Contables principales.");
+    }
+    if (!confirm(`¿Seguro que deseas eliminar la cuenta "${cuenta.nombre}"? Se borrará la cuenta y sus transacciones.`)) return;
+
+    const res = await fetch('/api/finanzas/cuentas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'eliminar_cuenta', data: { id: cuenta.id } })
+    });
+    if (res.ok) {
+      loadCuentas();
+      loadDashboard();
+    } else {
+      const err = await res.json();
+      alert("Error al eliminar la cuenta: " + (err.error || 'Desconocido'));
+    }
+  };
+
   const registrarTransaccion = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!tCuentaId || !tMonto) return alert("Selecciona cuenta y monto");
+    const targetCuentaId = tOfrendaCuentaId || tCuentaId;
+    if (!targetCuentaId || !tMonto) return alert("Selecciona la cuenta y el monto");
+
     const res = await fetch('/api/finanzas/cuentas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'registrar_transaccion',
-        data: { cuenta_fondo_id: tCuentaId, tipo: tTipoTransaccion, monto: parseFloat(tMonto), fecha: tFecha, descripcion: tDesc, metodo_pago: tMetodoPago }
+        data: {
+          cuenta_fondo_id: targetCuentaId,
+          caja_fisica_id: tCuentaId,
+          tipo: tTipoTransaccion,
+          monto: parseFloat(tMonto),
+          fecha: tFecha,
+          descripcion: tDesc,
+          metodo_pago: tMetodoPago
+        }
       })
     });
     if (res.ok) {
       const data = await res.json();
-      setTMonto(''); setTDesc(''); loadCuentas(); loadDashboard();
+      setTMonto(''); setTDesc(''); setTOfrendaCuentaId(''); loadCuentas(); loadDashboard();
       if (confirm("Transacción registrada con éxito. ¿Deseas imprimir el recibo ahora?")) {
         imprimirRecibo(data[0] || data);
       }
@@ -807,8 +848,7 @@ export default function FinanzasModule() {
           { id: 'dashboard', label: '📊 Dashboard' },
           { id: 'diezmos_ofrendas', label: '🤲 Diezmos y Ofrendas' },
           { id: 'ingresos_gastos', label: '⚖️ Ingresos y Gastos' },
-          { id: 'ministerios', label: '🏛️ Fondos Min.' },
-          { id: 'presupuestos_min', label: '📋 Presupuestos Min.' },
+          { id: 'ministerios', label: '🏛️ Fondos Ministeriales' },
           { id: 'nomina', label: '👥 Nómina' },
           { id: 'promesas', label: '🌟 Promesas de Fe' },
           { id: 'conciliacion', label: '🏦 Conciliación Bancaria' },
@@ -825,6 +865,9 @@ export default function FinanzasModule() {
                 loadCuentas();
                 if (ingresoGastoSubTab === 'gasto') setTTipoTransaccion('EGRESO');
                 else setTTipoTransaccion('INGRESO');
+              } else if (tab.id === 'ministerios') {
+                loadCuentas();
+                loadPresupuestosMin(pmPeriodoFiltro, pmAnioFiltro);
               }
             }}
             style={{
@@ -1421,6 +1464,16 @@ export default function FinanzasModule() {
                   <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem' }}>
                     <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Registrar Ofrenda</h3>
                     <form onSubmit={registrarTransaccion} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: '0.2rem' }}>Cuenta de Ofrenda (Concepto)</label>
+                      <select required value={tOfrendaCuentaId} onChange={e=>setTOfrendaCuentaId(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: 'white', fontWeight: 600 }}>
+                        <option value="">-- Seleccionar Cuenta de Ofrenda --</option>
+                        {cuentasOfrendas.map((c: any) => (
+                          <option key={c.id} value={c.id}>
+                            🎁 {c.nombre} (${c.balance.toFixed(2)})
+                          </option>
+                        ))}
+                      </select>
+
                       <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: '0.2rem' }}>Caja Contable (Destino Físico)</label>
                       <select required value={tCuentaId} onChange={e=>setTCuentaId(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: 'white', fontWeight: 600 }}>
                         <option value="">-- Seleccionar Caja Contable --</option>
@@ -1481,6 +1534,7 @@ export default function FinanzasModule() {
                         <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.1rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           🎁 {c.nombre}
                           <button onClick={() => editarCuenta(c)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: '#0284c7' }}>✏️ Editar</button>
+                          <button onClick={() => eliminarCuenta(c)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: '#dc2626' }}>🗑️ Borrar</button>
                         </h4>
                         <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>{c.descripcion || 'Sin descripción'}</p>
                       </div>
@@ -1608,9 +1662,7 @@ export default function FinanzasModule() {
                   <form onSubmit={e => crearCuenta(e, tipoFiltrado)} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     <input required placeholder={`Nombre (Ej: ${ingresoGastoSubTab === 'ingreso' ? 'Eventos Especiales' : 'Luz y Agua'})`} value={cNombre} onChange={e=>setCNombre(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
                     <input placeholder="Descripción breve" value={cDesc} onChange={e=>setCDesc(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
-                    <button type="submit" style={{ padding: '0.65rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700 }}>
-                      + Crear Cuenta de {ingresoGastoSubTab === 'ingreso' ? 'Ingreso' : 'Gasto'}
-                    </button>
+                    <button type="submit" style={{ padding: '0.65rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700 }}>+ Crear Cuenta de {ingresoGastoSubTab === 'ingreso' ? 'Ingreso' : 'Gasto'}</button>
                   </form>
                 </div>
               </div>
@@ -1627,6 +1679,7 @@ export default function FinanzasModule() {
                         <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.1rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           {c.nombre}
                           <button onClick={() => editarCuenta(c)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: '#0284c7' }}>✏️ Editar</button>
+                          <button onClick={() => eliminarCuenta(c)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: '#dc2626' }}>🗑️ Borrar</button>
                         </h4>
                         <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>{c.descripcion || 'Sin descripción'}</p>
                       </div>
@@ -1644,7 +1697,7 @@ export default function FinanzasModule() {
         );
       })()}
 
-      {/* PESTAÑA: FONDOS DE DEPARTAMENTOS Y MINISTERIOS */}
+      {/* PESTAÑA: FONDOS MINISTERIALES */}
       {activeSubTab === 'ministerios' && (() => {
         const listaCuentas = finData?.cuentas || cuentas || [];
         const cajasFisicas = listaCuentas.filter((c: any) => 
@@ -1655,245 +1708,292 @@ export default function FinanzasModule() {
         const filtradas = cuentas.filter(c => c.tipo === 'DEPARTAMENTO');
 
         return (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
-            {/* Panel Izquierdo */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              {filtradas.length > 0 && (
-                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem' }}>
-                  <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Registrar Movimiento Ministerial</h3>
-                  <form onSubmit={registrarTransaccion} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: '0.2rem' }}>Caja Contable (Origen/Destino)</label>
-                    <select required value={tCuentaId} onChange={e=>setTCuentaId(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: 'white', fontWeight: 600 }}>
-                      <option value="">-- Seleccionar Caja Contable --</option>
-                      {cajasFisicas.map((c: any) => (
-                        <option key={c.id} value={c.id}>
-                          {c.nombre.toLowerCase().includes('chica') ? '💵 ' : c.nombre.toLowerCase().includes('general') ? '🏛️ ' : '🏦 '}
-                          {c.nombre} (${c.balance.toFixed(2)})
-                        </option>
-                      ))}
-                    </select>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <select required value={tTipoTransaccion} onChange={e=>setTTipoTransaccion(e.target.value)} style={{ flex: 1, padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', background: tTipoTransaccion === 'INGRESO' ? '#dcfce7' : '#fee2e2', color: tTipoTransaccion === 'INGRESO' ? '#15803d' : '#991b1b', fontWeight: 600 }}>
-                        <option value="INGRESO">Ingreso (+)</option>
-                        <option value="EGRESO">Egreso (-)</option>
-                      </select>
-                      <div style={{ flex: 1, display: 'flex', gap: '0.2rem' }}>
-                        <input required type="number" step="0.01" placeholder="Monto" value={tMonto} onChange={e=>setTMonto(e.target.value)} style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px 0 0 8px' }} />
-                        <button type="button" onClick={() => setShowContador(true)} style={{ padding: '0 0.75rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '0 8px 8px 0', cursor: 'pointer', fontWeight: 'bold' }} title="Contador de Dinero">
-                          🧮
-                        </button>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <select required value={tMetodoPago} onChange={e=>{
-                        const val = e.target.value;
-                        setTMetodoPago(val);
-                        if (val === 'TRANSFERENCIA') {
-                          const banco = cajasFisicas.find((c: any) => c.nombre.toLowerCase().includes('banco') || c.tipo === 'BANCO');
-                          if (banco) setTCuentaId(banco.id);
-                        }
-                      }} style={{ flex: 1, padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }}>
-                        <option value="EFECTIVO">💵 Efectivo</option>
-                        <option value="TRANSFERENCIA">🏦 Transferencia (Ir a Banco)</option>
-                        <option value="TARJETA">💳 Tarjeta</option>
-                        <option value="CHEQUE">📜 Cheque</option>
-                      </select>
-                      <input required type="date" value={tFecha} onChange={e=>setTFecha(e.target.value)} style={{ flex: 1, padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
-                    </div>
-                    <input placeholder="Descripción (Ej: Presupuesto Actividad Jóvenes...)" value={tDesc} onChange={e=>setTDesc(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
-                    <button type="submit" style={{ padding: '0.65rem', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700 }}>Registrar Movimiento</button>
-                  </form>
-                </div>
-              )}
-
-              <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem' }}>
-                <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Crear Fondo Departamental / Ministerial</h3>
-                <form onSubmit={e => crearCuenta(e, 'DEPARTAMENTO')} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <input required placeholder="Nombre (Ej: Ministerio de Jóvenes, Damas...)" value={cNombre} onChange={e=>setCNombre(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
-                  <input placeholder="Descripción breve" value={cDesc} onChange={e=>setCDesc(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
-                  <button type="submit" style={{ padding: '0.65rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700 }}>+ Crear Fondo Ministerial</button>
-                </form>
-              </div>
-            </div>
-
-            {/* Panel Derecho */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem', color: '#0f172a' }}>Fondos Ministeriales Registrados</h3>
-              {filtradas.map(c => (
-                <div key={c.id} style={{ display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.1rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        🏛️ {c.nombre}
-                        <button onClick={() => editarCuenta(c)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: '#0284c7' }}>✏️ Editar</button>
-                      </h4>
-                      <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>{c.descripcion || 'Sin descripción'}</p>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase' }}>Balance Disponible</p>
-                      <p style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, color: c.balance >= 0 ? '#0284c7' : '#dc2626' }}>${c.balance.toFixed(2)}</p>
-                    </div>
-                  </div>
-                  {c.transacciones && c.transacciones.length > 0 && (
-                    <div style={{ background: '#f8fafc', padding: '1rem', borderTop: 'none', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', borderBottomLeftRadius: '12px', borderBottomRightRadius: '12px' }}>
-                      <h5 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', color: '#64748b' }}>Últimos registros</h5>
-                      <ul style={{ margin: 0, padding: 0, listStyle: 'none', fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                        {c.transacciones.map((tr: any) => (
-                          <li key={tr.id} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', paddingBottom: '0.2rem', alignItems: 'center' }}>
-                            <span style={{ color: '#475569' }}>{new Date(tr.fecha).toLocaleDateString()} - {tr.descripcion || tr.categoria}</span>
-                            <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                              <span style={{ fontWeight: 700, color: tr.tipo === 'INGRESO' ? '#16a34a' : '#dc2626' }}>
-                                {tr.tipo === 'INGRESO' ? '+' : '-'}${tr.monto.toFixed(2)}
-                              </span>
-                              <button onClick={() => imprimirRecibo(tr)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: '#0284c7', padding: '0 0.2rem' }} title="Imprimir Recibo">
-                                🖨️
-                              </button>
-                              <button 
-                                onClick={() => eliminarTransaccion(tr.id)} 
-                                style={{ 
-                                  background: 'none', border: 'none', color: '#f43f5e', cursor: 'pointer', padding: '4px',
-                                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'color 0.2s'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.color = '#e11d48'}
-                                onMouseLeave={(e) => e.currentTarget.style.color = '#f43f5e'}
-                                title="Eliminar transacción"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-                              </button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              ))}
-              {filtradas.length === 0 && <p style={{ color: '#94a3b8' }}>No hay cuentas creadas en esta sección.</p>}
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* PRESUPUESTOS MIN. */}
-      {activeSubTab === 'presupuestos_min' && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0, color: '#0f172a' }}>Presupuestos Recibidos de Ministerios</h3>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <select value={pmPeriodoFiltro} onChange={e=>setPmPeriodoFiltro(e.target.value)} style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                <option value="ANUAL">Anual</option>
-                <option value="Q1">Trimestre 1 (Ene-Mar)</option>
-                <option value="Q2">Trimestre 2 (Abr-Jun)</option>
-                <option value="Q3">Trimestre 3 (Jul-Sep)</option>
-                <option value="Q4">Trimestre 4 (Oct-Dic)</option>
-                <option value="ENERO">Enero</option>
-                <option value="FEBRERO">Febrero</option>
-                <option value="MARZO">Marzo</option>
-              </select>
-              <input type="number" value={pmAnioFiltro} onChange={e=>setPmAnioFiltro(e.target.value)} style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1', width: '80px' }} />
-              <button onClick={() => loadPresupuestosMin(pmPeriodoFiltro, pmAnioFiltro)} style={{ padding: '0.5rem 1rem', background: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Buscar</button>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-            <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', flex: 1, textAlign: 'center' }}>
-              <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>Total Solicitado</p>
-              <p style={{ margin: 0, fontSize: '2rem', fontWeight: 800, color: '#0f172a' }}>
-                ${presupuestosMin.reduce((acc, p) => acc + (p.monto_asignado || 0), 0).toFixed(2)}
-              </p>
-            </div>
-            <div style={{ background: '#f0fdf4', padding: '1.5rem', borderRadius: '12px', border: '1px solid #bbf7d0', flex: 1, textAlign: 'center' }}>
-              <p style={{ margin: 0, color: '#166534', fontSize: '0.9rem' }}>Total Aprobado</p>
-              <p style={{ margin: 0, fontSize: '2rem', fontWeight: 800, color: '#15803d' }}>
-                ${presupuestosMin.filter(p => p.estado === 'APROBADO').reduce((acc, p) => acc + (p.monto_aprobado || 0), 0).toFixed(2)}
-              </p>
-            </div>
-            <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', flex: 1, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <button 
-                onClick={() => imprimirReporteHtml('Reporte de Presupuestos de Ministerios', 'reporte-presupuestos')}
-                style={{ padding: '0.75rem 1.5rem', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                🖨️ Imprimir Reporte
+          <div>
+            {/* BOTONES DE ALTERNANCIA SUPERIOR EN FONDOS MINISTERIALES */}
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', background: '#f1f5f9', padding: '0.4rem', borderRadius: '12px', width: 'fit-content' }}>
+              <button
+                type="button"
+                onClick={() => setMinisteriosSubTab('fondos')}
+                style={{
+                  padding: '0.5rem 1.25rem', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem',
+                  background: ministeriosSubTab === 'fondos' ? '#0284c7' : 'transparent',
+                  color: ministeriosSubTab === 'fondos' ? 'white' : '#475569',
+                  boxShadow: ministeriosSubTab === 'fondos' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
+                }}
+              >
+                🏛️ Fondos por Ministerio
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMinisteriosSubTab('presupuestos');
+                  loadPresupuestosMin(pmPeriodoFiltro, pmAnioFiltro);
+                }}
+                style={{
+                  padding: '0.5rem 1.25rem', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem',
+                  background: ministeriosSubTab === 'presupuestos' ? '#0284c7' : 'transparent',
+                  color: ministeriosSubTab === 'presupuestos' ? 'white' : '#475569',
+                  boxShadow: ministeriosSubTab === 'presupuestos' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
+                }}
+              >
+                📋 Presupuestos Ministeriales
               </button>
             </div>
-          </div>
 
-          <div id="reporte-presupuestos" style={{ display: 'grid', gap: '1rem' }}>
-            {presupuestosMin.length === 0 && <p style={{ color: '#64748b' }}>No hay presupuestos para este período.</p>}
-            {presupuestosMin.map(p => (
-              <div key={p.id} style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: p.estado === 'APROBADO' ? '2px solid #22c55e' : (p.estado === 'EN_REVISION' ? '2px solid #eab308' : '1px solid #e2e8f0') }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
-                  <div>
-                    <h4 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a' }}>
-                      {p.sociedad ? p.sociedad.nombre_sociedad : (p.grupo_trabajo ? p.grupo_trabajo.nombre_grupo : 'Ministerio General')}
-                    </h4>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.5rem', borderRadius: '4px', background: p.estado === 'APROBADO' ? '#dcfce7' : (p.estado === 'EN_REVISION' ? '#fef9c3' : '#e0f2fe'), color: p.estado === 'APROBADO' ? '#166534' : (p.estado === 'EN_REVISION' ? '#854d0e' : '#075985') }}>
-                      {p.estado}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', textAlign: 'right' }}>
-                    <div>
-                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Solicitado:</p>
-                      <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
-                        ${p.monto_asignado.toFixed(2)}
-                      </span>
+            {ministeriosSubTab === 'fondos' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
+                {/* Panel Izquierdo */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  {filtradas.length > 0 && (
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem' }}>
+                      <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Registrar Movimiento Ministerial</h3>
+                      <form onSubmit={registrarTransaccion} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: '0.2rem' }}>Fondo / Cuenta Ministerial</label>
+                        <select required value={tOfrendaCuentaId} onChange={e=>setTOfrendaCuentaId(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: 'white', fontWeight: 600 }}>
+                          <option value="">-- Seleccionar Fondo Ministerial --</option>
+                          {filtradas.map((c: any) => (
+                            <option key={c.id} value={c.id}>
+                              🏛️ {c.nombre} (${c.balance.toFixed(2)})
+                            </option>
+                          ))}
+                        </select>
+
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: '0.2rem' }}>Caja Contable (Origen/Destino Físico)</label>
+                        <select required value={tCuentaId} onChange={e=>setTCuentaId(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: 'white', fontWeight: 600 }}>
+                          <option value="">-- Seleccionar Caja Contable --</option>
+                          {cajasFisicas.map((c: any) => (
+                            <option key={c.id} value={c.id}>
+                              {c.nombre.toLowerCase().includes('chica') ? '💵 ' : c.nombre.toLowerCase().includes('general') ? '🏛️ ' : '🏦 '}
+                              {c.nombre} (${c.balance.toFixed(2)})
+                            </option>
+                          ))}
+                        </select>
+
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <select required value={tTipoTransaccion} onChange={e=>setTTipoTransaccion(e.target.value)} style={{ flex: 1, padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', background: tTipoTransaccion === 'INGRESO' ? '#dcfce7' : '#fee2e2', color: tTipoTransaccion === 'INGRESO' ? '#15803d' : '#991b1b', fontWeight: 600 }}>
+                            <option value="INGRESO">Ingreso (+)</option>
+                            <option value="EGRESO">Egreso (-)</option>
+                          </select>
+                          <div style={{ flex: 1, display: 'flex', gap: '0.2rem' }}>
+                            <input required type="number" step="0.01" placeholder="Monto" value={tMonto} onChange={e=>setTMonto(e.target.value)} style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px 0 0 8px' }} />
+                            <button type="button" onClick={() => setShowContador(true)} style={{ padding: '0 0.75rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '0 8px 8px 0', cursor: 'pointer', fontWeight: 'bold' }} title="Contador de Dinero">
+                              🧮
+                            </button>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <select required value={tMetodoPago} onChange={e=>{
+                            const val = e.target.value;
+                            setTMetodoPago(val);
+                            if (val === 'TRANSFERENCIA') {
+                              const banco = cajasFisicas.find((c: any) => c.nombre.toLowerCase().includes('banco') || c.tipo === 'BANCO');
+                              if (banco) setTCuentaId(banco.id);
+                            }
+                          }} style={{ flex: 1, padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }}>
+                            <option value="EFECTIVO">💵 Efectivo</option>
+                            <option value="TRANSFERENCIA">🏦 Transferencia (Ir a Banco)</option>
+                            <option value="TARJETA">💳 Tarjeta</option>
+                            <option value="CHEQUE">📜 Cheque</option>
+                          </select>
+                          <input required type="date" value={tFecha} onChange={e=>setTFecha(e.target.value)} style={{ flex: 1, padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                        </div>
+                        <input placeholder="Descripción (Ej: Presupuesto Actividad Jóvenes...)" value={tDesc} onChange={e=>setTDesc(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                        <button type="submit" style={{ padding: '0.65rem', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700 }}>Registrar Movimiento</button>
+                      </form>
                     </div>
+                  )}
+
+                  <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem' }}>
+                    <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Crear Fondo Departamental / Ministerial</h3>
+                    <form onSubmit={e => crearCuenta(e, 'DEPARTAMENTO')} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <input required placeholder="Nombre (Ej: Ministerio de Jóvenes, Damas...)" value={cNombre} onChange={e=>setCNombre(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                      <input placeholder="Descripción breve" value={cDesc} onChange={e=>setCDesc(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                      <button type="submit" style={{ padding: '0.65rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700 }}>+ Crear Fondo Ministerial</button>
+                    </form>
                   </div>
                 </div>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.5rem', marginBottom: '1rem' }}>
-                  {p.items?.map((item: any) => (
-                    <div key={item.id} style={{ background: '#f1f5f9', padding: '0.5rem', borderRadius: '6px', display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '0.85rem', color: '#475569' }}>{item.categoria}</span>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0f172a' }}>${item.monto_estimado.toFixed(2)}</span>
+
+                {/* Panel Derecho */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem', color: '#0f172a' }}>Fondos Ministeriales Registrados</h3>
+                  {filtradas.map(c => (
+                    <div key={c.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.1rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            🏛️ {c.nombre}
+                            <button onClick={() => editarCuenta(c)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: '#0284c7' }}>✏️ Editar</button>
+                            <button onClick={() => eliminarCuenta(c)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: '#dc2626' }}>🗑️ Borrar</button>
+                          </h4>
+                          <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>{c.descripcion || 'Sin descripción'}</p>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase' }}>Balance Disponible</p>
+                          <p style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, color: c.balance >= 0 ? '#0284c7' : '#dc2626' }}>${c.balance.toFixed(2)}</p>
+                        </div>
+                      </div>
+                      {c.transacciones && c.transacciones.length > 0 && (
+                        <div style={{ background: '#f8fafc', padding: '1rem', borderTop: 'none', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', borderBottomLeftRadius: '12px', borderBottomRightRadius: '12px' }}>
+                          <h5 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', color: '#64748b' }}>Últimos registros</h5>
+                          <ul style={{ margin: 0, padding: 0, listStyle: 'none', fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                            {c.transacciones.map((tr: any) => (
+                              <li key={tr.id} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', paddingBottom: '0.2rem', alignItems: 'center' }}>
+                                <span style={{ color: '#475569' }}>{new Date(tr.fecha).toLocaleDateString()} - {tr.descripcion || tr.categoria}</span>
+                                <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  <span style={{ fontWeight: 700, color: tr.tipo === 'INGRESO' ? '#16a34a' : '#dc2626' }}>
+                                    {tr.tipo === 'INGRESO' ? '+' : '-'}${tr.monto.toFixed(2)}
+                                  </span>
+                                  <button onClick={() => imprimirRecibo(tr)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: '#0284c7', padding: '0 0.2rem' }} title="Imprimir Recibo">
+                                    🖨️
+                                  </button>
+                                  <button 
+                                    onClick={() => eliminarTransaccion(tr.id)} 
+                                    style={{ 
+                                      background: 'none', border: 'none', color: '#f43f5e', cursor: 'pointer', padding: '4px',
+                                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'color 0.2s'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.color = '#e11d48'}
+                                    onMouseLeave={(e) => e.currentTarget.style.color = '#f43f5e'}
+                                    title="Eliminar transacción"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                  </button>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {filtradas.length === 0 && <p style={{ color: '#94a3b8' }}>No hay fondos ministeriales creados aún.</p>}
+                </div>
+              </div>
+            )}
+
+            {ministeriosSubTab === 'presupuestos' && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <h3 style={{ margin: 0, color: '#0f172a' }}>Presupuestos Recibidos de Ministerios</h3>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <select value={pmPeriodoFiltro} onChange={e=>setPmPeriodoFiltro(e.target.value)} style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                      <option value="ANUAL">Anual</option>
+                      <option value="Q1">Trimestre 1 (Ene-Mar)</option>
+                      <option value="Q2">Trimestre 2 (Abr-Jun)</option>
+                      <option value="Q3">Trimestre 3 (Jul-Sep)</option>
+                      <option value="Q4">Trimestre 4 (Oct-Dic)</option>
+                      <option value="ENERO">Enero</option>
+                      <option value="FEBRERO">Febrero</option>
+                      <option value="MARZO">Marzo</option>
+                    </select>
+                    <input type="number" value={pmAnioFiltro} onChange={e=>setPmAnioFiltro(e.target.value)} style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1', width: '80px' }} />
+                    <button onClick={() => loadPresupuestosMin(pmPeriodoFiltro, pmAnioFiltro)} style={{ padding: '0.5rem 1rem', background: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Buscar</button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', flex: 1, textAlign: 'center' }}>
+                    <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>Total Solicitado</p>
+                    <p style={{ margin: 0, fontSize: '2rem', fontWeight: 800, color: '#0f172a' }}>
+                      ${presupuestosMin.reduce((acc, p) => acc + (p.monto_asignado || 0), 0).toFixed(2)}
+                    </p>
+                  </div>
+                  <div style={{ background: '#f0fdf4', padding: '1.5rem', borderRadius: '12px', border: '1px solid #bbf7d0', flex: 1, textAlign: 'center' }}>
+                    <p style={{ margin: 0, color: '#166534', fontSize: '0.9rem' }}>Total Aprobado</p>
+                    <p style={{ margin: 0, fontSize: '2rem', fontWeight: 800, color: '#15803d' }}>
+                      ${presupuestosMin.filter(p => p.estado === 'APROBADO').reduce((acc, p) => acc + (p.monto_aprobado || 0), 0).toFixed(2)}
+                    </p>
+                  </div>
+                  <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', flex: 1, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <button 
+                      onClick={() => imprimirReporteHtml('Reporte de Presupuestos de Ministerios', 'reporte-presupuestos')}
+                      style={{ padding: '0.75rem 1.5rem', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      🖨️ Imprimir Reporte
+                    </button>
+                  </div>
+                </div>
+
+                <div id="reporte-presupuestos" style={{ display: 'grid', gap: '1rem' }}>
+                  {presupuestosMin.length === 0 && <p style={{ color: '#64748b' }}>No hay presupuestos para este período.</p>}
+                  {presupuestosMin.map(p => (
+                    <div key={p.id} style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: p.estado === 'APROBADO' ? '2px solid #22c55e' : (p.estado === 'EN_REVISION' ? '2px solid #eab308' : '1px solid #e2e8f0') }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                        <div>
+                          <h4 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a' }}>
+                            {p.sociedad ? p.sociedad.nombre_sociedad : (p.grupo_trabajo ? p.grupo_trabajo.nombre_grupo : 'Ministerio General')}
+                          </h4>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.5rem', borderRadius: '4px', background: p.estado === 'APROBADO' ? '#dcfce7' : (p.estado === 'EN_REVISION' ? '#fef9c3' : '#e0f2fe'), color: p.estado === 'APROBADO' ? '#166534' : (p.estado === 'EN_REVISION' ? '#854d0e' : '#075985') }}>
+                            {p.estado}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', textAlign: 'right' }}>
+                          <div>
+                            <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Solicitado:</p>
+                            <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
+                              ${p.monto_asignado.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.5rem', marginBottom: '1rem' }}>
+                        {p.items?.map((item: any) => (
+                          <div key={item.id} style={{ background: '#f1f5f9', padding: '0.5rem', borderRadius: '6px', display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ fontSize: '0.85rem', color: '#475569' }}>{item.categoria}</span>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0f172a' }}>${item.monto_estimado.toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-start' }}>
+                        <div style={{ flex: '1 1 200px' }}>
+                          <label style={{ display: 'block', fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem' }}>Monto Aprobado ($)</label>
+                          <input 
+                            type="number" 
+                            value={presupuestoUpdates[p.id]?.monto || ''} 
+                            onChange={e => setPresupuestoUpdates({...presupuestoUpdates, [p.id]: { ...presupuestoUpdates[p.id], monto: e.target.value }})}
+                            style={{ padding: '0.5rem', width: '100%', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '1rem', fontWeight: 600 }}
+                            disabled={p.estado === 'APROBADO'}
+                          />
+                        </div>
+                        <div style={{ flex: '2 1 300px' }}>
+                          <label style={{ display: 'block', fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem' }}>Comentarios de Finanzas</label>
+                          <input 
+                            type="text" 
+                            value={presupuestoUpdates[p.id]?.comentarios || ''} 
+                            onChange={e => setPresupuestoUpdates({...presupuestoUpdates, [p.id]: { ...presupuestoUpdates[p.id], comentarios: e.target.value }})}
+                            placeholder="Nota opcional para el ministerio..."
+                            style={{ padding: '0.5rem', width: '100%', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                            disabled={p.estado === 'APROBADO'}
+                          />
+                        </div>
+                        {p.estado !== 'APROBADO' && (
+                          <div style={{ display: 'flex', gap: '0.5rem', alignSelf: 'flex-end', width: '100%', justifyContent: 'flex-end' }}>
+                            <button onClick={() => handleUpdatePresupuesto(p.id, 'EN_REVISION')} style={{ padding: '0.6rem 1rem', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>
+                              ↩️ Devolver para Ajuste
+                            </button>
+                            <button onClick={() => handleUpdatePresupuesto(p.id, 'APROBADO')} style={{ padding: '0.6rem 1rem', background: '#22c55e', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>
+                              ✅ Aprobar Presupuesto
+                            </button>
+                          </div>
+                        )}
+                        {p.estado === 'APROBADO' && (
+                          <div style={{ display: 'flex', gap: '0.5rem', alignSelf: 'flex-end', width: '100%', justifyContent: 'flex-end' }}>
+                            <button onClick={() => handleUpdatePresupuesto(p.id, 'ENVIADO')} style={{ padding: '0.4rem 0.8rem', background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer' }}>
+                              ❌ Deshacer Aprobación
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
-
-                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-start' }}>
-                  <div style={{ flex: '1 1 200px' }}>
-                    <label style={{ display: 'block', fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem' }}>Monto Aprobado ($)</label>
-                    <input 
-                      type="number" 
-                      value={presupuestoUpdates[p.id]?.monto || ''} 
-                      onChange={e => setPresupuestoUpdates({...presupuestoUpdates, [p.id]: { ...presupuestoUpdates[p.id], monto: e.target.value }})}
-                      style={{ padding: '0.5rem', width: '100%', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '1rem', fontWeight: 600 }}
-                      disabled={p.estado === 'APROBADO'}
-                    />
-                  </div>
-                  <div style={{ flex: '2 1 300px' }}>
-                    <label style={{ display: 'block', fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem' }}>Comentarios de Finanzas</label>
-                    <input 
-                      type="text" 
-                      value={presupuestoUpdates[p.id]?.comentarios || ''} 
-                      onChange={e => setPresupuestoUpdates({...presupuestoUpdates, [p.id]: { ...presupuestoUpdates[p.id], comentarios: e.target.value }})}
-                      placeholder="Nota opcional para el ministerio..."
-                      style={{ padding: '0.5rem', width: '100%', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                      disabled={p.estado === 'APROBADO'}
-                    />
-                  </div>
-                  {p.estado !== 'APROBADO' && (
-                    <div style={{ display: 'flex', gap: '0.5rem', alignSelf: 'flex-end', width: '100%', justifyContent: 'flex-end' }}>
-                      <button onClick={() => handleUpdatePresupuesto(p.id, 'EN_REVISION')} style={{ padding: '0.6rem 1rem', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>
-                        ↩️ Devolver para Ajuste
-                      </button>
-                      <button onClick={() => handleUpdatePresupuesto(p.id, 'APROBADO')} style={{ padding: '0.6rem 1rem', background: '#22c55e', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>
-                        ✅ Aprobar Presupuesto
-                      </button>
-                    </div>
-                  )}
-                  {p.estado === 'APROBADO' && (
-                    <div style={{ display: 'flex', gap: '0.5rem', alignSelf: 'flex-end', width: '100%', justifyContent: 'flex-end' }}>
-                      <button onClick={() => handleUpdatePresupuesto(p.id, 'ENVIADO')} style={{ padding: '0.4rem 0.8rem', background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer' }}>
-                        ❌ Deshacer Aprobación
-                      </button>
-                    </div>
-                  )}
-                </div>
               </div>
-            ))}
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* NÓMINA */}
       {activeSubTab === 'nomina' && (
