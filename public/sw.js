@@ -1,9 +1,10 @@
-const CACHE_NAME = 'igleconet-v2';
+const CACHE_NAME = 'igleconet-v3';
 const urlsToCache = [
   '/',
   '/hub',
   '/manifest.json',
-  '/Igleconet logo 2.png'
+  '/logo igleconet inicio.png',
+  '/2 logo icono igleconet.png'
 ];
 
 self.addEventListener('install', (event) => {

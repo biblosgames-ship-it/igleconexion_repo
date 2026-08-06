@@ -205,7 +205,7 @@ export default function GlobalLogin() {
     <div className={styles.loginContainer}>
       <div className={styles.loginCard}>
         <div className={styles.brandLogo}>
-          <NextImage src="/Igleconet logo 2.png" alt="Igleconet" width={180} height={135} style={{ objectFit: 'contain' }} />
+          <NextImage src="/logo igleconet inicio.png" alt="Igleconet" width={180} height={135} style={{ objectFit: 'contain' }} />
         </div>
         
         <h1 className={styles.title}>IGLECONET</h1>

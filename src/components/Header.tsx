@@ -9,7 +9,7 @@ export default function Header() {
       <Link href="/" legacyBehavior>
         <a className={styles.logoLink}>
           <Image
-            src="/Igleconet logo 2.png"
+            src="/logo igleconet inicio.png"
             alt="Igleconet"
             width={120}
             height={40}
