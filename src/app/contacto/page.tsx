@@ -50,7 +50,7 @@ export default function ContactoPage() {
     <div className={styles.container}>
       <div className={styles.card}>
         <div className={styles.header}>
-          <h1 className={styles.title}>📩 Contacta a Igleconexion</h1>
+          <h1 className={styles.title}>📩 Contacta a Igleconet</h1>
           <p className={styles.subtitle}>
             ¿Quieres implementar el sistema en tu iglesia o tienes alguna consulta? Elige tu canal preferido o déjanos un mensaje directo.
           </p>

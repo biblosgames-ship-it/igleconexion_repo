@@ -582,7 +582,7 @@ function LiderazgoGrupoContent() {
       </main>
 
       <footer className={styles.footer}>
-        Igleconexion SaaS • Espacio de Trabajo Colaborativo de Liderazgo
+        Igleconet SaaS • Espacio de Trabajo Colaborativo de Liderazgo
       </footer>
     </div>
   );

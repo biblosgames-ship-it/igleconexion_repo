@@ -1414,7 +1414,7 @@ export default function Perfil() {
       )}
 
       <footer className={styles.footer}>
-        Igleconexion SaaS • Gestión de Crecimiento
+        Igleconet SaaS • Gestión de Crecimiento
       </footer>
     </div>
   );

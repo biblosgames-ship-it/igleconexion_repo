@@ -1,9 +1,9 @@
-const CACHE_NAME = 'igleconexion-v1';
+const CACHE_NAME = 'igleconet-v2';
 const urlsToCache = [
   '/',
   '/hub',
   '/manifest.json',
-  '/Igleconexion logo.png'
+  '/Igleconet logo 2.png'
 ];
 
 self.addEventListener('install', (event) => {

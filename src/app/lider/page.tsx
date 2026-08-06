@@ -255,7 +255,7 @@ export default function LeaderDashboard() {
       {/* Header del Panel Administrativo */}
       <header className={styles.header}>
         <div className={styles.brand}>
-          <span>⚙️</span> Igleconexion Admin
+          <span>⚙️</span> Igleconet Admin
         </div>
         <div className={styles.userMenu}>
           {currentUser && currentUser.paginas_acceso && (

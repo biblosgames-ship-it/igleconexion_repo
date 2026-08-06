@@ -515,7 +515,7 @@ export default function SuperAdminPage() {
     <div className={styles.container}>
       <header className={styles.header}>
         <div className={styles.titleSection}>
-          <h1>✝_ Igleconexion SaaS</h1>
+          <h1>✝_ Igleconet SaaS</h1>
           <p>Consola de Administración del Core del Sistema</p>
         </div>
         <div className={styles.headerActions}>
