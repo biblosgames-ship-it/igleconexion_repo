@@ -407,6 +407,7 @@ const allSystemIcons = [
     }))
   });
   const [limitePersonas, setLimitePersonas] = useState(50);
+  const [showTemasMensuales, setShowTemasMensuales] = useState(false);
   const [limiteUsuarios, setLimiteUsuarios] = useState(5);
   const [precioMensual, setPrecioMensual] = useState(29.99);
   const [fechaVencimiento, setFechaVencimiento] = useState<string | null>(null);
@@ -2353,29 +2354,9 @@ const allSystemIcons = [
               {/* Bloque 1: Identidad Básica */}
               <div className={styles.configBlock} style={{ background: 'white' }}>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 700, borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem', marginBottom: '1rem', color: '#1e293b' }}>
-                  ⛪ Identidad de la Iglesia y Módulos Activos
+                  ⛪ Identidad de la Iglesia
                 </h3>
 
-                {/* Checkbox Módulo Grupos de Familias */}
-                <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.85rem 1.1rem', borderRadius: '10px', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                  <div>
-                    <strong style={{ color: '#166534', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                      🏡 Habilitar Estructura de Grupos de Familias (Cultos de Hogar)
-                    </strong>
-                    <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#15803d' }}>
-                      Si tu iglesia trabaja con macro grupos de familias mixtos para cultos de hogar y consolidación, activa este módulo. De lo contrario, se mantendrá oculto.
-                    </p>
-                  </div>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.88rem', color: '#166534', backgroundColor: 'white', padding: '0.4rem 0.85rem', borderRadius: '8px', border: '1px solid #86efac' }}>
-                    <input 
-                      type="checkbox"
-                      checked={churchUsarGruposFamilia}
-                      onChange={(e) => setChurchUsarGruposFamilia(e.target.checked)}
-                      style={{ accentColor: '#16a34a', transform: 'scale(1.2)' }}
-                    />
-                    {churchUsarGruposFamilia ? 'Módulo Activado' : 'Módulo Desactivado'}
-                  </label>
-                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
                   <div>
                     <label style={{ display: 'block', fontWeight: 600, fontSize: '0.85rem', marginBottom: '0.4rem', color: '#475569' }}>Nombre de la Iglesia</label>
@@ -2675,92 +2656,135 @@ const allSystemIcons = [
               </div>
 
               <div className={styles.configBlock} style={{ background: 'white', marginTop: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem', marginBottom: '0.5rem', color: '#1e293b' }}>
-                  📅 Temas Mensuales
-                </h3>
-                <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-                  Define un tema específico para cada mes del año. Estos se mostrarán automáticamente en Mi Iglesia según el mes actual.
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
-                  {[
-                    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", 
-                    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-                  ].map((nombreMes, index) => {
-                    const mesIndex = index + 1;
-                    const mesData = temaAnual.meses?.find((m: any) => m.mes === mesIndex) || { mes: mesIndex, tema: "", descripcion: "" };
-                    
-                    return (
-                      <div key={index} style={{ 
-                        background: 'white', 
-                        borderRadius: '12px', 
-                        border: '1px solid #e2e8f0', 
-                        padding: '1.25rem',
-                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02)',
-                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -2px rgba(0,0,0,0.025)';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02)';
-                      }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px dashed #e2e8f0' }}>
-                          <h4 style={{ margin: 0, color: '#0f172a', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            🗓️ {nombreMes}
-                          </h4>
-                          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: '12px' }}>
-                            Mes {mesIndex}
-                          </span>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                          <div>
-                            <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700, color: '#64748b', marginBottom: '0.35rem', display: 'block' }}>Lema del Mes</label>
-                            <input 
-                              type="text" 
-                              className={styles.input} 
-                              style={{ padding: '0.6rem 0.8rem', fontSize: '0.9rem', border: '1px solid #cbd5e1', borderRadius: '6px', width: '100%' }}
-                              placeholder={`Ej: Cosecha y Bendición`}
-                              value={mesData.tema}
-                              onChange={(e) => {
-                                const newMeses = [...(temaAnual.meses || [])];
-                                const existingIdx = newMeses.findIndex(m => m.mes === mesIndex);
-                                if (existingIdx >= 0) {
-                                  newMeses[existingIdx].tema = e.target.value;
-                                } else {
-                                  newMeses.push({ mes: mesIndex, theme: e.target.value, descripcion: "" });
-                                }
-                                setTemaAnual({ ...temaAnual, meses: newMeses });
-                              }}
-                            />
-                          </div>
-                          <div>
-                            <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700, color: '#64748b', marginBottom: '0.35rem', display: 'block' }}>Descripción (Opcional)</label>
-                            <textarea 
-                              className={styles.textarea} 
-                              rows={2}
-                              style={{ padding: '0.6rem 0.8rem', fontSize: '0.85rem', border: '1px solid #cbd5e1', borderRadius: '6px', width: '100%', resize: 'none' }}
-                              placeholder="Breve enfoque para este mes..."
-                              value={mesData.descripcion}
-                              onChange={(e) => {
-                                const newMeses = [...(temaAnual.meses || [])];
-                                const existingIdx = newMeses.findIndex(m => m.mes === mesIndex);
-                                if (existingIdx >= 0) {
-                                  newMeses[existingIdx].descripcion = e.target.value;
-                                } else {
-                                  newMeses.push({ mes: mesIndex, tema: "", descripcion: e.target.value });
-                                }
-                                setTemaAnual({ ...temaAnual, meses: newMeses });
-                              }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div 
+                  onClick={() => setShowTemasMensuales(!showTemasMensuales)}
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between', 
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    paddingBottom: showTemasMensuales ? '0.5rem' : '0',
+                    borderBottom: showTemasMensuales ? '1px solid #f1f5f9' : 'none'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: '#1e293b' }}>
+                      📅 Temas Mensuales
+                    </h3>
+                    <span style={{ fontSize: '0.78rem', color: '#64748b', backgroundColor: '#f1f5f9', padding: '0.2rem 0.6rem', borderRadius: '12px', fontWeight: 600 }}>
+                      {temaAnual.meses?.filter((m: any) => m.tema && m.tema.trim()).length || 0} de 12 configurados
+                    </span>
+                  </div>
+                  <button 
+                    type="button"
+                    style={{ 
+                      background: showTemasMensuales ? '#f1f5f9' : '#f0f9ff', 
+                      color: showTemasMensuales ? '#475569' : '#0284c7', 
+                      border: '1px solid', 
+                      borderColor: showTemasMensuales ? '#cbd5e1' : '#bae6fd', 
+                      borderRadius: '8px', 
+                      padding: '0.35rem 0.85rem', 
+                      fontSize: '0.82rem', 
+                      fontWeight: 700, 
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    {showTemasMensuales ? '▲ Ocultar 12 Meses' : '▼ Desplegar / Editar 12 Meses'}
+                  </button>
                 </div>
+
+                {showTemasMensuales && (
+                  <div style={{ marginTop: '1.25rem' }}>
+                    <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
+                      Define un tema específico para cada mes del año. Estos se mostrarán automáticamente en Mi Iglesia según el mes actual.
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+                      {[
+                        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", 
+                        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+                      ].map((nombreMes, index) => {
+                        const mesIndex = index + 1;
+                        const mesData = temaAnual.meses?.find((m: any) => m.mes === mesIndex) || { mes: mesIndex, tema: "", descripcion: "" };
+                        
+                        return (
+                          <div key={index} style={{ 
+                            background: 'white', 
+                            borderRadius: '12px', 
+                            border: '1px solid #e2e8f0', 
+                            padding: '1.25rem',
+                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02)',
+                            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -2px rgba(0,0,0,0.025)';
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02)';
+                          }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px dashed #e2e8f0' }}>
+                              <h4 style={{ margin: 0, color: '#0f172a', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                🗓️ {nombreMes}
+                              </h4>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: '12px' }}>
+                                Mes {mesIndex}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                              <div>
+                                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700, color: '#64748b', marginBottom: '0.35rem', display: 'block' }}>Lema del Mes</label>
+                                <input 
+                                  type="text" 
+                                  className={styles.input} 
+                                  style={{ padding: '0.6rem 0.8rem', fontSize: '0.9rem', border: '1px solid #cbd5e1', borderRadius: '6px', width: '100%' }}
+                                  placeholder={`Ej: Cosecha y Bendición`}
+                                  value={mesData.tema}
+                                  onChange={(e) => {
+                                    const newMeses = [...(temaAnual.meses || [])];
+                                    const existingIdx = newMeses.findIndex(m => m.mes === mesIndex);
+                                    if (existingIdx >= 0) {
+                                      newMeses[existingIdx].tema = e.target.value;
+                                    } else {
+                                      newMeses.push({ mes: mesIndex, theme: e.target.value, descripcion: "" });
+                                    }
+                                    setTemaAnual({ ...temaAnual, meses: newMeses });
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700, color: '#64748b', marginBottom: '0.35rem', display: 'block' }}>Descripción (Opcional)</label>
+                                <textarea 
+                                  className={styles.textarea} 
+                                  rows={2}
+                                  style={{ padding: '0.6rem 0.8rem', fontSize: '0.85rem', border: '1px solid #cbd5e1', borderRadius: '6px', width: '100%', resize: 'none' }}
+                                  placeholder="Breve enfoque para este mes..."
+                                  value={mesData.descripcion}
+                                  onChange={(e) => {
+                                    const newMeses = [...(temaAnual.meses || [])];
+                                    const existingIdx = newMeses.findIndex(m => m.mes === mesIndex);
+                                    if (existingIdx >= 0) {
+                                      newMeses[existingIdx].descripcion = e.target.value;
+                                    } else {
+                                      newMeses.push({ mes: mesIndex, tema: "", descripcion: e.target.value });
+                                    }
+                                    setTemaAnual({ ...temaAnual, meses: newMeses });
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Bloque 2: Contacto e Información */}
@@ -3089,6 +3113,32 @@ const allSystemIcons = [
                       </div>
                     )}
                   </div>
+                </div>
+              </div>
+
+              {/* Bloque: Configuración de Módulos Adicionales */}
+              <div className={styles.configBlock} style={{ background: 'white', marginTop: '1.5rem' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem', marginBottom: '1rem', color: '#1e293b' }}>
+                  ⚙️ Módulos Especiales
+                </h3>
+                <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.85rem 1.1rem', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  <div>
+                    <strong style={{ color: '#166534', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      🏡 Habilitar Estructura de Grupos de Familias (Cultos de Hogar)
+                    </strong>
+                    <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#15803d' }}>
+                      Si tu iglesia trabaja con macro grupos de familias mixtos para cultos de hogar y consolidación, activa este módulo. De lo contrario, se mantendrá oculto.
+                    </p>
+                  </div>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.88rem', color: '#166534', backgroundColor: 'white', padding: '0.4rem 0.85rem', borderRadius: '8px', border: '1px solid #86efac' }}>
+                    <input 
+                      type="checkbox"
+                      checked={churchUsarGruposFamilia}
+                      onChange={(e) => setChurchUsarGruposFamilia(e.target.checked)}
+                      style={{ accentColor: '#16a34a', transform: 'scale(1.2)' }}
+                    />
+                    {churchUsarGruposFamilia ? 'Módulo Activado' : 'Módulo Desactivado'}
+                  </label>
                 </div>
               </div>
 

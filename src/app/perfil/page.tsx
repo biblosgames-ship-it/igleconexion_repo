@@ -397,23 +397,28 @@ export default function Perfil() {
 
   // Obtener tareas específicas de cada etapa
   const getTasksForStage = (stageId: string) => {
-    if (procesos.length > 0) {
-      return procesos.filter(p => p.etapa_id === stageId);
+    if (procesos && procesos.length > 0) {
+      const stageTasks = procesos.filter(p => p.etapa_id === stageId);
+      if (stageTasks.length > 0) return stageTasks;
     }
-    // Fallback si localstorage está vacío
-    if (stageId === "etapa-1") {
+    
+    // Fallback inteligente por id u orden secuencial de la etapa si no hay procesos mapeados explícitamente en la BD
+    const stageObj = sortedEtapas.find(e => e.id === stageId);
+    const order = stageObj ? stageObj.orden_secuencial : 1;
+
+    if (stageId === "etapa-1" || order === 1) {
       return [
         { id: "task-1-1", nombre_tarea: "Llamada de Primer Contacto", dias_limite: 1, es_obligatoria: true },
         { id: "task-1-2", nombre_tarea: "Visita en el hogar", dias_limite: 7, es_obligatoria: true }
       ];
     }
-    if (stageId === "etapa-2") {
+    if (stageId === "etapa-2" || order === 2) {
       return [
         { id: "task-2-1", nombre_tarea: "Llamada de Bienvenida", dias_limite: 3, es_obligatoria: true },
         { id: "task-2-2", nombre_tarea: "Asistencia a 4 Clases Bíblicas", dias_limite: 15, es_obligatoria: true }
       ];
     }
-    if (stageId === "etapa-3") {
+    if (stageId === "etapa-3" || order >= 3) {
       return [
         { id: "task-3-1", nombre_tarea: "Curso de Liderazgo Básico", dias_limite: 30, es_obligatoria: true }
       ];
@@ -1148,8 +1153,8 @@ export default function Perfil() {
                           </p>
                         )}
 
-                        {/* Listar tareas si es la etapa activa o completada */}
-                        {(isStageActive || isStageCompleted) && stageTasks.length > 0 && (
+                        {/* Listar tareas si la etapa contiene procesos */}
+                        {stageTasks.length > 0 && (
                           <div className={styles.tasksList}>
                             {(() => {
                               const activeTaskObj = stageTasks.find((t: any) => !matchedMember.tareas_completadas.includes(t.id));

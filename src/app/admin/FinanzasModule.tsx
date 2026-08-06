@@ -94,7 +94,7 @@ export default function FinanzasModule() {
   const totalContador = denominaciones.reduce((acc, den) => acc + (contadorValores[den] * den), 0);
 
   // Cajas Principales & Transferencias
-  const [diezmoOfrendaSubTab, setDiezmoOfrendaSubTab] = useState<'diezmos' | 'ofrendas'>('diezmos');
+  const [diezmoOfrendaSubTab, setDiezmoOfrendaSubTab] = useState<'diezmos' | 'ofrendas' | 'ministeriales'>('diezmos');
   const [ingresoGastoSubTab, setIngresoGastoSubTab] = useState<'ingreso' | 'gasto'>('ingreso');
   const [ministeriosSubTab, setMinisteriosSubTab] = useState<'fondos' | 'presupuestos'>('fondos');
   const [tOfrendaCuentaId, setTOfrendaCuentaId] = useState('');
@@ -972,9 +972,6 @@ export default function FinanzasModule() {
             <button onClick={() => window.print()} style={{ padding: '0.5rem 1rem', background: 'white', color: '#0f172a', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               🖨️ Imprimir
             </button>
-            <button onClick={resetFinanzasData} style={{ padding: '0.5rem 1rem', background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: 'auto' }} title="Vaciar todas las transacciones de prueba y resetear balances a 0">
-              🗑️ Vaciar / Reiniciar Datos Financieros
-            </button>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -1367,7 +1364,7 @@ export default function FinanzasModule() {
                   boxShadow: diezmoOfrendaSubTab === 'diezmos' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
                 }}
               >
-                💵 Registro de Diezmos
+                💵 Diezmos
               </button>
               <button
                 type="button"
@@ -1382,7 +1379,22 @@ export default function FinanzasModule() {
                   boxShadow: diezmoOfrendaSubTab === 'ofrendas' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
                 }}
               >
-                🎁 Registro de Ofrendas
+                🎁 Ofrendas Generales
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDiezmoOfrendaSubTab('ministeriales');
+                  setTTipoTransaccion('INGRESO');
+                }}
+                style={{
+                  padding: '0.5rem 1.25rem', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem',
+                  background: diezmoOfrendaSubTab === 'ministeriales' ? '#7c3aed' : 'transparent',
+                  color: diezmoOfrendaSubTab === 'ministeriales' ? 'white' : '#475569',
+                  boxShadow: diezmoOfrendaSubTab === 'ministeriales' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
+                }}
+              >
+                🏛️ Ofrendas Ministeriales
               </button>
             </div>
 
@@ -2219,26 +2231,26 @@ export default function FinanzasModule() {
                 const neto = totalIngresos - totalEgresos;
 
                 return (
-                  <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                      <div className="print-card-green" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '1.5rem' }}>
-                        <h3 style={{ color: '#166534', fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Ingresos del Mes</h3>
-                        <p style={{ fontSize: '2.2rem', fontWeight: 800, color: '#15803d', margin: 0 }}>${totalIngresos.toFixed(2)}</p>
+                  <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+                      <div className="print-card-green" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '1rem' }}>
+                        <h3 style={{ color: '#166534', fontSize: '0.78rem', textTransform: 'uppercase', marginBottom: '0.35rem', fontWeight: 700 }}>Ingresos del Mes</h3>
+                        <p style={{ fontSize: '1.5rem', fontWeight: 800, color: '#15803d', margin: 0 }}>${totalIngresos.toFixed(2)}</p>
                       </div>
                       <div className="print-card-red" style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', padding: '1.5rem' }}>
-                        <h3 style={{ color: '#991b1b', fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Egresos del Mes</h3>
-                        <p style={{ fontSize: '2.2rem', fontWeight: 800, color: '#dc2626', margin: 0 }}>${totalEgresos.toFixed(2)}</p>
+                        <h3 style={{ color: '#991b1b', fontSize: '0.78rem', textTransform: 'uppercase', marginBottom: '0.35rem', fontWeight: 700 }}>Egresos del Mes</h3>
+                        <p style={{ fontSize: '1.5rem', fontWeight: 800, color: '#dc2626', margin: 0 }}>${totalEgresos.toFixed(2)}</p>
                       </div>
                       <div className="print-card-blue" style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '12px', padding: '1.5rem' }}>
-                        <h3 style={{ color: '#075985', fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Balance Neto</h3>
-                        <p style={{ fontSize: '2.2rem', fontWeight: 800, color: neto >= 0 ? '#0369a1' : '#dc2626', margin: 0 }}>${neto.toFixed(2)}</p>
+                        <h3 style={{ color: '#075985', fontSize: '0.78rem', textTransform: 'uppercase', marginBottom: '0.35rem', fontWeight: 700 }}>Balance Neto</h3>
+                        <p style={{ fontSize: '1.5rem', fontWeight: 800, color: neto >= 0 ? '#0369a1' : '#dc2626', margin: 0 }}>${neto.toFixed(2)}</p>
                       </div>
                     </div>
 
-                    <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: '#0f172a' }}>Evolución Financiera</h3>
-                    <div style={{ width: '100%', height: 250, marginBottom: '2rem' }}>
+                    <h3 style={{ fontSize: '1rem', marginBottom: '0.75rem', color: '#0f172a', fontWeight: 700 }}>Evolución Financiera</h3>
+                    <div style={{ width: '100%', height: 180, marginBottom: '1.5rem' }}>
                       <ResponsiveContainer>
-                        <AreaChart data={rChart} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                        <AreaChart data={rChart} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
                           <defs>
                             <linearGradient id="rColorIngresos" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
@@ -2359,47 +2371,73 @@ export default function FinanzasModule() {
                   <div className="print-only">
                     <h2 style={{ display: 'none' }}>Reporte Financiero Detallado (Desde {new Date(rFechaInicio + 'T00:00:00').toLocaleDateString()} Hasta {new Date(rFechaFin + 'T00:00:00').toLocaleDateString()})</h2>
                   </div>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                    <thead style={{ borderBottom: '2px solid #e2e8f0' }}>
-                      <tr>
-                        <th style={{ padding: '0.75rem', textAlign: 'left' }}>Fecha</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left' }}>Cuenta/Origen</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left' }}>Detalle</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'center' }}>Método</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'right' }}>Monto</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'center' }}>Acción</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {reportData.map((r: any, i: number) => (
-                        <tr key={r.id || i} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '0.75rem' }}>{new Date(r.fecha || new Date()).toLocaleDateString()}</td>
-                          <td style={{ padding: '0.75rem' }}>
-                            {r.cuenta_fondo?.nombre || 'General'}
-                            <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', fontWeight: 700, color: r.tipo === 'INGRESO' ? '#16a34a' : '#dc2626' }}>
-                              [{r.tipo || '-'}]
-                            </span>
-                          </td>
-                          <td style={{ padding: '0.75rem', color: '#64748b' }}>{r.descripcion || '-'}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'center', color: '#64748b', fontSize: '0.8rem' }}>{r.metodo_pago || 'EFECTIVO'}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 700, color: r.tipo === 'EGRESO' ? '#dc2626' : '#16a34a' }}>
-                            ${(r.monto || 0).toFixed(2)}
-                          </td>
-                          <td style={{ padding: '0.75rem', textAlign: 'center' }}>
-                            <button onClick={() => imprimirRecibo(r)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: '#0284c7', padding: '0 0.2rem' }} title="Imprimir Recibo">
-                              🖨️
-                            </button>
-                          </td>
+                  <div style={{ overflowX: 'auto', width: '100%' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+                      <thead style={{ borderBottom: '2px solid #e2e8f0' }}>
+                        <tr>
+                          <th style={{ padding: '0.65rem', textAlign: 'left' }}>Fecha</th>
+                          <th style={{ padding: '0.65rem', textAlign: 'left' }}>Cuenta/Origen</th>
+                          <th style={{ padding: '0.65rem', textAlign: 'left' }}>Detalle</th>
+                          <th style={{ padding: '0.65rem', textAlign: 'center' }}>Método</th>
+                          <th style={{ padding: '0.65rem', textAlign: 'right' }}>Monto</th>
+                          <th style={{ padding: '0.65rem', textAlign: 'center' }}>Acción</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {reportData.map((r: any, i: number) => (
+                          <tr key={r.id || i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '0.65rem' }}>{new Date(r.fecha || new Date()).toLocaleDateString()}</td>
+                            <td style={{ padding: '0.65rem' }}>
+                              {r.cuenta_fondo?.nombre || 'General'}
+                              <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', fontWeight: 700, color: r.tipo === 'INGRESO' ? '#16a34a' : '#dc2626' }}>
+                                [{r.tipo || '-'}]
+                              </span>
+                            </td>
+                            <td style={{ padding: '0.65rem', color: '#64748b' }}>{r.descripcion || '-'}</td>
+                            <td style={{ padding: '0.65rem', textAlign: 'center', color: '#64748b', fontSize: '0.8rem' }}>{r.metodo_pago || 'EFECTIVO'}</td>
+                            <td style={{ padding: '0.65rem', textAlign: 'right', fontWeight: 700, color: r.tipo === 'EGRESO' ? '#dc2626' : '#16a34a' }}>
+                              ${(r.monto || 0).toFixed(2)}
+                            </td>
+                            <td style={{ padding: '0.65rem', textAlign: 'center' }}>
+                              <button onClick={() => imprimirRecibo(r)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: '#0284c7', padding: '0 0.2rem' }} title="Imprimir Recibo">
+                                🖨️
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                   {reportData.length > 0 && (
-                    <div style={{ textAlign: 'right', padding: '1rem 0.75rem', fontWeight: 800, fontSize: '1.2rem', borderTop: '2px solid #e2e8f0' }}>
+                    <div style={{ textAlign: 'right', padding: '0.85rem 0.75rem', fontWeight: 800, fontSize: '1.1rem', borderTop: '2px solid #e2e8f0' }}>
                       Balance Neto: ${reportData.reduce((acc: number, curr: any) => curr.tipo === 'INGRESO' ? acc + (curr.monto||0) : acc - (curr.monto||0), 0).toFixed(2)}
                     </div>
                   )}
                   {reportData.length === 0 && <p style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>No hay datos para este período.</p>}
+
+                  {/* Zona de Mantenimiento / Reinicio discreto */}
+                  <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Zona de administración avanzada:</span>
+                    <button 
+                      onClick={resetFinanzasData} 
+                      style={{ 
+                        padding: '0.35rem 0.75rem', 
+                        background: '#fff1f2', 
+                        color: '#e11d48', 
+                        border: '1px solid #fecdd3', 
+                        borderRadius: '6px', 
+                        fontWeight: 600, 
+                        fontSize: '0.75rem', 
+                        cursor: 'pointer', 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '0.35rem' 
+                      }} 
+                      title="Vaciar todas las transacciones de prueba y resetear balances a 0"
+                    >
+                      🗑️ Vaciar / Reiniciar Datos Financieros
+                    </button>
+                  </div>
                 </>
               );
             })()}

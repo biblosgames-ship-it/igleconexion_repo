@@ -8,7 +8,7 @@ export async function GET() {
     const userId = await getSessionUserId();
 
     // Todas las queries base en paralelo (sin dependencias entre sí)
-    const [userObj, iglesia, sociedadesRaw, gruposFamiliaRaw, etapas, modulos] = await Promise.all([
+    const [userObj, iglesia, sociedadesRaw, gruposFamiliaRaw, etapas, modulos, dbProcesos] = await Promise.all([
       userId ? prisma.usuario.findUnique({ where: { id: userId }, select: { rol: true } }) : null,
       prisma.iglesia.findUnique({ where: { id: defaultIglesiaId } }),
       prisma.sociedad.findMany({
@@ -43,6 +43,11 @@ export async function GET() {
       prisma.moduloConfig.findMany({
         where: { iglesia_id: defaultIglesiaId },
         orderBy: { orden: "asc" },
+      }),
+      prisma.tareaConfig.findMany({
+        where: { iglesia_id: defaultIglesiaId },
+        orderBy: { orden: "asc" },
+        include: { subtareas: true },
       }),
     ]);
 
@@ -169,6 +174,16 @@ export async function GET() {
       necesidades: gf.necesidades
     }));
 
+    const procesos = dbProcesos.map((p) => ({
+      id: p.id,
+      nombre_tarea: p.nombre_tarea,
+      modulo_id: p.modulo_id,
+      etapa_id: p.etapa_id,
+      dias_limite: p.dias_limite,
+      es_obligatoria: p.es_obligatoria,
+      subtareas: p.subtareas,
+    }));
+
     return NextResponse.json({
       ...iglesia,
       redes_sociales,
@@ -182,6 +197,7 @@ export async function GET() {
       grupos_familia,
       etapas,
       modulos,
+      procesos,
     }, {
       headers: {
         'Cache-Control': 'private, s-maxage=30, stale-while-revalidate=120'
