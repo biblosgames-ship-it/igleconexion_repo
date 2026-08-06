@@ -7985,16 +7985,16 @@ const allSystemIcons = [
                   {/* Tarjetas de métricas clave - Estilo Minimalista y Moderno */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '0.65rem' }}>
                     {[
-                      { label: 'Total Miembros', value: analyticsData.totalMiembros, icon: '👥', color: '#0284c7', bg: '#f0f9ff' },
-                      { label: 'Familias Registradas', value: analyticsData.totalFamilias || 0, icon: '👨‍👩‍👧‍👦', color: '#16a34a', bg: '#f0fdf4' },
-                      { label: 'Líderes Activos', value: analyticsData.totalLideres || 0, icon: '👨‍💼', color: '#7c3aed', bg: '#f5f3ff' },
-                      { label: 'Grupos Conexión', value: analyticsData.totalGrupos, icon: '🌐', color: '#0284c7', bg: '#f0f9ff' },
-                      { label: 'Grupos Familia', value: analyticsData.totalGruposFamilia || 0, icon: '🏡', color: '#16a34a', bg: '#f0fdf4' },
-                      { label: 'Departamentos', value: analyticsData.totalDepartamentos || 0, icon: '🏢', color: '#d97706', bg: '#fffbeb' },
-                      { label: 'Ministerios', value: analyticsData.totalMinisterios || 0, icon: '⛪', color: '#ea580c', bg: '#fff7ed' },
-                      { label: 'Instituciones', value: analyticsData.totalInstituciones || 0, icon: '🏫', color: '#0891b2', bg: '#ecfeff' },
-                      { label: 'Cobertura Pastoral', value: `${analyticsData.coberturaPastoral || 0} pers.`, icon: '🐑', color: '#059669', bg: '#ecfdf5' },
-                      { label: 'Oraciones Activas', value: analyticsData.totalOracionActivas || 0, icon: '🙏', color: '#dc2626', bg: '#fef2f2' }
+                      { label: 'Total Miembros', value: analyticsData.totalMiembros, icon: '/Iconos SVG/perfil.svg', color: '#0284c7', bg: '#f0f9ff' },
+                      { label: 'Familias Registradas', value: analyticsData.totalFamilias || 0, icon: '/Iconos SVG/familia.svg', color: '#16a34a', bg: '#f0fdf4' },
+                      { label: 'Líderes Activos', value: analyticsData.totalLideres || 0, icon: '/Iconos SVG/servicio.svg', color: '#7c3aed', bg: '#f5f3ff' },
+                      { label: 'Grupos Conexión', value: analyticsData.totalGrupos, icon: '/Iconos SVG/Grupo 1.svg', color: '#0284c7', bg: '#f0f9ff' },
+                      { label: 'Grupos Familia', value: analyticsData.totalGruposFamilia || 0, icon: '/Iconos SVG/familia-3.svg', color: '#16a34a', bg: '#f0fdf4' },
+                      { label: 'Departamentos', value: analyticsData.totalDepartamentos || 0, icon: '/Iconos SVG/Proceso.svg', color: '#d97706', bg: '#fffbeb' },
+                      { label: 'Ministerios', value: analyticsData.totalMinisterios || 0, icon: '/Iconos SVG/Iglesia-ID.svg', color: '#ea580c', bg: '#fff7ed' },
+                      { label: 'Instituciones', value: analyticsData.totalInstituciones || 0, icon: '/Iconos SVG/templo.svg', color: '#0891b2', bg: '#ecfeff' },
+                      { label: 'Cobertura Pastoral', value: `${analyticsData.coberturaPastoral || 0} pers.`, icon: '/Iconos SVG/pastoral.svg', color: '#059669', bg: '#ecfdf5' },
+                      { label: 'Oraciones Activas', value: analyticsData.totalOracionActivas || 0, icon: '/Iconos SVG/Peticiones.svg', color: '#dc2626', bg: '#fef2f2' }
                     ].map(card => (
                       <div 
                         key={card.label} 
@@ -8021,7 +8021,11 @@ const allSystemIcons = [
                           height: '32px',
                           flexShrink: 0
                         }}>
-                          {card.icon}
+                          {typeof card.icon === 'string' && card.icon.startsWith('/') ? (
+                            <img src={card.icon} alt={card.label} style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                          ) : (
+                            card.icon
+                          )}
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0 }}>
                           <div style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.1 }}>{card.value}</div>
