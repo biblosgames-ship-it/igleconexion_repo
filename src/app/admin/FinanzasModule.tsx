@@ -1349,6 +1349,7 @@ export default function FinanzasModule() {
           c.nombre.toLowerCase() === 'caja chica' || c.nombre.toLowerCase() === 'caja general' || c.nombre.toLowerCase() === 'caja de banco'
         );
         const cuentasOfrendas = cuentas.filter(c => c.tipo === 'OFRENDA');
+        const transaccionesRecientes = finData?.transaccionesRecientes || [];
 
         return (
           <div>
@@ -1586,6 +1587,107 @@ export default function FinanzasModule() {
                       No hay cuentas de ofrenda creadas aún. Puedes crear una a la izquierda.
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* SECCIÓN OFRENDAS MINISTERIALES */}
+            {diezmoOfrendaSubTab === 'ministeriales' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem' }}>
+                    <h3 style={{ fontSize: '1rem', marginBottom: '0.35rem', color: '#0f172a', fontWeight: 700 }}>🏛️ Registrar Ofrenda Ministerial</h3>
+                    <p style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: '1rem' }}>
+                      Registra ofrendas destinadas a un ministerio, sociedad, grupo o departamento. El monto se acreditará a la cuenta del ministerio seleccionado y a la caja de efectivo elegida.
+                    </p>
+                    <form onSubmit={registrarTransaccion} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: '0.2rem' }}>Ministerio / Departamento / Grupo Destino</label>
+                      <select required value={tOfrendaCuentaId} onChange={e=>setTOfrendaCuentaId(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: 'white', fontWeight: 600 }}>
+                        <option value="">-- Seleccionar Ministerio / Fondo --</option>
+                        {cuentas.filter((c: any) => c.tipo !== 'CAJA_CHICA' && c.tipo !== 'CAJA_GENERAL' && c.tipo !== 'BANCO' && c.tipo !== 'GASTO' && c.tipo !== 'OFRENDA').map((c: any) => (
+                          <option key={c.id} value={c.id}>
+                            🏛️ {c.nombre} (${(c.balance || 0).toFixed(2)})
+                          </option>
+                        ))}
+                      </select>
+
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: '0.2rem' }}>Caja Contable (Depósito Físico)</label>
+                      <select required value={tCuentaId} onChange={e=>setTCuentaId(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px', backgroundColor: 'white', fontWeight: 600 }}>
+                        <option value="">-- Seleccionar Caja Contable --</option>
+                        {cajasFisicas.map((c: any) => (
+                          <option key={c.id} value={c.id}>
+                            {c.nombre.toLowerCase().includes('chica') ? '💵 ' : c.nombre.toLowerCase().includes('general') ? '🏛️ ' : '🏦 '}
+                            {c.nombre} (${(c.balance || 0).toFixed(2)})
+                          </option>
+                        ))}
+                      </select>
+
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <div style={{ flex: 1, display: 'flex', gap: '0.2rem' }}>
+                          <input required type="number" step="0.01" placeholder="Monto ($)" value={tMonto} onChange={e=>setTMonto(e.target.value)} style={{ width: '100%', padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px 0 0 8px' }} />
+                          <button type="button" onClick={() => setShowContador(true)} style={{ padding: '0 0.75rem', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '0 8px 8px 0', cursor: 'pointer', fontWeight: 'bold' }} title="Contador de Dinero">
+                            🧮
+                          </button>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <select required value={tMetodoPago} onChange={e=>{
+                          const val = e.target.value;
+                          setTMetodoPago(val);
+                          if (val === 'TRANSFERENCIA') {
+                            const banco = cajasFisicas.find((c: any) => c.nombre.toLowerCase().includes('banco') || c.tipo === 'BANCO');
+                            if (banco) setTCuentaId(banco.id);
+                          }
+                        }} style={{ flex: 1, padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }}>
+                          <option value="EFECTIVO">💵 Efectivo</option>
+                          <option value="TRANSFERENCIA">🏦 Transferencia (Ir a Banco)</option>
+                          <option value="CHEQUE">📜 Cheque</option>
+                        </select>
+                        <input required type="date" value={tFecha} onChange={e=>setTFecha(e.target.value)} style={{ flex: 1, padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                      </div>
+
+                      <input placeholder="Descripción (Ej: Ofrenda Culto de Jóvenes...)" value={tDesc} onChange={e=>setTDesc(e.target.value)} style={{ padding: '0.65rem', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                      <button type="submit" style={{ padding: '0.65rem', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>Registrar Ofrenda Ministerial</button>
+                    </form>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 style={{ fontSize: '1rem', marginBottom: '1rem', color: '#0f172a', fontWeight: 700 }}>Historial de Ofrendas Ministeriales</h3>
+                  <div style={{ overflowX: 'auto', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                      <thead style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                        <tr>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', color: '#475569' }}>Fecha</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', color: '#475569' }}>Ministerio / Fondo</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', color: '#475569' }}>Detalle</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'right', color: '#475569' }}>Monto</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'center', color: '#475569' }}>Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {transaccionesRecientes.filter((t: any) => t.tipo === 'INGRESO' && t.cuenta_fondo && t.cuenta_fondo.tipo !== 'CAJA_CHICA' && t.cuenta_fondo.tipo !== 'CAJA_GENERAL' && t.cuenta_fondo.tipo !== 'BANCO' && t.cuenta_fondo.tipo !== 'OFRENDA' && t.cuenta_fondo.tipo !== 'GASTO').map((t: any) => (
+                          <tr key={t.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '0.75rem' }}>{new Date(t.fecha).toLocaleDateString()}</td>
+                            <td style={{ padding: '0.75rem', fontWeight: 600, color: '#7c3aed' }}>🏛️ {t.cuenta_fondo?.nombre}</td>
+                            <td style={{ padding: '0.75rem', color: '#475569' }}>{t.descripcion || 'Ofrenda Ministerial'}</td>
+                            <td style={{ padding: '0.75rem', textAlign: 'right', color: '#16a34a', fontWeight: 700 }}>+${t.monto.toFixed(2)}</td>
+                            <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                              <button onClick={() => imprimirRecibo(t)} style={{ background: '#f8fafc', border: '1px solid #cbd5e1', color: '#475569', padding: '0.3rem 0.6rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }} title="Imprimir Recibo">
+                                🖨️
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {transaccionesRecientes.filter((t: any) => t.tipo === 'INGRESO' && t.cuenta_fondo && t.cuenta_fondo.tipo !== 'CAJA_CHICA' && t.cuenta_fondo.tipo !== 'CAJA_GENERAL' && t.cuenta_fondo.tipo !== 'BANCO' && t.cuenta_fondo.tipo !== 'OFRENDA' && t.cuenta_fondo.tipo !== 'GASTO').length === 0 && (
+                          <tr>
+                            <td colSpan={5} style={{ padding: '1.5rem', textAlign: 'center', color: '#94a3b8' }}>No hay ofrendas ministeriales registradas recientemente.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}
