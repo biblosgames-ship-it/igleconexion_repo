@@ -8150,36 +8150,7 @@ const allSystemIcons = [
                       </div>
                     </div>
 
-                    {/* Resumen Financiero Simplificado */}
-                    <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-                      <h3 style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a', marginBottom: '1rem' }}>💵 Transacciones Financieras del Mes</h3>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#475569', marginBottom: '0.25rem' }}>
-                            <span>Ingresos Registrados</span>
-                            <span style={{ fontWeight: 700, color: '#059669' }}>+${(analyticsData.totalIngresosMes || 0).toLocaleString()}</span>
-                          </div>
-                          <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${analyticsData.totalIngresosMes > 0 ? 100 : 0}%`, background: '#059669', borderRadius: '4px' }} />
-                          </div>
-                        </div>
-                        <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#475569', marginBottom: '0.25rem' }}>
-                            <span>Egresos Registrados</span>
-                            <span style={{ fontWeight: 700, color: '#dc2626' }}>-${(analyticsData.totalEgresosMes || 0).toLocaleString()}</span>
-                          </div>
-                          <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${analyticsData.totalIngresosMes > 0 ? Math.min((analyticsData.totalEgresosMes / analyticsData.totalIngresosMes) * 100, 100) : (analyticsData.totalEgresosMes > 0 ? 100 : 0)}%`, background: '#dc2626', borderRadius: '4px' }} />
-                          </div>
-                        </div>
-                        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>Balance Neto:</span>
-                          <span style={{ fontSize: '1rem', fontWeight: 800, color: (analyticsData.totalIngresosMes - analyticsData.totalEgresosMes) >= 0 ? '#059669' : '#dc2626' }}>
-                            ${((analyticsData.totalIngresosMes || 0) - (analyticsData.totalEgresosMes || 0)).toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+
                   </div>
 
                 </div>
