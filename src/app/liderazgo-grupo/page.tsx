@@ -7,6 +7,7 @@ import styles from "./liderazgo-grupo.module.css";
 import InventarioModulo from "@/components/InventarioModulo";
 import AsistenciaModulo from "@/components/AsistenciaModulo";
 import PresupuestoModulo from "@/components/PresupuestoModulo";
+import FinanzasMinisterioModulo from "@/components/FinanzasMinisterioModulo";
 
 function LiderazgoGrupoContent() {
   const searchParams = useSearchParams();
@@ -16,7 +17,7 @@ function LiderazgoGrupoContent() {
   const [grupo, setGrupo] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"announcements" | "agenda" | "forum" | "inventario" | "asistencia" | "presupuesto">("announcements");
+  const [activeTab, setActiveTab] = useState<"announcements" | "agenda" | "forum" | "inventario" | "asistencia" | "presupuesto" | "finanzas">("announcements");
 
   // Form states
   const [newAgreementTitle, setNewAgreementTitle] = useState("");
@@ -321,6 +322,14 @@ function LiderazgoGrupoContent() {
             <span className={styles.tabBtnIcon}><img src="/Iconos SVG/finanzas.svg" alt="" /></span>
             <span className={styles.tabBtnLabel}>Presupuesto</span>
           </button>
+          <button
+            onClick={() => setActiveTab("finanzas")}
+            className={`${styles.tabBtn} ${activeTab === "finanzas" ? styles.tabBtnActive : ""}`}
+            title="Finanzas del Ministerio"
+          >
+            <span className={styles.tabBtnIcon}><img src="/Iconos SVG/servicio.svg" alt="" /></span>
+            <span className={styles.tabBtnLabel}>Finanzas</span>
+          </button>
         </div>
 
             {/* CONTENIDO PESTAÑA: COMUNICADOS Y ACUERDOS */}
@@ -546,6 +555,10 @@ function LiderazgoGrupoContent() {
 
             {activeTab === "presupuesto" && grupo && (
               <PresupuestoModulo entidadId={grupo.id} entidadTipo="GRUPO_TRABAJO" />
+            )}
+
+            {activeTab === "finanzas" && grupo && (
+              <FinanzasMinisterioModulo grupoId={grupo.id} nombreGrupo={grupo.nombre} tipoGrupo={grupo.tipo} />
             )}
 
           {/* Directivos */}

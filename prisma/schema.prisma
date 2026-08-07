@@ -615,16 +615,18 @@ model TransaccionFinanciera {
   centro_costo    String?
 
   cuenta_fondo_id String? // Relación a CuentaFondo (Sub-cuentas de ofrendas, gastos, ministerios)
+  subcuenta_fondo_id String? // Relación opcional a SubCuentaFondo
 
   // Conciliación Bancaria
   conciliada          Boolean   @default(false)
   fecha_conciliacion  DateTime?
   referencia_bancaria String?
 
-  iglesia      Iglesia             @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
-  concepto     ConceptoFinanciero? @relation(fields: [concepto_id], references: [id])
-  cuenta_fondo CuentaFondo?        @relation(fields: [cuenta_fondo_id], references: [id])
-  promesa_fe   PromesaFe?          @relation(fields: [promesa_fe_id], references: [id])
+  iglesia         Iglesia             @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  concepto        ConceptoFinanciero? @relation(fields: [concepto_id], references: [id])
+  cuenta_fondo    CuentaFondo?        @relation(fields: [cuenta_fondo_id], references: [id])
+  subcuenta_fondo SubCuentaFondo?     @relation(fields: [subcuenta_fondo_id], references: [id])
+  promesa_fe      PromesaFe?          @relation(fields: [promesa_fe_id], references: [id])
 
   evento_id String?
   evento    Evento? @relation(fields: [evento_id], references: [id], onDelete: SetNull)
@@ -656,8 +658,77 @@ model CuentaFondo {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  iglesia       Iglesia                 @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
-  transacciones TransaccionFinanciera[]
+  iglesia                Iglesia                         @relation(fields: [iglesia_id], references: [id], onDelete: Cascade)
+  transacciones          TransaccionFinanciera[]
+  subcuentas             SubCuentaFondo[]
+  caja_chica_ministerial CajaChicaMinisterial?
+  solicitudes_aprobacion SolicitudAprobacionFinanciera[]
+}
+
+model SubCuentaFondo {
+  id              String   @id @default(uuid())
+  cuenta_fondo_id String
+  nombre          String
+  tipo            String   @default("INGRESO") // INGRESO | GASTO
+  balance         Float    @default(0.0)
+  descripcion     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  cuenta_fondo           CuentaFondo                     @relation(fields: [cuenta_fondo_id], references: [id], onDelete: Cascade)
+  transacciones          TransaccionFinanciera[]
+  solicitudes_aprobacion SolicitudAprobacionFinanciera[]
+}
+
+model SolicitudAprobacionFinanciera {
+  id                    String    @id @default(uuid())
+  iglesia_id            String
+  cuenta_fondo_id       String
+  subcuenta_fondo_id    String?
+  caja_fisica_id        String?
+  tipo                  String    // INGRESO | EGRESO
+  monto                 Float
+  fecha                 DateTime
+  metodo_pago           String    @default("EFECTIVO")
+  descripcion           String
+  solicitado_por_id     String
+  solicitado_por_nombre String
+  estado                String    @default("PENDIENTE") // PENDIENTE | APROBADO | RECHAZADO
+  notas_respuesta       String?
+  aprobado_por_id       String?
+  transaccion_id        String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  cuenta_fondo    CuentaFondo     @relation(fields: [cuenta_fondo_id], references: [id], onDelete: Cascade)
+  subcuenta_fondo SubCuentaFondo? @relation(fields: [subcuenta_fondo_id], references: [id], onDelete: SetNull)
+}
+
+model CajaChicaMinisterial {
+  id                 String   @id @default(uuid())
+  iglesia_id         String
+  cuenta_fondo_id    String   @unique
+  balance            Float    @default(0.0)
+  limite_gasto_menor Float    @default(50.0)
+  responsable_id     String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  cuenta_fondo          CuentaFondo                         @relation(fields: [cuenta_fondo_id], references: [id], onDelete: Cascade)
+  transacciones_menores TransaccionCajaChicaMinisterial[]
+}
+
+model TransaccionCajaChicaMinisterial {
+  id                    String   @id @default(uuid())
+  caja_ministerial_id   String
+  tipo                  String   @default("EGRESO") // EGRESO | REINTEGRO
+  monto                 Float
+  descripcion           String
+  fecha                 DateTime @default(now())
+  registrado_por_nombre String
+  createdAt             DateTime @default(now())
+
+  caja_ministerial CajaChicaMinisterial @relation(fields: [caja_ministerial_id], references: [id], onDelete: Cascade)
 }
 
 model HistorialDiezmo {

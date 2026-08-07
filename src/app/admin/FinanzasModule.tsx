@@ -60,6 +60,11 @@ export default function FinanzasModule() {
   const [showProyectoModal, setShowProyectoModal] = useState(false);
   const [showPromesaModal, setShowPromesaModal] = useState(false);
   const [showAbonoModal, setShowAbonoModal] = useState<string | null>(null);
+
+  // Solicitudes Ministeriales
+  const [solicitudesPendientes, setSolicitudesPendientes] = useState<any[]>([]);
+  const [solicitudesHistorial, setSolicitudesHistorial] = useState<any[]>([]);
+  const [solSubTab, setSolSubTab] = useState<'PENDIENTES' | 'HISTORIAL'>('PENDIENTES');
   
   // Proyecto Form
   const [prId, setPrId] = useState<string | null>(null);
@@ -287,6 +292,45 @@ export default function FinanzasModule() {
     } catch (e) { console.error(e); }
   };
 
+  const loadSolicitudesMinisteriales = async () => {
+    try {
+      const res = await fetch('/api/finanzas/solicitudes');
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setSolicitudesPendientes(data.filter((s: any) => s.estado === 'PENDIENTE'));
+        setSolicitudesHistorial(data.filter((s: any) => s.estado !== 'PENDIENTE'));
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const responderSolicitudMinisterial = async (id: string, estado: 'APROBADO' | 'RECHAZADO') => {
+    const notas = estado === 'RECHAZADO' ? prompt("Motivo del rechazo (opcional):") : "Aprobado por Tesorería";
+    if (estado === 'RECHAZADO' && notas === null) return;
+
+    try {
+      const res = await fetch('/api/finanzas/solicitudes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'responder_solicitud',
+          data: { id, estado, notas_respuesta: notas }
+        })
+      });
+
+      if (res.ok) {
+        alert(estado === 'APROBADO' ? "✅ Solicitud aprobada con éxito. Transacción procesada y saldos actualizados." : "❌ Solicitud rechazada.");
+        loadSolicitudesMinisteriales();
+        loadCuentas();
+        loadDashboard();
+      } else {
+        const err = await res.json();
+        alert("Error: " + (err.error || "No se pudo procesar la solicitud"));
+      }
+    } catch (e) {
+      alert("Error de conexión");
+    }
+  };
+
   const loadProyectosPromesa = async () => {
     try {
       const res = await fetch('/api/finanzas/proyectos');
@@ -296,7 +340,9 @@ export default function FinanzasModule() {
   };
 
   useEffect(() => {
+    loadSolicitudesMinisteriales();
     if (activeSubTab === 'promesas') loadProyectosPromesa();
+    if (activeSubTab === 'solicitudes_aprobacion') loadSolicitudesMinisteriales();
   }, [activeSubTab]);
 
   const registrarProyecto = async (e: React.FormEvent) => {
@@ -868,6 +914,7 @@ export default function FinanzasModule() {
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '0.5rem', borderBottom: '2px solid #e2e8f0' }}>
         {[
           { id: 'dashboard', label: '📊 Dashboard' },
+          { id: 'solicitudes_aprobacion', label: `⏳ Solicitudes Ministeriales${solicitudesPendientes.length > 0 ? ` (${solicitudesPendientes.length})` : ''}` },
           { id: 'diezmos_ofrendas', label: '🤲 Diezmos y Ofrendas' },
           { id: 'ingresos_gastos', label: '⚖️ Ingresos y Gastos' },
           { id: 'ministerios', label: '🏛️ Fondos Ministeriales' },
@@ -887,6 +934,8 @@ export default function FinanzasModule() {
                 loadCuentas();
                 if (ingresoGastoSubTab === 'gasto') setTTipoTransaccion('EGRESO');
                 else setTTipoTransaccion('INGRESO');
+              } else if (tab.id === 'solicitudes_aprobacion') {
+                loadSolicitudesMinisteriales();
               } else if (tab.id === 'ministerios') {
                 loadCuentas();
                 loadPresupuestosMin(pmPeriodoFiltro, pmAnioFiltro);
@@ -2544,6 +2593,123 @@ export default function FinanzasModule() {
               );
             })()}
           </div>
+        </div>
+      )}
+
+      {/* SOLICITUDES MINISTERIALES */}
+      {activeSubTab === 'solicitudes_aprobacion' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>
+            <button onClick={() => setSolSubTab('PENDIENTES')} style={{ background: 'none', border: 'none', padding: '0.5rem 1rem', fontSize: '1rem', fontWeight: 600, cursor: 'pointer', color: solSubTab === 'PENDIENTES' ? '#0284c7' : '#64748b', borderBottom: solSubTab === 'PENDIENTES' ? '3px solid #0284c7' : '3px solid transparent' }}>
+              Pendientes de Aprobación ({solicitudesPendientes.length})
+            </button>
+            <button onClick={() => setSolSubTab('HISTORIAL')} style={{ background: 'none', border: 'none', padding: '0.5rem 1rem', fontSize: '1rem', fontWeight: 600, cursor: 'pointer', color: solSubTab === 'HISTORIAL' ? '#0284c7' : '#64748b', borderBottom: solSubTab === 'HISTORIAL' ? '3px solid #0284c7' : '3px solid transparent' }}>
+              Historial de Solicitudes ({solicitudesHistorial.length})
+            </button>
+          </div>
+
+          {solSubTab === 'PENDIENTES' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
+              {solicitudesPendientes.map(sol => (
+                <div key={sol.id} style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '0.25rem 0.6rem', borderRadius: '20px', background: sol.tipo === 'INGRESO' ? '#dcfce7' : '#fee2e2', color: sol.tipo === 'INGRESO' ? '#15803d' : '#b91c1c' }}>
+                      {sol.tipo === 'INGRESO' ? '🟢 Ingreso a Fondo' : '🔴 Egreso de Fondo'}
+                    </span>
+                    <span style={{ fontSize: '0.78rem', color: '#64748b' }}>{new Date(sol.fecha).toLocaleDateString()}</span>
+                  </div>
+
+                  <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.05rem', color: '#0f172a', fontWeight: 700 }}>
+                    🏛️ {sol.cuenta_fondo?.nombre}
+                  </h4>
+                  {sol.subcuenta_fondo && (
+                    <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.82rem', color: '#0284c7', fontWeight: 600 }}>
+                      📂 Subcuenta: {sol.subcuenta_fondo.nombre}
+                    </p>
+                  )}
+
+                  <p style={{ fontSize: '0.88rem', color: '#334155', background: '#f8fafc', padding: '0.65rem', borderRadius: '8px', border: '1px solid #f1f5f9', margin: '0.5rem 0' }}>
+                    {sol.descripcion}
+                  </p>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '1rem 0 0.75rem 0' }}>
+                    <div>
+                      <span style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8' }}>Solicitado por:</span>
+                      <strong style={{ fontSize: '0.85rem', color: '#475569' }}>{sol.solicitado_por_nombre}</strong>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <span style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8' }}>Monto:</span>
+                      <strong style={{ fontSize: '1.4rem', color: sol.tipo === 'INGRESO' ? '#16a34a' : '#dc2626' }}>${sol.monto.toFixed(2)}</strong>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9' }}>
+                    <button
+                      onClick={() => responderSolicitudMinisterial(sol.id, 'APROBADO')}
+                      style={{ flex: 1, padding: '0.55rem', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}
+                    >
+                      ✅ Aprobar
+                    </button>
+                    <button
+                      onClick={() => responderSolicitudMinisterial(sol.id, 'RECHAZADO')}
+                      style={{ flex: 1, padding: '0.55rem', background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}
+                    >
+                      ❌ Rechazar
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {solicitudesPendientes.length === 0 && (
+                <div style={{ gridColumn: '1 / -1', padding: '3rem', textAlign: 'center', background: 'white', border: '1px dashed #cbd5e1', borderRadius: '12px', color: '#94a3b8' }}>
+                  🎉 No hay solicitudes ministeriales pendientes de aprobación en este momento.
+                </div>
+              )}
+            </div>
+          )}
+
+          {solSubTab === 'HISTORIAL' && (
+            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+                <thead style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                  <tr>
+                    <th style={{ padding: '0.75rem', textAlign: 'left', color: '#475569' }}>Fecha</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'left', color: '#475569' }}>Ministerio / Fondo</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'left', color: '#475569' }}>Subcuenta</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'left', color: '#475569' }}>Solicitante</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'left', color: '#475569' }}>Descripción</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'right', color: '#475569' }}>Monto</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'center', color: '#475569' }}>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {solicitudesHistorial.map(sol => (
+                    <tr key={sol.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '0.75rem' }}>{new Date(sol.fecha).toLocaleDateString()}</td>
+                      <td style={{ padding: '0.75rem', fontWeight: 600, color: '#0f172a' }}>🏛️ {sol.cuenta_fondo?.nombre}</td>
+                      <td style={{ padding: '0.75rem', color: '#0284c7' }}>{sol.subcuenta_fondo?.nombre || 'General'}</td>
+                      <td style={{ padding: '0.75rem', color: '#475569' }}>{sol.solicitado_por_nombre}</td>
+                      <td style={{ padding: '0.75rem', color: '#64748b' }}>{sol.descripcion}</td>
+                      <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 700, color: sol.tipo === 'INGRESO' ? '#16a34a' : '#dc2626' }}>${sol.monto.toFixed(2)}</td>
+                      <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                        <span style={{
+                          padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700,
+                          background: sol.estado === 'APROBADO' ? '#dcfce7' : '#fee2e2',
+                          color: sol.estado === 'APROBADO' ? '#15803d' : '#b91c1c'
+                        }}>
+                          {sol.estado === 'APROBADO' ? '✅ Aprobado' : '❌ Rechazado'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {solicitudesHistorial.length === 0 && (
+                    <tr>
+                      <td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No hay historial de solicitudes procesadas.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
