@@ -8,6 +8,7 @@ import styles from './admin.module.css'; // Mismo estilo base
 export default function FinanzasModule() {
   const [activeSubTab, setActiveSubTab] = useState('dashboard');
   const [loading, setLoading] = useState(true);
+  const [showFinanzasMenu, setShowFinanzasMenu] = useState(false);
   
   // Dashboard Periodo
   const [dashPeriodoValor, setDashPeriodoValor] = useState(new Date().getFullYear().toString()); // Por defecto el año actual
@@ -908,50 +909,212 @@ export default function FinanzasModule() {
   if (loading && !finData) return <p style={{ color: '#64748b' }}>Cargando módulo de finanzas...</p>;
   if (finData?.error) return <div style={{ color: 'red', padding: '2rem' }}>{finData.error}</div>;
 
+  const subModulosFinanzas = [
+    {
+      id: 'dashboard',
+      label: 'Dashboard Analítico',
+      desc: 'Métricas generales, gráficos y resúmenes de ingresos y egresos.',
+      icon: '/Iconos SVG/dashboard.svg',
+      badge: null
+    },
+    {
+      id: 'solicitudes_aprobacion',
+      label: 'Solicitudes Ministeriales',
+      desc: 'Bandeja de revisión y aprobación de fondos solicitados por líderes.',
+      icon: '/Iconos SVG/Proceso.svg',
+      badge: solicitudesPendientes.length > 0 ? `${solicitudesPendientes.length} pendientes` : null
+    },
+    {
+      id: 'diezmos_ofrendas',
+      label: 'Diezmos y Ofrendas',
+      desc: 'Registro de diezmos de miembros, ofrendas generales y ministeriales.',
+      icon: '/Iconos SVG/finanzas (2).svg',
+      badge: null
+    },
+    {
+      id: 'ingresos_gastos',
+      label: 'Ingresos y Gastos',
+      desc: 'Clasificación contable por cuentas de ingresos y partidas de gastos.',
+      icon: '/Iconos SVG/finanzas.svg',
+      badge: null
+    },
+    {
+      id: 'ministerios',
+      label: 'Fondos Ministeriales',
+      desc: 'Cuentas de fondos de sociedades, departamentos y presupuestos.',
+      icon: '/Iconos SVG/servicio.svg',
+      badge: null
+    },
+    {
+      id: 'nomina',
+      label: 'Nómina de Empleados',
+      desc: 'Planilla de empleados, cargos y sueldos fijados.',
+      icon: '/Iconos SVG/Miembros.svg',
+      badge: null
+    },
+    {
+      id: 'promesas',
+      label: 'Promesas de Fe',
+      desc: 'Proyectos financieros, compromisos y recaudación de promesas.',
+      icon: '/Iconos SVG/Peticiones.svg',
+      badge: null
+    },
+    {
+      id: 'conciliacion',
+      label: 'Conciliación Bancaria',
+      desc: 'Cotejo de registros financieros contra extractos de banco.',
+      icon: '/Iconos SVG/Iglesia-ID.svg',
+      badge: null
+    },
+    {
+      id: 'reportes',
+      label: 'Reportes Financieros',
+      desc: 'Informes detallados y consolidados para impresión y exportación CSV.',
+      icon: '/Iconos SVG/Formulario.svg',
+      badge: null
+    }
+  ];
+
   return (
     <div style={{ padding: '0' }}>
 
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '0.5rem', borderBottom: '2px solid #e2e8f0' }}>
-        {[
-          { id: 'dashboard', label: '📊 Dashboard' },
-          { id: 'solicitudes_aprobacion', label: `⏳ Solicitudes Ministeriales${solicitudesPendientes.length > 0 ? ` (${solicitudesPendientes.length})` : ''}` },
-          { id: 'diezmos_ofrendas', label: '🤲 Diezmos y Ofrendas' },
-          { id: 'ingresos_gastos', label: '⚖️ Ingresos y Gastos' },
-          { id: 'ministerios', label: '🏛️ Fondos Ministeriales' },
-          { id: 'nomina', label: '👥 Nómina' },
-          { id: 'promesas', label: '🌟 Promesas de Fe' },
-          { id: 'conciliacion', label: '🏦 Conciliación Bancaria' },
-          { id: 'reportes', label: '📑 Reportes' }
-        ].map(tab => (
-          <button 
-            key={tab.id}
-            onClick={() => {
-              setActiveSubTab(tab.id);
-              if (tab.id === 'diezmos_ofrendas') {
-                loadDiezmos();
-                loadCuentas();
-              } else if (tab.id === 'ingresos_gastos') {
-                loadCuentas();
-                if (ingresoGastoSubTab === 'gasto') setTTipoTransaccion('EGRESO');
-                else setTTipoTransaccion('INGRESO');
-              } else if (tab.id === 'solicitudes_aprobacion') {
-                loadSolicitudesMinisteriales();
-              } else if (tab.id === 'ministerios') {
-                loadCuentas();
-                loadPresupuestosMin(pmPeriodoFiltro, pmAnioFiltro);
-              }
-            }}
-            style={{
-              padding: '0.5rem 1rem', border: 'none',
-              background: activeSubTab === tab.id ? '#0284c7' : 'transparent',
-              color: activeSubTab === tab.id ? 'white' : '#64748b',
-              borderRadius: '8px', fontWeight: 600, cursor: 'pointer',
-              whiteSpace: 'nowrap', transition: 'all 0.2s'
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* NAVEGACIÓN DESPLEGABLE CON GRID DE ÍCONOS ESTILO HUB */}
+      <div style={{ marginBottom: '1.5rem', background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+        
+        {/* BARRA SUPERIOR DE SECCIÓN ACTIVA Y BOTÓN DESPLEGABLE */}
+        <div 
+          onClick={() => setShowFinanzasMenu(!showFinanzasMenu)} 
+          style={{ 
+            padding: '1rem 1.25rem', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            cursor: 'pointer', 
+            background: showFinanzasMenu ? '#f8fafc' : 'white',
+            transition: 'all 0.2s',
+            userSelect: 'none'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {(() => {
+              const currentMod = subModulosFinanzas.find(m => m.id === activeSubTab) || subModulosFinanzas[0];
+              return (
+                <>
+                  <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px' }}>
+                    <img src={currentMod.icon} alt={currentMod.label} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Módulo Financiero</span>
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {currentMod.label}
+                      {currentMod.badge && (
+                        <span style={{ background: '#ef4444', color: 'white', fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 800 }}>
+                          {currentMod.badge}
+                        </span>
+                      )}
+                    </h2>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button 
+              type="button" 
+              style={{ 
+                padding: '0.55rem 1rem', 
+                background: showFinanzasMenu ? '#0284c7' : '#f1f5f9', 
+                color: showFinanzasMenu ? 'white' : '#0f172a', 
+                border: 'none', 
+                borderRadius: '10px', 
+                fontWeight: 700, 
+                fontSize: '0.85rem', 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.4rem' 
+              }}
+            >
+              <span>📂 Menú de Iconos</span>
+              <span style={{ transform: showFinanzasMenu ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+            </button>
+          </div>
+        </div>
+
+        {/* GRID DESPLEGABLE DE TARJETAS DE ÍCONOS ESTILO HUB */}
+        {showFinanzasMenu && (
+          <div style={{ padding: '1.25rem', borderTop: '1px solid #e2e8f0', background: '#f8fafc' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '0.85rem' }}>
+              {subModulosFinanzas.map(mod => {
+                const isActive = activeSubTab === mod.id;
+                return (
+                  <div
+                    key={mod.id}
+                    onClick={() => {
+                      setActiveSubTab(mod.id);
+                      setShowFinanzasMenu(false);
+                      if (mod.id === 'diezmos_ofrendas') {
+                        loadDiezmos();
+                        loadCuentas();
+                      } else if (mod.id === 'ingresos_gastos') {
+                        loadCuentas();
+                        if (ingresoGastoSubTab === 'gasto') setTTipoTransaccion('EGRESO');
+                        else setTTipoTransaccion('INGRESO');
+                      } else if (mod.id === 'solicitudes_aprobacion') {
+                        loadSolicitudesMinisteriales();
+                      } else if (mod.id === 'ministerios') {
+                        loadCuentas();
+                        loadPresupuestosMin(pmPeriodoFiltro, pmAnioFiltro);
+                      }
+                    }}
+                    style={{
+                      background: isActive ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : 'white',
+                      color: isActive ? 'white' : '#0f172a',
+                      border: isActive ? '2px solid #0284c7' : '1px solid #e2e8f0',
+                      borderRadius: '14px',
+                      padding: '1rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease-in-out',
+                      boxShadow: isActive ? '0 10px 15px -3px rgba(2, 132, 199, 0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '0.85rem'
+                    }}
+                  >
+                    <div style={{ 
+                      width: '40px', 
+                      height: '40px', 
+                      borderRadius: '10px', 
+                      background: isActive ? 'rgba(255,255,255,0.2)' : '#f1f5f9', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      padding: '8px', 
+                      flexShrink: 0 
+                    }}>
+                      <img src={mod.icon} alt={mod.label} style={{ width: '100%', height: '100%', objectFit: 'contain', filter: isActive ? 'brightness(0) invert(1)' : 'none' }} />
+                    </div>
+
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 800 }}>{mod.label}</h4>
+                        {mod.badge && (
+                          <span style={{ background: '#ef4444', color: 'white', fontSize: '0.68rem', padding: '0.1rem 0.4rem', borderRadius: '10px', fontWeight: 800 }}>
+                            {mod.badge}
+                          </span>
+                        )}
+                      </div>
+                      <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.78rem', opacity: isActive ? 0.9 : 0.7, lineHeight: '1.25' }}>
+                        {mod.desc}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* DASHBOARD */}
