@@ -912,53 +912,54 @@ export default function FinanzasModule() {
   return (
     <div style={{ padding: '0' }}>
 
-      {/* BOTÓN SUPERIOR PARA DESPLEGAR / OCULTAR MENÚ */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            📊 Secciones de Finanzas
-          </span>
-        </div>
+      {/* BOTÓN SUPERIOR PEQUEÑO SOLO CON FLECHITA PARA DESPLEGAR / OCULTAR */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', marginTop: '-0.25rem' }}>
+        <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          📊 Secciones de Finanzas
+        </span>
         <button
           type="button"
           onClick={() => setShowNavMenu(!showNavMenu)}
+          title={showNavMenu ? "Ocultar menú" : "Desplegar menú"}
           style={{
-            padding: '0.35rem 0.75rem',
+            width: '28px',
+            height: '28px',
+            borderRadius: '50%',
             background: showNavMenu ? '#f1f5f9' : '#0284c7',
             color: showNavMenu ? '#475569' : 'white',
             border: '1px solid #cbd5e1',
-            borderRadius: '8px',
-            fontSize: '0.78rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            display: 'inline-flex',
+            display: 'flex',
             alignItems: 'center',
-            gap: '0.35rem'
+            justifyContent: 'center',
+            cursor: 'pointer',
+            fontSize: '0.75rem',
+            fontWeight: 800,
+            transition: 'all 0.2s ease',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
           }}
         >
-          <span>{showNavMenu ? '🙈 Ocultar Menú' : '📂 Desplegar Menú de Íconos'}</span>
-          <span style={{ transform: showNavMenu ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+          <span style={{ transform: showNavMenu ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', display: 'inline-block' }}>▼</span>
         </button>
       </div>
 
-      {/* GRID DE ÍCONOS SEMI-CUADRADITOS CON TEXTO CENTRADO */}
+      {/* GRID DE ÍCONOS COMPACTO: 3 ÍCONOS POR LÍNEA PARA TELÉFONO */}
       {showNavMenu && (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(105px, 1fr))',
-          gap: '0.65rem',
-          marginBottom: '1.25rem',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '0.45rem',
+          marginBottom: '1rem',
           background: 'white',
-          padding: '0.85rem',
-          borderRadius: '16px',
+          padding: '0.6rem',
+          borderRadius: '14px',
           border: '1px solid #e2e8f0',
           boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
         }}>
           {[
             { id: 'dashboard', label: 'Dashboard', icon: '/Iconos SVG/dashboard.svg', title: 'Dashboard Analítico' },
             { id: 'solicitudes_aprobacion', label: 'Solicitudes', icon: '/Iconos SVG/Proceso.svg', title: 'Solicitudes Ministeriales', count: solicitudesPendientes.length },
-            { id: 'diezmos_ofrendas', label: 'Diezmos y Ofrendas', icon: '/Iconos SVG/finanzas (2).svg', title: 'Diezmos y Ofrendas' },
-            { id: 'ingresos_gastos', label: 'Ingresos y Gastos', icon: '/Iconos SVG/finanzas.svg', title: 'Ingresos y Gastos' },
+            { id: 'diezmos_ofrendas', label: 'Diezmos/Ofrendas', icon: '/Iconos SVG/finanzas (2).svg', title: 'Diezmos y Ofrendas' },
+            { id: 'ingresos_gastos', label: 'Ingresos/Gastos', icon: '/Iconos SVG/finanzas.svg', title: 'Ingresos y Gastos' },
             { id: 'ministerios', label: 'Fondos Min.', icon: '/Iconos SVG/servicio.svg', title: 'Fondos Ministeriales' },
             { id: 'nomina', label: 'Nómina', icon: '/Iconos SVG/Miembros.svg', title: 'Nómina de Empleados' },
             { id: 'promesas', label: 'Promesas', icon: '/Iconos SVG/Peticiones.svg', title: 'Promesas de Fe' },
@@ -991,44 +992,44 @@ export default function FinanzasModule() {
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '0.75rem 0.4rem',
-                  borderRadius: '12px',
+                  padding: '0.45rem 0.2rem',
+                  borderRadius: '10px',
                   border: isActive ? '2px solid #0284c7' : '1px solid #e2e8f0',
                   background: isActive ? '#f0f9ff' : '#f8fafc',
                   color: isActive ? '#0284c7' : '#475569',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
                   position: 'relative',
-                  boxShadow: isActive ? '0 4px 10px rgba(2, 132, 199, 0.15)' : 'none',
-                  minHeight: '85px'
+                  boxShadow: isActive ? '0 2px 6px rgba(2, 132, 199, 0.15)' : 'none',
+                  minHeight: '68px'
                 }}
               >
                 {!!item.count && item.count > 0 && (
                   <span style={{ 
                     position: 'absolute',
-                    top: '5px',
-                    right: '5px',
+                    top: '3px',
+                    right: '3px',
                     background: '#ef4444', 
                     color: 'white', 
-                    fontSize: '0.65rem', 
-                    padding: '0.1rem 0.35rem', 
-                    borderRadius: '10px', 
+                    fontSize: '0.6rem', 
+                    padding: '0.05rem 0.3rem', 
+                    borderRadius: '8px', 
                     fontWeight: 800 
                   }}>
                     {item.count}
                   </span>
                 )}
                 <div style={{
-                  width: '34px',
-                  height: '34px',
-                  borderRadius: '10px',
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '8px',
                   background: isActive ? '#0284c7' : 'white',
                   border: isActive ? 'none' : '1px solid #cbd5e1',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginBottom: '0.4rem',
-                  padding: '6px',
+                  marginBottom: '0.25rem',
+                  padding: '4px',
                   flexShrink: 0
                 }}>
                   <img 
@@ -1043,11 +1044,13 @@ export default function FinanzasModule() {
                   />
                 </div>
                 <span style={{ 
-                  fontSize: '0.74rem', 
+                  fontSize: '0.68rem', 
                   fontWeight: 800, 
                   textAlign: 'center', 
-                  lineHeight: '1.15',
-                  width: '100%'
+                  lineHeight: '1.1',
+                  width: '100%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
                 }}>
                   {item.label}
                 </span>
