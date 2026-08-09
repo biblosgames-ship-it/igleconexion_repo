@@ -1978,20 +1978,7 @@ export default function Hub() {
                   <div style={{ marginBottom: '1.5rem' }}>
                     <h4 style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0f172a', marginBottom: '0.5rem' }}>📍 Horarios de Reuniones</h4>
                     <div style={{ fontSize: '0.9rem', color: '#166534', lineHeight: '1.5', backgroundColor: '#f0fdf4', borderLeft: '4px solid #22c55e', padding: '0.75rem 1rem', borderRadius: '4px', whiteSpace: 'pre-wrap', fontWeight: 500 }}>
-                      {(() => {
-                        if (selectedSociety.horarios) {
-                          return selectedSociety.horarios;
-                        }
-                        const socEvents = events.filter((ev: any) => ev.sociedadId === selectedSociety.id);
-                        if (socEvents.length > 0) {
-                          return socEvents.map((ev: any) => {
-                            const timeStr = ev.hora ? ` @ ${ev.hora}` : '';
-                            const dateStr = ev.tipo === "ESPECIAL" ? ev.fecha : `Todos los ${ev.diaSemana}`;
-                            return `• ${ev.titulo}: ${dateStr}${timeStr}`;
-                          }).join("\n");
-                        }
-                        return "Reuniones periódicas según agenda. Consulta con los líderes.";
-                      })()}
+                      {selectedSociety.horarios || "Reuniones periódicas según agenda. Consulta con los líderes de la sociedad."}
                     </div>
                   </div>
 
