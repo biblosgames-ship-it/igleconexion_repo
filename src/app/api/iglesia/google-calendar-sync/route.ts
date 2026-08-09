@@ -9,9 +9,10 @@ function parseICalEvents(icsText: string) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const thirtyDaysLater = new Date();
-  thirtyDaysLater.setDate(today.getDate() + 30);
-  thirtyDaysLater.setHours(23, 59, 59, 999);
+  // Parsear eventos hasta 180 días (6 meses / resto del año) en el futuro
+  const maxFutureDate = new Date();
+  maxFutureDate.setDate(today.getDate() + 180);
+  maxFutureDate.setHours(23, 59, 59, 999);
 
   for (let i = 1; i < vevents.length; i++) {
     const block = vevents[i].split("END:VEVENT")[0];
@@ -57,8 +58,8 @@ function parseICalEvents(icsText: string) {
       // FILTRO 1: Ignorar eventos pasados
       if (eventDate < today) continue;
 
-      // FILTRO 2: Solo eventos en los próximos 30 días (1 mes de programación)
-      if (eventDate > thirtyDaysLater) continue;
+      // FILTRO 2: Guardar eventos de los próximos 6 meses (hasta fin de año)
+      if (eventDate > maxFutureDate) continue;
 
       const fechaFormatted = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const horaFormatted = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
@@ -124,7 +125,7 @@ export async function POST(request: Request) {
     const parsedEvents = parseICalEvents(icsText);
 
     if (parsedEvents.length === 0) {
-      return NextResponse.json({ error: "No se encontraron eventos futuros para los próximos 30 días en Google Calendar." }, { status: 404 });
+      return NextResponse.json({ error: "No se encontraron eventos futuros en Google Calendar." }, { status: 404 });
     }
 
     // Cargar iglesia actual para combinar eventos
@@ -134,7 +135,7 @@ export async function POST(request: Request) {
       try { existingEvents = JSON.parse(iglesia.eventos); } catch (e) {}
     }
 
-    // Filtrar duplicados con eventos semanales existentes
+    // Filtrar duplicados con eventos existentes
     const newEventsToAdd: any[] = [];
     let countImportados = 0;
 
@@ -168,7 +169,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      totalProximos30Dias: parsedEvents.length,
+      totalProximosMeses: parsedEvents.length,
       nuevosImportados: countImportados,
       eventos: updatedEventsList
     });
