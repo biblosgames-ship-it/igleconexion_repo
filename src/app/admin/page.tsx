@@ -408,6 +408,7 @@ const allSystemIcons = [
   });
   const [limitePersonas, setLimitePersonas] = useState(50);
   const [showTemasMensuales, setShowTemasMensuales] = useState(false);
+  const [showBibliotecaBlock, setShowBibliotecaBlock] = useState(false);
   const [limiteUsuarios, setLimiteUsuarios] = useState(5);
   const [precioMensual, setPrecioMensual] = useState(29.99);
   const [fechaVencimiento, setFechaVencimiento] = useState<string | null>(null);
@@ -1122,6 +1123,10 @@ const allSystemIcons = [
 
   const handleAddResource = (e: React.FormEvent) => {
     e.preventDefault();
+    if (churchResources.length >= 25) {
+      alert("⚠️ Has alcanzado el límite máximo de 25 recursos en la Biblioteca Digital. Para agregar un nuevo recurso, elimina uno de los existentes.");
+      return;
+    }
     if (!newRecTitle.trim() || (!newRecUrl.trim() && newRecType !== "BLOG")) return;
     const newRec = {
       id: "rec-" + Date.now(),
@@ -2887,135 +2892,199 @@ const allSystemIcons = [
                 </div>
               </div>
 
-              {/* Bloque 5: Recursos */}
-              <div className={styles.configBlock} style={{ background: 'white' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem', marginBottom: '1rem', color: '#1e293b' }}>
-                  📚 Biblioteca de Recursos
-                </h3>
-                
-                {/* Formulario Agregar Recurso */}
-                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px dashed #cbd5e1', marginBottom: '1.5rem' }}>
-                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.75rem', color: '#334155' }}>📚 Cargar Nuevo Recurso</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                    <div>
-                      <label style={{ display: 'block', fontWeight: 600, fontSize: '0.75rem', marginBottom: '0.25rem' }}>Título del Recurso</label>
-                      <input 
-                        type="text" 
-                        value={newRecTitle} 
-                        onChange={(e) => setNewRecTitle(e.target.value)} 
-                        style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} 
-                        placeholder="Ej: Libro de Discipulado"
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontWeight: 600, fontSize: '0.75rem', marginBottom: '0.25rem' }}>Categoría</label>
-                      <select
-                        value={newRecCategory}
-                        onChange={(e) => setNewRecCategory(e.target.value)}
-                        style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', backgroundColor: 'white' }}
-                      >
-                        <option value="Estudios Bíblicos">Estudios Bíblicos</option>
-                        <option value="Sermones y Predicas">Sermones y Prédicas</option>
-                        <option value="Manuales y Guías">Manuales y Guías</option>
-                        <option value="Jóvenes y Niños">Jóvenes y Niños</option>
-                        <option value="Eventos Especiales">Eventos Especiales</option>
-                        <option value="General">General</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontWeight: 600, fontSize: '0.75rem', marginBottom: '0.25rem' }}>Tipo de Recurso</label>
-                      <select 
-                        value={newRecType} 
-                        onChange={(e) => setNewRecType(e.target.value)} 
-                        style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', backgroundColor: 'white' }} 
-                      >
-                        <option value="LINK">🌐 Link / Sitio Web</option>
-                        <option value="PDF">📄 Documento PDF / Guía</option>
-                        <option value="VIDEO">📺 Video (YouTube / Vimeo)</option>
-                        <option value="GALERIA">🖼️ Fotografía / Galería de Fotos</option>
-                        <option value="AUDIO">🎧 Audio / Podcast / Prédica</option>
-                        <option value="BLOG">✍️ Artículo / Reflexión Escrita</option>
-                      </select>
-                    </div>
+              {/* Bloque 5: Recursos de Biblioteca Digital (Desplegable + Límite 25) */}
+              <div className={styles.configBlock} style={{ background: 'white', transition: 'all 0.3s ease' }}>
+                <div 
+                  onClick={() => setShowBibliotecaBlock(!showBibliotecaBlock)}
+                  style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    cursor: 'pointer', 
+                    userSelect: 'none',
+                    paddingBottom: showBibliotecaBlock ? '0.75rem' : '0',
+                    borderBottom: showBibliotecaBlock ? '1px solid #f1f5f9' : 'none'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      📚 Biblioteca Digital de Recursos
+                    </h3>
+                    <span style={{ 
+                      fontSize: '0.75rem', 
+                      fontWeight: 800, 
+                      padding: '0.25rem 0.6rem', 
+                      borderRadius: '12px',
+                      background: churchResources.length >= 25 ? '#fee2e2' : '#f1f5f9',
+                      color: churchResources.length >= 25 ? '#dc2626' : '#475569',
+                      border: churchResources.length >= 25 ? '1px solid #fecdd3' : '1px solid #cbd5e1'
+                    }}>
+                      {churchResources.length} / 25 recursos {churchResources.length >= 25 ? '(Máximo alcanzado)' : ''}
+                    </span>
                   </div>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', fontWeight: 600, fontSize: '0.75rem', marginBottom: '0.25rem' }}>URL / Enlace del Recurso</label>
-                    <input 
-                      type="text" 
-                      value={newRecUrl} 
-                      onChange={(e) => setNewRecUrl(e.target.value)} 
-                      style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} 
-                      placeholder="Ej: https://miiglesia.com/recursos/libro.pdf"
-                    />
-                  </div>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', fontWeight: 600, fontSize: '0.75rem', marginBottom: '0.25rem' }}>Breve Descripción</label>
-                    <input 
-                      type="text" 
-                      value={newRecDesc} 
-                      onChange={(e) => setNewRecDesc(e.target.value)} 
-                      style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} 
-                      placeholder="Ej: Guía de estudio para nuevos creyentes en grupos pequeños."
-                    />
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <button type="button" onClick={handleAddResource} className={styles.btnPrimary} style={{ fontSize: '0.85rem', padding: '0.4rem 1.25rem' }}>
-                      + Cargar Recurso
-                    </button>
-                  </div>
+
+                  <button 
+                    type="button" 
+                    style={{ 
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      padding: '0.35rem 0.85rem', 
+                      background: showBibliotecaBlock ? '#f1f5f9' : '#f0f9ff', 
+                      color: showBibliotecaBlock ? '#475569' : '#0284c7', 
+                      border: '1px solid', 
+                      borderColor: showBibliotecaBlock ? '#cbd5e1' : '#bae6fd', 
+                      borderRadius: '8px', 
+                      fontWeight: 700, 
+                      fontSize: '0.8rem', 
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <span>{showBibliotecaBlock ? '▲ Ocultar Recursos' : '▼ Desplegar Recursos'}</span>
+                  </button>
                 </div>
 
-                {/* Listado de Recursos */}
-                {churchResources.length === 0 ? (
-                  <p style={{ color: '#94a3b8', fontSize: '0.85rem', fontStyle: 'italic' }}>No hay recursos cargados.</p>
-                ) : (
-                  <table className={styles.table} style={{ fontSize: '0.9rem' }}>
-                    <thead>
-                      <tr>
-                        <th>Título</th>
-                        <th>Tipo</th>
-                        <th>Descripción</th>
-                        <th style={{ width: '80px', textAlign: 'center' }}>Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {churchResources.map((rec) => (
-                        <tr key={rec.id}>
-                          <td style={{ fontWeight: 600 }}>{rec.titulo}</td>
-                          <td>
-                            <span style={{ fontSize: '0.75rem', background: '#e2e8f0', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
-                              {rec.tipo}
-                            </span>
-                          </td>
-                          <td style={{ color: '#64748b' }}>{rec.descripcion}</td>
-                          <td style={{ textAlign: 'center' }}>
-                            <button 
-                              type="button" 
-                              onClick={() => handleRemoveResource(rec.id)} 
-                              style={{ 
-                                background: 'none',
-                                border: 'none',
-                                color: '#f43f5e',
-                                cursor: 'pointer',
-                                padding: '4px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                transition: 'color 0.2s',
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.style.color = '#e11d48'}
-                              onMouseLeave={(e) => e.currentTarget.style.color = '#f43f5e'}
-                              title="Remover recurso"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
+                {showBibliotecaBlock && (
+                  <div style={{ marginTop: '1rem' }}>
+                    {/* Formulario Agregar Recurso */}
+                    <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '10px', border: '1px dashed #cbd5e1', marginBottom: '1.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                        <h4 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, color: '#334155' }}>📚 Cargar Nuevo Recurso</h4>
+                        <span style={{ fontSize: '0.78rem', color: churchResources.length >= 25 ? '#dc2626' : '#64748b', fontWeight: 600 }}>
+                          Límite disponible: {25 - churchResources.length} espacio(s)
+                        </span>
+                      </div>
 
+                      {churchResources.length >= 25 ? (
+                        <div style={{ padding: '0.75rem', background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '8px', color: '#be123c', fontSize: '0.85rem', fontWeight: 600 }}>
+                          ⚠️ Has alcanzado el límite máximo permitido de 25 recursos en la Biblioteca Digital. Para agregar un nuevo contenido, debes eliminar uno de los elementos de la lista inferior.
+                        </div>
+                      ) : (
+                        <>
+                          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                            <div>
+                              <label style={{ display: 'block', fontWeight: 600, fontSize: '0.75rem', marginBottom: '0.25rem' }}>Título del Recurso</label>
+                              <input 
+                                type="text" 
+                                value={newRecTitle} 
+                                onChange={(e) => setNewRecTitle(e.target.value)} 
+                                style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} 
+                                placeholder="Ej: Libro de Discipulado"
+                              />
+                            </div>
+                            <div>
+                              <label style={{ display: 'block', fontWeight: 600, fontSize: '0.75rem', marginBottom: '0.25rem' }}>Categoría</label>
+                              <select
+                                value={newRecCategory}
+                                onChange={(e) => setNewRecCategory(e.target.value)}
+                                style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', backgroundColor: 'white' }}
+                              >
+                                <option value="Estudios Bíblicos">Estudios Bíblicos</option>
+                                <option value="Sermones y Predicas">Sermones y Prédicas</option>
+                                <option value="Manuales y Guías">Manuales y Guías</option>
+                                <option value="Jóvenes y Niños">Jóvenes y Niños</option>
+                                <option value="Eventos Especiales">Eventos Especiales</option>
+                                <option value="General">General</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label style={{ display: 'block', fontWeight: 600, fontSize: '0.75rem', marginBottom: '0.25rem' }}>Tipo de Recurso</label>
+                              <select 
+                                value={newRecType} 
+                                onChange={(e) => setNewRecType(e.target.value)} 
+                                style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', backgroundColor: 'white' }} 
+                              >
+                                <option value="LINK">🌐 Link / Sitio Web</option>
+                                <option value="PDF">📄 Documento PDF / Guía</option>
+                                <option value="VIDEO">📺 Video (YouTube / Vimeo)</option>
+                                <option value="GALERIA">🖼️ Fotografía / Galería de Fotos</option>
+                                <option value="AUDIO">🎧 Audio / Podcast / Prédica</option>
+                                <option value="BLOG">✍️ Artículo / Reflexión Escrita</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div style={{ marginBottom: '1rem' }}>
+                            <label style={{ display: 'block', fontWeight: 600, fontSize: '0.75rem', marginBottom: '0.25rem' }}>URL / Enlace del Recurso</label>
+                            <input 
+                              type="text" 
+                              value={newRecUrl} 
+                              onChange={(e) => setNewRecUrl(e.target.value)} 
+                              style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} 
+                              placeholder="Ej: https://miiglesia.com/recursos/libro.pdf"
+                            />
+                          </div>
+                          <div style={{ marginBottom: '1rem' }}>
+                            <label style={{ display: 'block', fontWeight: 600, fontSize: '0.75rem', marginBottom: '0.25rem' }}>Breve Descripción</label>
+                            <input 
+                              type="text" 
+                              value={newRecDesc} 
+                              onChange={(e) => setNewRecDesc(e.target.value)} 
+                              style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} 
+                              placeholder="Ej: Guía de estudio para nuevos creyentes en grupos pequeños."
+                            />
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <button type="button" onClick={handleAddResource} className={styles.btnPrimary} style={{ fontSize: '0.85rem', padding: '0.4rem 1.25rem' }}>
+                              + Cargar Recurso
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Listado de Recursos */}
+                    {churchResources.length === 0 ? (
+                      <p style={{ color: '#94a3b8', fontSize: '0.85rem', fontStyle: 'italic' }}>No hay recursos cargados.</p>
+                    ) : (
+                      <table className={styles.table} style={{ fontSize: '0.9rem' }}>
+                        <thead>
+                          <tr>
+                            <th>Título</th>
+                            <th>Tipo</th>
+                            <th>Descripción</th>
+                            <th style={{ width: '80px', textAlign: 'center' }}>Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {churchResources.map((rec) => (
+                            <tr key={rec.id}>
+                              <td style={{ fontWeight: 600 }}>{rec.titulo}</td>
+                              <td>
+                                <span style={{ fontSize: '0.75rem', background: '#e2e8f0', color: '#475569', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                                  {rec.tipo}
+                                </span>
+                              </td>
+                              <td style={{ color: '#64748b' }}>{rec.descripcion}</td>
+                              <td style={{ textAlign: 'center' }}>
+                                <button 
+                                  type="button" 
+                                  onClick={() => handleRemoveResource(rec.id)} 
+                                  style={{ 
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#f43f5e',
+                                    cursor: 'pointer',
+                                    padding: '4px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'color 0.2s',
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.color = '#e11d48'}
+                                  onMouseLeave={(e) => e.currentTarget.style.color = '#f43f5e'}
+                                  title="Remover recurso"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Bloque: Opciones Personalizadas del Formulario de Registro */}
