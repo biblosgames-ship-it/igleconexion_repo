@@ -453,12 +453,35 @@ export default function Hub() {
 
   const regularEvents = events.filter((ev: any) => ev.tipo === "REGULAR");
   
-  const fechaLimite = new Date();
-  fechaLimite.setDate(fechaLimite.getDate() - 30);
-  const fechaLimiteStr = fechaLimite.toISOString().split("T")[0];
+  const hoyStr = new Date().toISOString().split("T")[0];
+  const en30Dias = new Date();
+  en30Dias.setDate(en30Dias.getDate() + 30);
+  const en30DiasStr = en30Dias.toISOString().split("T")[0];
 
-  const specialEvents = events
-    .filter((ev: any) => ev.tipo === "ESPECIAL" && ev.fecha >= fechaLimiteStr)
+  const specialEventsMap = new Map();
+  events.forEach((ev: any) => {
+    if (ev.tipo !== "ESPECIAL") return;
+    if (!ev.fecha) return;
+
+    // 1. Ignorar eventos pasados
+    if (ev.fecha < hoyStr) return;
+
+    // 2. Solo programación del mes (próximos 30 días)
+    if (ev.fecha > en30DiasStr) return;
+
+    // 3. Evitar duplicar eventos semanales regulares existentes
+    const coincideConSemanal = regularEvents.some(
+      (reg: any) => reg.titulo?.toLowerCase().trim() === ev.titulo?.toLowerCase().trim()
+    );
+    if (coincideConSemanal) return;
+
+    const key = `${ev.titulo?.toLowerCase().trim()}_${ev.fecha}`;
+    if (!specialEventsMap.has(key)) {
+      specialEventsMap.set(key, ev);
+    }
+  });
+
+  const specialEvents = Array.from(specialEventsMap.values())
     .sort((a: any, b: any) => a.fecha.localeCompare(b.fecha));
 
   const diasOrden = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
