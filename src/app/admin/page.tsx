@@ -415,6 +415,8 @@ const allSystemIcons = [
   const [estadoPago, setEstadoPago] = useState("PAGADO");
   const [churchOpcionesRegistro, setChurchOpcionesRegistro] = useState<any>({ medio_relacion: [] });
   const [newMedioOption, setNewMedioOption] = useState("");
+  const [gcalUrlInput, setGcalUrlInput] = useState("");
+  const [syncingGcal, setSyncingGcal] = useState(false);
 
   // Estados para configurar detalles de sociedad
   const [editingSoc, setEditingSoc] = useState<any | null>(null);
@@ -1146,6 +1148,51 @@ const allSystemIcons = [
 
   const handleRemoveResource = (id: string) => {
     setChurchResources(churchResources.filter(rec => rec.id !== id));
+  };
+
+  const handleSyncGoogleCalendar = async () => {
+    if (!gcalUrlInput.trim()) {
+      return alert("Ingresa el ID de tu Google Calendar (ej. tuiglesia@gmail.com) o su URL iCal pública.");
+    }
+    setSyncingGcal(true);
+    try {
+      const res = await fetch("/api/iglesia/google-calendar-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ calendarId: gcalUrlInput, calendarUrl: gcalUrlInput })
+      });
+      const data = await res.json();
+      if (res.ok && data.eventos) {
+        const newEventsList = [...churchEvents];
+        let importadosCount = 0;
+
+        for (const gEv of data.eventos) {
+          const yaExiste = newEventsList.some(e => e.titulo.toLowerCase() === gEv.titulo.toLowerCase() && e.fecha === gEv.fecha);
+          if (!yaExiste) {
+            newEventsList.push({
+              id: "gcal-" + Date.now() + "-" + Math.random().toString(36).substring(2, 6),
+              titulo: gEv.titulo,
+              descripcion: gEv.descripcion || "Evento sincronizado desde Google Calendar",
+              tipo: gEv.tipo || "ESPECIAL",
+              fecha: gEv.fecha,
+              hora: gEv.hora,
+              diaSemana: "Lunes",
+              sociedadId: null
+            });
+            importadosCount++;
+          }
+        }
+
+        setChurchEvents(newEventsList);
+        alert(`✅ ¡Sincronización Exitosa! Se agregaron ${importadosCount} eventos desde Google Calendar directamente a la Agenda.`);
+      } else {
+        alert("Aviso: " + (data.error || "Asegúrate de que tu calendario de Google esté configurado como Público en los ajustes de Google Calendar."));
+      }
+    } catch (e) {
+      alert("Error de conexión al sincronizar Google Calendar.");
+    } finally {
+      setSyncingGcal(false);
+    }
   };
 
   const handleSaveChurchConfig = async (e?: React.FormEvent) => {
@@ -3228,9 +3275,59 @@ const allSystemIcons = [
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 700, borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem', marginBottom: '1rem', color: '#1e293b' }}>
                   🗓️ Programar Nueva Actividad
                 </h3>
+
+                {/* Sincronización Automática con Google Calendar */}
+                <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0369a1', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      📅 Sincronización Automática con Google Calendar
+                    </h4>
+                    <span style={{ fontSize: '0.75rem', background: '#e0f2fe', color: '#0284c7', padding: '0.2rem 0.6rem', borderRadius: '12px', fontWeight: 700 }}>
+                      Importación Directa
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '0.85rem', color: '#334155', margin: '0 0 1rem 0', lineHeight: '1.4' }}>
+                    Vincular tu <strong>Google Calendar público</strong> permite importar automáticamente todos los eventos agendados sin necesidad de escribirlos manualmente uno por uno.
+                  </p>
+
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                    <div style={{ flex: 1, minWidth: '260px' }}>
+                      <label style={{ display: 'block', fontWeight: 700, fontSize: '0.78rem', color: '#475569', marginBottom: '0.25rem' }}>
+                        ID o URL Pública de Google Calendar (.ics)
+                      </label>
+                      <input 
+                        type="text" 
+                        value={gcalUrlInput} 
+                        onChange={(e) => setGcalUrlInput(e.target.value)} 
+                        placeholder="Ej: tuiglesia@gmail.com o https://calendar.google.com/calendar/ical/.../public/basic.ics"
+                        style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', backgroundColor: 'white' }}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSyncGoogleCalendar}
+                      disabled={syncingGcal}
+                      style={{ 
+                        padding: '0.55rem 1.25rem', 
+                        background: syncingGcal ? '#94a3b8' : '#0284c7', 
+                        color: 'white', 
+                        border: 'none', 
+                        borderRadius: '8px', 
+                        fontWeight: 700, 
+                        fontSize: '0.85rem', 
+                        cursor: syncingGcal ? 'wait' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      {syncingGcal ? '⏳ Sincronizando...' : '🔄 Sincronizar Google Calendar'}
+                    </button>
+                  </div>
+                </div>
                 
                 <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px dashed #cbd5e1', marginBottom: '1.5rem' }}>
-                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.75rem', color: '#334155' }}>🗓️ Programar Nueva Actividad</h4>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.75rem', color: '#334155' }}>🗓️ Programar Nueva Actividad Manual</h4>
                   <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                     <div>
                       <label style={{ display: 'block', fontWeight: 600, fontSize: '0.75rem', marginBottom: '0.25rem' }}>Título de la Actividad</label>
