@@ -567,6 +567,9 @@ const allSystemIcons = [
           setChurchGoogleMaps(dataIgl.link_google_maps || "");
           setChurchWaze(dataIgl.link_waze || "");
           setChurchSocials(dataIgl.redes_sociales || { facebook: "", instagram: "", youtube: "" });
+          if (dataIgl.redes_sociales?.google_calendar_url) {
+            setGcalUrlInput(dataIgl.redes_sociales.google_calendar_url);
+          }
           setChurchEvents(dataIgl.eventos || []);
           setChurchResources(dataIgl.recursos || []);
           setChurchPlan(dataIgl.plan || "BASICO");
@@ -1183,8 +1186,12 @@ const allSystemIcons = [
           }
         }
 
-        setChurchEvents(newEventsList);
-        alert(`✅ ¡Sincronización Exitosa! Se agregaron ${importadosCount} eventos desde Google Calendar directamente a la Agenda.`);
+        if (data.googleCalendarUrl) {
+          setGcalUrlInput(data.googleCalendarUrl);
+          setChurchSocials((prev: any) => ({ ...prev, google_calendar_url: data.googleCalendarUrl }));
+        }
+        setChurchEvents(data.eventos || newEventsList);
+        alert(`✅ ¡Sincronización Exitosa! Se agregaron ${data.nuevosImportados ?? importadosCount} nuevos eventos desde Google Calendar directamente a la Agenda.`);
       } else {
         alert("Aviso: " + (data.error || "Asegúrate de que tu calendario de Google esté configurado como Público en los ajustes de Google Calendar."));
       }

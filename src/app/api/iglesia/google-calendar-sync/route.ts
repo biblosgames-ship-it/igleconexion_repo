@@ -9,7 +9,6 @@ function parseICalEvents(icsText: string) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Parsear eventos hasta 180 días (6 meses / resto del año) en el futuro
   const maxFutureDate = new Date();
   maxFutureDate.setDate(today.getDate() + 180);
   maxFutureDate.setHours(23, 59, 59, 999);
@@ -55,10 +54,7 @@ function parseICalEvents(icsText: string) {
 
       const eventDate = new Date(year, month, day, hour, min);
 
-      // FILTRO 1: Ignorar eventos pasados
       if (eventDate < today) continue;
-
-      // FILTRO 2: Guardar eventos de los próximos 6 meses (hasta fin de año)
       if (eventDate > maxFutureDate) continue;
 
       const fechaFormatted = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -74,10 +70,8 @@ function parseICalEvents(icsText: string) {
     }
   }
 
-  // Ordenar cronológicamente por fecha
   events.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 
-  // Deduplicar por título y fecha exacta
   const uniqueMap = new Map();
   for (const ev of events) {
     const key = `${ev.titulo.toLowerCase().trim()}_${ev.fecha}`;
@@ -106,15 +100,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Se requiere una URL de iCal (.ics) o ID de Google Calendar" }, { status: 400 });
     }
 
-    if (targetUrl.includes("calendar.google.com/calendar/embed") || targetUrl.includes("calendar.google.com/calendar/u/")) {
-      const match = targetUrl.match(/src=([^&]+)/);
+    let fetchUrl = targetUrl;
+    if (fetchUrl.includes("calendar.google.com/calendar/embed") || fetchUrl.includes("calendar.google.com/calendar/u/")) {
+      const match = fetchUrl.match(/src=([^&]+)/);
       if (match && match[1]) {
         const cid = decodeURIComponent(match[1]);
-        targetUrl = `https://calendar.google.com/calendar/ical/${encodeURIComponent(cid)}/public/basic.ics`;
+        fetchUrl = `https://calendar.google.com/calendar/ical/${encodeURIComponent(cid)}/public/basic.ics`;
       }
     }
 
-    const response = await fetch(targetUrl, { headers: { "User-Agent": "Mozilla/5.0 (Igleconet-Sync)" } });
+    const response = await fetch(fetchUrl, { headers: { "User-Agent": "Mozilla/5.0 (Igleconet-Sync)" } });
     if (!response.ok) {
       return NextResponse.json({
         error: `No se pudo conectar con Google Calendar (Código HTTP ${response.status}). Verifica que el calendario esté configurado como Público en los ajustes de Google Calendar.`
@@ -128,14 +123,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No se encontraron eventos futuros en Google Calendar." }, { status: 404 });
     }
 
-    // Cargar iglesia actual para combinar eventos
+    // Cargar iglesia actual para combinar eventos y guardar URL de Google Calendar
     const iglesia = await prisma.iglesia.findUnique({ where: { id: iglesiaId } });
     let existingEvents: any[] = [];
     if (iglesia?.eventos) {
       try { existingEvents = JSON.parse(iglesia.eventos); } catch (e) {}
     }
 
-    // Filtrar duplicados con eventos existentes
+    let redes: any = {};
+    if (iglesia?.redes_sociales) {
+      try { redes = JSON.parse(iglesia.redes_sociales); } catch (e) {}
+    }
+    redes.google_calendar_url = targetUrl;
+
     const newEventsToAdd: any[] = [];
     let countImportados = 0;
 
@@ -161,14 +161,18 @@ export async function POST(request: Request) {
 
     const updatedEventsList = [...existingEvents, ...newEventsToAdd];
 
-    // Persistir directamente en la base de datos
+    // Persistir directamente los eventos Y la URL guardada del calendario
     await prisma.iglesia.update({
       where: { id: iglesiaId },
-      data: { eventos: JSON.stringify(updatedEventsList) }
+      data: {
+        eventos: JSON.stringify(updatedEventsList),
+        redes_sociales: JSON.stringify(redes)
+      }
     });
 
     return NextResponse.json({
       success: true,
+      googleCalendarUrl: targetUrl,
       totalProximosMeses: parsedEvents.length,
       nuevosImportados: countImportados,
       eventos: updatedEventsList
