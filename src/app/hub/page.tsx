@@ -454,9 +454,6 @@ export default function Hub() {
   const regularEvents = events.filter((ev: any) => ev.tipo === "REGULAR");
   
   const hoyStr = new Date().toISOString().split("T")[0];
-  const en30Dias = new Date();
-  en30Dias.setDate(en30Dias.getDate() + 30);
-  const en30DiasStr = en30Dias.toISOString().split("T")[0];
 
   const specialEventsMap = new Map();
   events.forEach((ev: any) => {
@@ -466,10 +463,7 @@ export default function Hub() {
     // 1. Ignorar eventos pasados
     if (ev.fecha < hoyStr) return;
 
-    // 2. Solo programación del mes (próximos 30 días)
-    if (ev.fecha > en30DiasStr) return;
-
-    // 3. Evitar duplicar eventos semanales regulares existentes
+    // 2. Evitar duplicar eventos semanales regulares existentes
     const coincideConSemanal = regularEvents.some(
       (reg: any) => reg.titulo?.toLowerCase().trim() === ev.titulo?.toLowerCase().trim()
     );
@@ -481,8 +475,10 @@ export default function Hub() {
     }
   });
 
+  // Tomar los PRÓXIMOS 5 EVENTOS ESPECIALES sin importar la distancia de la fecha
   const specialEvents = Array.from(specialEventsMap.values())
-    .sort((a: any, b: any) => a.fecha.localeCompare(b.fecha));
+    .sort((a: any, b: any) => a.fecha.localeCompare(b.fecha))
+    .slice(0, 5);
 
   const diasOrden = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
   const regularEventsSorted = [...regularEvents].sort((a: any, b: any) => {
@@ -1150,7 +1146,11 @@ export default function Hub() {
                           </span>
                         )}
                       </div>
-                      {ev.descripcion && <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>{ev.descripcion}</p>}
+                      {ev.descripcion && (
+                        <div style={{ fontSize: '0.81rem', color: '#475569', backgroundColor: '#f8fafc', padding: '0.4rem 0.65rem', borderRadius: '6px', borderLeft: '2px solid #f59e0b', marginTop: '0.25rem', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                          📝 {ev.descripcion}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -1575,7 +1575,11 @@ export default function Hub() {
                               <span style={{ fontSize: '0.78rem', color: '#d97706', fontWeight: 700, display: 'block', marginBottom: '0.15rem' }}>
                                 🗓️ {formatFriendlyDate(ev.fecha)} {ev.hora ? `@ ${ev.hora}` : ''}
                               </span>
-                              {ev.descripcion && <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0 }}>{ev.descripcion}</p>}
+                              {ev.descripcion && (
+                                <div style={{ fontSize: '0.81rem', color: '#475569', backgroundColor: '#f8fafc', padding: '0.4rem 0.65rem', borderRadius: '6px', borderLeft: '2px solid #f59e0b', marginTop: '0.25rem', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                                  📝 {ev.descripcion}
+                                </div>
+                              )}
                             </div>
                           );
                         })}
