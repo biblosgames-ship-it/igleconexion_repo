@@ -869,25 +869,35 @@ export async function POST(request: Request) {
       }
 
       case "bulkImportMiembros": {
-        const { rows, grupo_conexion_id } = data; // Array of { sociedadName, grupoName, nombre, correo, telefono, sexo, edad }
+        const { rows, grupo_conexion_id } = data; // Array of { sociedadName, grupoName, nombre, correo, telefono, sexo, edad, etapaName, estadoCivil, direccion }
         const defaultIglesiaId = await getActiveChurchId();
 
-        // Encontrar Etapa 2 (Nuevo Creyente) como predeterminada
-        const etapa = await prisma.etapaConfig.findFirst({
-          where: {
-            iglesia_id: defaultIglesiaId,
-            orden_secuencial: 2,
-          },
+        // Obtener etapas registradas de la iglesia
+        const etapas = await prisma.etapaConfig.findMany({
+          where: { iglesia_id: defaultIglesiaId },
+          orderBy: { orden_secuencial: "asc" },
         });
-        const etapaId = etapa ? etapa.id : "etapa-2";
+        const defaultEtapaId = etapas[0]?.id || "etapa-1";
 
         const imported = [];
         const errors = [];
 
         for (const row of rows) {
           try {
-            const { sociedadName, grupoName, nombre, correo, telefono, sexo, edad } = row;
+            const { sociedadName, grupoName, nombre, correo, telefono, sexo, edad, etapaName, estadoCivil, direccion } = row;
             if (!nombre || !nombre.trim()) continue;
+
+            // Determinar Etapa de Crecimiento Espiritual por nombre de columna
+            let etapaId = defaultEtapaId;
+            if (etapaName && etapaName.trim()) {
+              const cleanEtapa = etapaName.trim().toLowerCase();
+              const matchedEtapa = etapas.find(e => 
+                e.nombre_etapa.toLowerCase().includes(cleanEtapa) || cleanEtapa.includes(e.nombre_etapa.toLowerCase())
+              );
+              if (matchedEtapa) {
+                etapaId = matchedEtapa.id;
+              }
+            }
 
             // Evitar duplicados por correo o teléfono
             let existing = null;
@@ -916,14 +926,11 @@ export async function POST(request: Request) {
             // Buscar grupo de conexión por nombre o usar el asignado
             let grupoId = grupo_conexion_id || null;
             if (!grupoId && grupoName && grupoName.trim()) {
-              // Buscar primero sociedad si se especificó
               let socId = null;
               if (sociedadName && sociedadName.trim()) {
                 const soc = await prisma.sociedad.findFirst({
                   where: {
-                    nombre_sociedad: {
-                      contains: sociedadName.trim()
-                    },
+                    nombre_sociedad: { contains: sociedadName.trim() },
                     iglesia_id: defaultIglesiaId
                   }
                 });
@@ -932,9 +939,7 @@ export async function POST(request: Request) {
 
               const grupo = await prisma.grupoConexion.findFirst({
                 where: {
-                  nombre_grupo: {
-                    contains: grupoName.trim()
-                  },
+                  nombre_grupo: { contains: grupoName.trim() },
                   sociedad: socId ? { id: socId } : { iglesia_id: defaultIglesiaId }
                 }
               });
@@ -943,7 +948,7 @@ export async function POST(request: Request) {
               }
             }
 
-            // Si no se especificó o no se encontró el grupo, hacer asignación automática por edad y sexo
+            // Si no se especificó el grupo, hacer asignación por edad y sexo
             if (!grupoId && sexo && edad) {
               const ageVal = parseInt(edad);
               const cleanSexo = sexo.trim().toUpperCase();
@@ -963,7 +968,7 @@ export async function POST(request: Request) {
             }
 
             if (existing) {
-              // Actualizar perfil
+              // Actualizar perfil existente
               const updated = await prisma.persona.update({
                 where: { id: existing.id },
                 data: {
@@ -973,12 +978,15 @@ export async function POST(request: Request) {
                   whatsapp: telefono ? telefono.trim() : existing.whatsapp,
                   sexo: sexo ? sexo.trim().toUpperCase() : existing.sexo,
                   fecha_nacimiento: fechaNac || existing.fecha_nacimiento,
+                  etapa_id: etapaId || existing.etapa_id,
+                  estado_civil: estadoCivil ? estadoCivil.trim() : existing.estado_civil,
+                  calle: direccion ? direccion.trim() : existing.calle,
                   grupo_conexion_id: grupoId || existing.grupo_conexion_id,
                 }
               });
               imported.push(updated);
             } else {
-              // Crear nuevo perfil de Persona (sin cuenta de usuario)
+              // Crear nuevo perfil de Persona
               const created = await prisma.persona.create({
                 data: {
                   iglesia_id: defaultIglesiaId,
@@ -989,6 +997,8 @@ export async function POST(request: Request) {
                   whatsapp: telefono ? telefono.trim() : null,
                   sexo: sexo ? sexo.trim().toUpperCase() : "MIXTO",
                   fecha_nacimiento: fechaNac,
+                  estado_civil: estadoCivil ? estadoCivil.trim() : null,
+                  calle: direccion ? direccion.trim() : null,
                   grupo_conexion_id: grupoId,
                 }
               });

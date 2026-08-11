@@ -8596,18 +8596,18 @@ function BulkImportSection({ gruposConexion, sociedades }: { gruposConexion: any
   const handleDownloadTemplate = () => {
     let csvContent = "\uFEFF"; // UTF-8 BOM para Excel
     if (selectedImportGroupId) {
-      csvContent += "Nombre Completo,Correo,Teléfono\n";
-      csvContent += "Juan Pérez,juan.perez@email.com,8095551234\n";
-      csvContent += "María Gómez,maria.gomez@email.com,8095555678\n";
+      csvContent += "Nombre Completo,Correo,Teléfono,Sexo,Edad,Etapa de Crecimiento,Estado Civil,Dirección\n";
+      csvContent += `"Juan Pérez","juan.perez@email.com","8095551234","M","25","Nuevo Creyente","Soltero/a","Calle Principal #12"\n`;
+      csvContent += `"María Gómez","maria.gomez@email.com","8095555678","F","28","Discipulado","Casado/a","Av. Central #45"\n`;
     } else {
-      csvContent += "Sociedad,Grupo de Conexión,Nombre Completo,Correo,Teléfono,Sexo,Edad\n";
+      csvContent += "Sociedad,Grupo de Conexión,Nombre Completo,Correo,Teléfono,Sexo,Edad,Etapa de Crecimiento,Estado Civil,Dirección\n";
       if (gruposConexion && gruposConexion.length > 0) {
         gruposConexion.forEach((g: any) => {
           const socName = sociedades.find((s: any) => s.id === g.sociedad_id)?.nombre_sociedad || "Sociedad General";
-          csvContent += `"${socName}","${g.nombre_grupo}","Ejemplo ${g.nombre_grupo}","ejemplo@email.com","8095550000","M","30"\n`;
+          csvContent += `"${socName}","${g.nombre_grupo}","Ejemplo ${g.nombre_grupo}","ejemplo@email.com","8095550000","M","30","Nuevo Creyente","Soltero/a","Calle 1 #5"\n`;
         });
       } else {
-        csvContent += `"Sociedad de Honor","Grupo Jóvenes","Juan Pérez","juan.perez@email.com","8095551234","M","25"\n`;
+        csvContent += `"Sociedad de Jóvenes","Grupo Jóvenes","Juan Pérez","juan.perez@email.com","8095551234","M","25","Bautismo","Soltero/a","Calle 1 #5"\n`;
       }
     }
 
@@ -8615,7 +8615,7 @@ function BulkImportSection({ gruposConexion, sociedades }: { gruposConexion: any
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", selectedImportGroupId ? "plantilla_grupo_conexion.csv" : "plantilla_importacion_miembros.csv");
+    link.setAttribute("download", selectedImportGroupId ? "plantilla_grupo_conexion_completa.csv" : "plantilla_importacion_miembros_completa.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -8663,14 +8663,22 @@ function BulkImportSection({ gruposConexion, sociedades }: { gruposConexion: any
       let telefono = "";
       let sexo = "";
       let edad = "";
+      let etapaName = "";
+      let estadoCivil = "";
+      let direccion = "";
 
       if (selectedImportGroupId) {
-        // Formato simple de grupo directo: Nombre | Correo | Teléfono
+        // Formato simple de grupo directo: Nombre | Correo | Teléfono | Sexo | Edad | Etapa | Estado Civil | Dirección
         nombre = parts[0]?.trim()?.replace(/^"|"$/g, '') || "";
         correo = parts[1]?.trim()?.replace(/^"|"$/g, '') || "";
         telefono = parts[2]?.trim()?.replace(/^"|"$/g, '') || "";
+        sexo = parts[3]?.trim()?.replace(/^"|"$/g, '') || "";
+        edad = parts[4]?.trim()?.replace(/^"|"$/g, '') || "";
+        etapaName = parts[5]?.trim()?.replace(/^"|"$/g, '') || "";
+        estadoCivil = parts[6]?.trim()?.replace(/^"|"$/g, '') || "";
+        direccion = parts[7]?.trim()?.replace(/^"|"$/g, '') || "";
       } else {
-        // Formato completo clasificado: Sociedad | Grupo | Nombre | Correo | Teléfono | Sexo | Edad
+        // Formato completo clasificado: Sociedad | Grupo | Nombre | Correo | Teléfono | Sexo | Edad | Etapa | Estado Civil | Dirección
         sociedadName = parts[0]?.trim()?.replace(/^"|"$/g, '') || "";
         grupoName = parts[1]?.trim()?.replace(/^"|"$/g, '') || "";
         nombre = parts[2]?.trim()?.replace(/^"|"$/g, '') || "";
@@ -8678,10 +8686,13 @@ function BulkImportSection({ gruposConexion, sociedades }: { gruposConexion: any
         telefono = parts[4]?.trim()?.replace(/^"|"$/g, '') || "";
         sexo = parts[5]?.trim()?.replace(/^"|"$/g, '') || "";
         edad = parts[6]?.trim()?.replace(/^"|"$/g, '') || "";
+        etapaName = parts[7]?.trim()?.replace(/^"|"$/g, '') || "";
+        estadoCivil = parts[8]?.trim()?.replace(/^"|"$/g, '') || "";
+        direccion = parts[9]?.trim()?.replace(/^"|"$/g, '') || "";
       }
 
       if (nombre) {
-        rows.push({ sociedadName, grupoName, nombre, correo, telefono, sexo, edad });
+        rows.push({ sociedadName, grupoName, nombre, correo, telefono, sexo, edad, etapaName, estadoCivil, direccion });
       }
     }
 
@@ -8729,7 +8740,7 @@ function BulkImportSection({ gruposConexion, sociedades }: { gruposConexion: any
     <div>
       <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.25rem' }}>📥 Carga Masiva de Miembros</h2>
       <p style={{ color: '#64748b', marginBottom: '1.25rem', fontSize: '0.88rem' }}>
-        Importa múltiples miembros al mismo tiempo descargando nuestra plantilla de Excel o cargando tu archivo directamente.
+        Importa múltiples miembros al mismo tiempo descargando nuestra plantilla de Excel completa o cargando tu archivo directamente.
       </p>
 
       <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
@@ -8740,7 +8751,7 @@ function BulkImportSection({ gruposConexion, sociedades }: { gruposConexion: any
             type="button"
             style={{ padding: '0.55rem 1.1rem', background: '#16a34a', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 2px 4px rgba(22,163,74,0.2)' }}
           >
-            📥 Descargar Plantilla en Excel (.csv)
+            📥 Descargar Plantilla Completa en Excel (.csv)
           </button>
           <label style={{ padding: '0.55rem 1.1rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 2px 4px rgba(2,132,199,0.2)' }}>
             📁 Seleccionar Archivo Excel / CSV
@@ -8776,19 +8787,19 @@ function BulkImportSection({ gruposConexion, sociedades }: { gruposConexion: any
         {selectedImportGroupId ? (
           <p style={{ fontSize: '0.82rem', color: '#475569', lineHeight: '1.5', margin: 0 }}>
             Has elegido cargar directamente al grupo: <strong>{selectedGroup?.nombre_grupo} ({selectedGroupSocName})</strong>.<br />
-            1. Copia y pega un listado simple de tu Excel con el siguiente orden de columnas:<br />
-            <span style={{ display: 'inline-block', background: '#e0f2fe', color: '#0369a1', padding: '0.2rem 0.5rem', borderRadius: '4px', margin: '0.25rem 0', fontFamily: 'monospace', fontWeight: 600 }}>
-              Nombre Completo | Correo (Opcional) | Teléfono (Opcional)
+            1. Copia y pega un listado de tu Excel con las columnas en el siguiente orden:<br />
+            <span style={{ display: 'inline-block', background: '#e0f2fe', color: '#0369a1', padding: '0.25rem 0.6rem', borderRadius: '4px', margin: '0.25rem 0', fontFamily: 'monospace', fontWeight: 600, fontSize: '0.78rem' }}>
+              Nombre Completo | Correo | Teléfono | Sexo (M/F) | Edad | Etapa de Crecimiento | Estado Civil | Dirección
             </span><br />
-            2. Todos los miembros serán agregados a este grupo sin necesidad de registrar datos demográficos adicionales.
+            2. Todos los miembros serán agregados a este grupo con sus datos asignados automáticamente.
           </p>
         ) : (
           <p style={{ fontSize: '0.82rem', color: '#475569', lineHeight: '1.5', margin: 0 }}>
             1. Copia y pega las filas de tu Excel clasificado. Las columnas deben ir en el siguiente orden:<br />
-            <span style={{ display: 'inline-block', background: '#f1f5f9', color: '#334155', padding: '0.2rem 0.5rem', borderRadius: '4px', margin: '0.25rem 0', fontFamily: 'monospace', fontWeight: 600 }}>
-              Sociedad | Grupo de Conexión | Nombre Completo | Correo (Opcional) | Teléfono (Opcional) | Sexo (Opcional) | Edad (Opcional)
+            <span style={{ display: 'inline-block', background: '#f1f5f9', color: '#334155', padding: '0.25rem 0.6rem', borderRadius: '4px', margin: '0.25rem 0', fontFamily: 'monospace', fontWeight: 600, fontSize: '0.78rem' }}>
+              Sociedad | Grupo de Conexión | Nombre Completo | Correo | Teléfono | Sexo | Edad | Etapa de Crecimiento | Estado Civil | Dirección
             </span><br />
-            2. El sistema buscará automáticamente la sociedad y el grupo en base a los nombres que ingreses en las primeras dos columnas y vinculará a los miembros directamente a su grupo de conexión correspondiente.
+            2. El sistema vinculará a los miembros directamente a su grupo y sociedad correspondientes, asignándoles su Etapa de Crecimiento Espiritual según la columna.
           </p>
         )}
 
