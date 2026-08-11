@@ -8,19 +8,19 @@ const configPath = path.join(process.cwd(), "src/lib/plans-config.json");
 
 const defaultConfigs = {
   BASICO: {
-    limite_personas: 50,
-    limite_usuarios: 5,
-    precio_mensual: 29.99
+    limite_personas: 100,
+    limite_usuarios: 15,
+    precio_mensual: 15
   },
   PREMIUM: {
-    limite_personas: 250,
-    limite_usuarios: 15,
-    precio_mensual: 79.99
+    limite_personas: 500,
+    limite_usuarios: 50,
+    precio_mensual: 30
   },
   PRO: {
     limite_personas: 9999,
-    limite_usuarios: 99,
-    precio_mensual: 199.99
+    limite_usuarios: 100,
+    precio_mensual: 50
   }
 };
 
@@ -38,6 +38,25 @@ function readConfig() {
   }
 }
 
+// Sincroniza automáticamente los límites y precios de todas las iglesias en la base de datos según su plan asignado
+async function syncChurchesWithPlans(config: Record<string, any>) {
+  try {
+    for (const [planKey, cfg] of Object.entries(config)) {
+      if (!cfg) continue;
+      await prisma.iglesia.updateMany({
+        where: { plan: planKey },
+        data: {
+          limite_personas: parseInt(cfg.limite_personas) || 100,
+          limite_usuarios: parseInt(cfg.limite_usuarios) || 15,
+          precio_mensual: parseFloat(cfg.precio_mensual) || 15
+        }
+      });
+    }
+  } catch (e) {
+    console.error("Error syncing churches with plans:", e);
+  }
+}
+
 export async function GET() {
   try {
     const userId = await getSessionUserId();
@@ -52,6 +71,7 @@ export async function GET() {
     }
 
     const config = readConfig();
+    await syncChurchesWithPlans(config);
     return NextResponse.json(config);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -77,26 +97,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Estructura de configuración inválida" }, { status: 400 });
     }
 
-    // Convert string inputs to proper numbers
     const cleanedConfig = {
       BASICO: {
-        limite_personas: parseInt(newConfig.BASICO.limite_personas) || 50,
-        limite_usuarios: parseInt(newConfig.BASICO.limite_usuarios) || 5,
-        precio_mensual: parseFloat(newConfig.BASICO.precio_mensual) || 29.99
+        limite_personas: parseInt(newConfig.BASICO.limite_personas) || 100,
+        limite_usuarios: parseInt(newConfig.BASICO.limite_usuarios) || 15,
+        precio_mensual: parseFloat(newConfig.BASICO.precio_mensual) || 15
       },
       PREMIUM: {
-        limite_personas: parseInt(newConfig.PREMIUM.limite_personas) || 250,
-        limite_usuarios: parseInt(newConfig.PREMIUM.limite_usuarios) || 15,
-        precio_mensual: parseFloat(newConfig.PREMIUM.precio_mensual) || 79.99
+        limite_personas: parseInt(newConfig.PREMIUM.limite_personas) || 500,
+        limite_usuarios: parseInt(newConfig.PREMIUM.limite_usuarios) || 50,
+        precio_mensual: parseFloat(newConfig.PREMIUM.precio_mensual) || 30
       },
       PRO: {
         limite_personas: parseInt(newConfig.PRO.limite_personas) || 9999,
-        limite_usuarios: parseInt(newConfig.PRO.limite_usuarios) || 99,
-        precio_mensual: parseFloat(newConfig.PRO.precio_mensual) || 199.99
+        limite_usuarios: parseInt(newConfig.PRO.limite_usuarios) || 100,
+        precio_mensual: parseFloat(newConfig.PRO.precio_mensual) || 50
       }
     };
 
     fs.writeFileSync(configPath, JSON.stringify(cleanedConfig, null, 2));
+    await syncChurchesWithPlans(cleanedConfig);
+
     return NextResponse.json({ success: true, config: cleanedConfig });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

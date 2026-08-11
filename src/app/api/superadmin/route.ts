@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUserId } from "@/lib/active-church";
+import fs from "fs";
+import path from "path";
 
 // Helper function to generate unique activation codes
 function generateRandomCode() {
@@ -176,14 +178,31 @@ export async function POST(request: Request) {
       }
 
       // B. Cambio de Plan de Iglesias
-      case "changeChurchPlan": {
+      case "updateChurchPlan": {
         const { churchId, plan } = data;
         if (!churchId || !plan) {
           return NextResponse.json({ error: "Falta ID de iglesia o plan" }, { status: 400 });
         }
+
+        const plansConfigPath = path.join(process.cwd(), "src/lib/plans-config.json");
+        let planConfig: any = null;
+        try {
+          if (fs.existsSync(plansConfigPath)) {
+            const cfg = JSON.parse(fs.readFileSync(plansConfigPath, "utf-8"));
+            planConfig = cfg[plan];
+          }
+        } catch (e) {}
+
         const updated = await prisma.iglesia.update({
           where: { id: churchId },
-          data: { plan: plan },
+          data: {
+            plan: plan,
+            ...(planConfig ? {
+              limite_personas: parseInt(planConfig.limite_personas) || 100,
+              limite_usuarios: parseInt(planConfig.limite_usuarios) || 15,
+              precio_mensual: parseFloat(planConfig.precio_mensual) || 15
+            } : {})
+          },
         });
         return NextResponse.json({ success: true, church: updated });
       }
