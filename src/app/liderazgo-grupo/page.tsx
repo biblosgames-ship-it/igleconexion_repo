@@ -311,6 +311,7 @@ function LiderazgoGrupoContent() {
                 onChange={(e) => setMagicRole(e.target.value)} 
                 style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', backgroundColor: 'white' }}
               >
+                <option value="MIEMBRO">👤 Miembro General (Sin Acceso a Configuración)</option>
                 <option value="LIDER">🔑 Líder de Área / Directiva</option>
                 <option value="ADMIN_IGLESIA">🛡️ Administrador de Iglesia</option>
               </select>

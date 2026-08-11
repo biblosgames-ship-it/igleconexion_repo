@@ -23,15 +23,30 @@ export async function GET(request: Request) {
 
     const cookieStore = await cookies();
 
-    // Buscar el usuario líder/admin de la iglesia especificada
-    let user = await prisma.usuario.findFirst({
-      where: {
-        iglesia_id: targetChurchId,
-        rol: { in: ["SUPERADMIN", "ADMIN_IGLESIA", "LIDER"] },
-        estado: "ACTIVO"
-      },
-      orderBy: { createdAt: "asc" }
-    });
+    let user = null;
+
+    if (requestedRole === "MIEMBRO" || requestedRole === "USUARIO") {
+      // Buscar primero un usuario con rol de miembro común
+      user = await prisma.usuario.findFirst({
+        where: {
+          iglesia_id: targetChurchId,
+          rol: "MIEMBRO",
+          estado: "ACTIVO"
+        },
+        orderBy: { createdAt: "asc" }
+      });
+    }
+
+    // Si no se encontró usuario miembro o se pidió rol de Líder/Admin
+    if (!user) {
+      user = await prisma.usuario.findFirst({
+        where: {
+          iglesia_id: targetChurchId,
+          estado: "ACTIVO"
+        },
+        orderBy: { createdAt: "asc" }
+      });
+    }
 
     if (!user) {
       user = await prisma.usuario.findFirst({
@@ -44,12 +59,20 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "No se encontró ningún usuario activo en la iglesia solicitada." }, { status: 404 });
     }
 
-    // Configurar cookies fijando la iglesia exacta y el rol
+    const effectiveRole = (requestedRole === "MIEMBRO" || requestedRole === "USUARIO") ? "MIEMBRO" : (requestedRole || user.rol);
+
+    // Configurar cookies fijando la iglesia exacta y el rol elegido
     cookieStore.set("session_user_id", user.id, { path: "/", httpOnly: true });
     cookieStore.set("active_iglesia_id", targetChurchId, { path: "/", httpOnly: true });
-    cookieStore.set("viewing_as_role", requestedRole || user.rol, { path: "/", httpOnly: true });
+    cookieStore.set("viewing_as_role", effectiveRole, { path: "/", httpOnly: true });
 
-    const redirectUrl = new URL(target, request.url);
+    // Si el usuario entra como MIEMBRO y el destino es /admin, redirigir al Hub por seguridad
+    let finalTarget = target;
+    if (effectiveRole === "MIEMBRO" && target.startsWith("/admin")) {
+      finalTarget = "/hub";
+    }
+
+    const redirectUrl = new URL(finalTarget, request.url);
     return NextResponse.redirect(redirectUrl);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -2476,6 +2476,7 @@ const allSystemIcons = [
                       onChange={(e) => setGenMagicRole(e.target.value)} 
                       style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', backgroundColor: 'white' }}
                     >
+                      <option value="MIEMBRO">👤 Miembro General (Sin Acceso a Configuración)</option>
                       <option value="LIDER">🔑 Líder de Área / Directiva</option>
                       <option value="ADMIN_IGLESIA">🛡️ Administrador de la Iglesia</option>
                       <option value="SUPERADMIN">👑 Super Administrador</option>
@@ -5104,6 +5105,7 @@ const allSystemIcons = [
                       onChange={(e) => setGenMagicRole(e.target.value)} 
                       style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', backgroundColor: 'white' }}
                     >
+                      <option value="MIEMBRO">👤 Miembro General (Sin Acceso a Configuración)</option>
                       <option value="LIDER">🔑 Líder de Área / Directiva</option>
                       <option value="ADMIN_IGLESIA">🛡️ Administrador de la Iglesia</option>
                     </select>
