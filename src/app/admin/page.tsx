@@ -8733,6 +8733,37 @@ function BulkImportSection({ gruposConexion, sociedades }: { gruposConexion: any
     }
   };
 
+  const handleBulkDeleteImported = async () => {
+    if (!confirm("🚨 ¿Estás seguro de eliminar todos los miembros importados recientemente por error que no tienen cuenta de usuario creada? Esta acción limpiará los registros cargados en lote.")) {
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/miembros", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "bulkDeleteMembers",
+          data: {
+            deleteAllWithoutUser: true,
+            grupoId: selectedImportGroupId || null
+          }
+        })
+      });
+      const resData = await res.json();
+      if (resData.error) {
+        alert("Error al eliminar: " + resData.error);
+      } else {
+        alert(`✅ ¡Operación exitosa! Se eliminaron ${resData.count} miembros cargados por error.`);
+        window.location.reload();
+      }
+    } catch (e) {
+      alert("Error de conexión al eliminar.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const selectedGroup = gruposConexion.find(g => g.id === selectedImportGroupId);
   const selectedGroupSocName = selectedGroup ? (sociedades.find(s => s.id === selectedGroup.sociedad_id)?.nombre_sociedad || "") : "";
 
@@ -8862,6 +8893,38 @@ function BulkImportSection({ gruposConexion, sociedades }: { gruposConexion: any
             )}
           </div>
           )}
+        {/* BOTÓN DE BORRADO MASIVO DE EMERGENCIA POR ERROR DE IMPORTACIÓN */}
+        <div style={{ marginTop: '2rem', background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '10px', padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', boxShadow: '0 2px 4px rgba(225,29,72,0.05)' }}>
+          <div>
+            <strong style={{ fontSize: '0.92rem', color: '#be123c', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
+              🚨 Borrado de Emergencia por Error de Importación
+            </strong>
+            <span style={{ fontSize: '0.82rem', color: '#9f1239', lineHeight: '1.4', display: 'block' }}>
+              ¿Cargaste una lista por error de más de 100 miembros? Elimina en 1 solo clic todos los perfiles de miembros importados que no tienen cuenta activa.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleBulkDeleteImported}
+            disabled={loading}
+            style={{ 
+              padding: '0.6rem 1.25rem', 
+              background: '#e11d48', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '8px', 
+              fontWeight: 800, 
+              fontSize: '0.85rem', 
+              cursor: loading ? 'wait' : 'pointer', 
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              boxShadow: '0 2px 6px rgba(225,29,72,0.25)' 
+            }}
+          >
+            🗑️ Eliminar Miembros Cargados por Error
+          </button>
+        </div>
       </div>
     </div>
   );

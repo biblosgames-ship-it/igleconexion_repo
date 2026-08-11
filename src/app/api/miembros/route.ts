@@ -431,6 +431,50 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true, deleted });
       }
 
+      case "bulkDeleteMembers": {
+        const { memberIds, grupoId, deleteAllWithoutUser } = data;
+        const iglesiaId = await getActiveChurchId();
+
+        let targetIds: string[] = Array.isArray(memberIds) ? memberIds : [];
+
+        if (deleteAllWithoutUser) {
+          const personasSinUsuario = await prisma.persona.findMany({
+            where: {
+              iglesia_id: iglesiaId,
+              usuario: null,
+              ...(grupoId ? { grupo_conexion_id: grupoId } : {})
+            },
+            select: { id: true }
+          });
+          targetIds = personasSinUsuario.map(p => p.id);
+        }
+
+        if (targetIds.length === 0) {
+          return NextResponse.json({ error: "No se encontraron miembros para eliminar." }, { status: 400 });
+        }
+
+        await prisma.historialTarea.deleteMany({ where: { persona_id: { in: targetIds } } });
+        await prisma.historialSubtarea.deleteMany({ where: { persona_id: { in: targetIds } } });
+        await prisma.foroComentario.deleteMany({ where: { persona_id: { in: targetIds } } });
+        await prisma.acuerdoConfirmacion.deleteMany({ where: { persona_id: { in: targetIds } } });
+        await prisma.personaEtiqueta.deleteMany({ where: { persona_id: { in: targetIds } } });
+        await prisma.asistenteEvento.deleteMany({ where: { persona_id: { in: targetIds } } });
+
+        await prisma.usuario.updateMany({
+          where: { persona_id: { in: targetIds } },
+          data: { persona_id: null }
+        });
+
+        const resDelete = await prisma.persona.deleteMany({
+          where: {
+            id: { in: targetIds },
+            iglesia_id: iglesiaId
+          }
+        });
+
+        return NextResponse.json({ success: true, count: resDelete.count });
+      }
+
       case "updateUserStatus": {
         const { usuarioId, estado } = data;
         const updated = await prisma.usuario.update({
