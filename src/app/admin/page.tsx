@@ -421,6 +421,13 @@ const allSystemIcons = [
   const [genMagicTarget, setGenMagicTarget] = useState("/hub");
   const [generatedMagicLink, setGeneratedMagicLink] = useState("");
 
+  useEffect(() => {
+    const slugToUse = churchSlug || "demo";
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://igleconexion-repo1-omega.vercel.app";
+    const fullUrl = `${origin}/api/auth/quick-access?slug=${encodeURIComponent(slugToUse)}&role=${genMagicRole}&target=${encodeURIComponent(genMagicTarget)}`;
+    setGeneratedMagicLink(fullUrl);
+  }, [churchSlug, genMagicRole, genMagicTarget]);
+
   // Estados para configurar detalles de sociedad
   const [editingSoc, setEditingSoc] = useState<any | null>(null);
   const [editingSocDesc, setEditingSocDesc] = useState("");
@@ -5073,6 +5080,77 @@ const allSystemIcons = [
                     ⚙️ Personalizar Nombres
                   </button>
                 </div>
+              </div>
+
+              {/* GENERADOR DE ENLACES MÁGICOS DE ACCESO DIRECTO PARA LÍDERES */}
+              <div className={styles.configBlock} style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#166534', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    ✨ Enlace Mágico de Acceso Rápido para Líderes
+                  </h3>
+                  <span style={{ fontSize: '0.75rem', background: '#dcfce7', color: '#15803d', padding: '0.2rem 0.6rem', borderRadius: '12px', fontWeight: 700 }}>
+                    Sin Contraseña ni Login
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.85rem', color: '#334155', margin: '0 0 1rem 0', lineHeight: '1.4' }}>
+                  Copia y envía este enlace por WhatsApp a tus líderes de área o directivas para que ingresen de inmediato sin pedirles usuario ni contraseña.
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 700, fontSize: '0.78rem', color: '#334155', marginBottom: '0.25rem' }}>Nivel de Acceso (Rol)</label>
+                    <select 
+                      value={genMagicRole} 
+                      onChange={(e) => setGenMagicRole(e.target.value)} 
+                      style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', backgroundColor: 'white' }}
+                    >
+                      <option value="LIDER">🔑 Líder de Área / Directiva</option>
+                      <option value="ADMIN_IGLESIA">🛡️ Administrador de la Iglesia</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 700, fontSize: '0.78rem', color: '#334155', marginBottom: '0.25rem' }}>Destino al Entrar</label>
+                    <select 
+                      value={genMagicTarget} 
+                      onChange={(e) => setGenMagicTarget(e.target.value)} 
+                      style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', backgroundColor: 'white' }}
+                    >
+                      <option value="/liderazgo-grupo">📊 Espacio de Trabajo de Liderazgo</option>
+                      <option value="/hub">🌐 Hub Congregacional</option>
+                      <option value="/admin">⚙️ Consola de Administración (/admin)</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                    <button 
+                      type="button" 
+                      onClick={handleGenerateMagicLink}
+                      style={{ width: '100%', padding: '0.55rem', background: '#16a34a', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(22,163,74,0.2)' }}
+                    >
+                      ✨ Generar Enlace Mágico
+                    </button>
+                  </div>
+                </div>
+
+                {generatedMagicLink && (
+                  <div style={{ background: 'white', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
+                    <input 
+                      type="text" 
+                      readOnly 
+                      value={generatedMagicLink} 
+                      style={{ flex: 1, padding: '0.4rem', border: 'none', fontSize: '0.85rem', color: '#166534', fontWeight: 700, outline: 'none', background: 'transparent' }}
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        navigator.clipboard.writeText(generatedMagicLink);
+                        alert("📋 ¡Enlace Mágico copiado con éxito! Ya puedes enviarlo por WhatsApp a tus líderes.");
+                      }}
+                      style={{ padding: '0.45rem 1rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}
+                    >
+                      📋 Copiar Enlace
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Selector de Sub-Tablas */}

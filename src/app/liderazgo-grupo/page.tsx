@@ -38,6 +38,13 @@ function LiderazgoGrupoContent() {
   const [magicTarget, setMagicTarget] = useState("/liderazgo-grupo");
   const [generatedLink, setGeneratedLink] = useState("");
 
+  useEffect(() => {
+    const churchSlug = currentUser?.iglesia?.subdominio_o_slug || currentUser?.churchSlug || "demo";
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://igleconexion-repo1-omega.vercel.app";
+    const url = `${origin}/api/auth/quick-access?slug=${encodeURIComponent(churchSlug)}&role=${magicRole}&target=${encodeURIComponent(magicTarget)}`;
+    setGeneratedLink(url);
+  }, [currentUser, magicRole, magicTarget]);
+
   const handleCreateMagicLink = () => {
     const churchSlug = currentUser?.iglesia?.subdominio_o_slug || currentUser?.churchSlug || "demo";
     const origin = typeof window !== "undefined" ? window.location.origin : "https://igleconexion-repo1-omega.vercel.app";
