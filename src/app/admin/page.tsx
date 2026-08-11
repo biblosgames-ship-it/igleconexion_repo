@@ -413,6 +413,7 @@ const allSystemIcons = [
   const [precioMensual, setPrecioMensual] = useState(29.99);
   const [fechaVencimiento, setFechaVencimiento] = useState<string | null>(null);
   const [estadoPago, setEstadoPago] = useState("PAGADO");
+  const [promoteMemberSearchFilter, setPromoteMemberSearchFilter] = useState("");
   const [churchOpcionesRegistro, setChurchOpcionesRegistro] = useState<any>({ medio_relacion: [] });
   const [newMedioOption, setNewMedioOption] = useState("");
   const [gcalUrlInput, setGcalUrlInput] = useState("");
@@ -5653,18 +5654,44 @@ const allSystemIcons = [
                     </div>
 
                     <form onSubmit={handlePromoteNewLider} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                        <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>Seleccionar Persona/Miembro</label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>Seleccionar Persona/Miembro</label>
+                          {promoteMemberSearchFilter && (
+                            <span style={{ fontSize: '0.72rem', color: '#0284c7', fontWeight: 700 }}>
+                              {miembros.filter(m => !usuarios.some(u => u.persona?.id === m.id && (u.rol === 'LIDER' || u.rol === 'ADMIN_IGLESIA' || u.rol === 'SUPERADMIN'))).filter(m => (m.nombre || '').toLowerCase().includes(promoteMemberSearchFilter.toLowerCase()) || (m.telefono || '').includes(promoteMemberSearchFilter) || (m.correo || '').toLowerCase().includes(promoteMemberSearchFilter.toLowerCase())).length} de {miembros.length} encontrados
+                            </span>
+                          )}
+                        </div>
+                        <input 
+                          type="text" 
+                          placeholder="🔍 Escribe el nombre o teléfono del miembro a buscar..." 
+                          value={promoteMemberSearchFilter}
+                          onChange={(e) => setPromoteMemberSearchFilter(e.target.value)}
+                          style={{ padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #0284c7', fontSize: '0.85rem', outline: 'none', backgroundColor: '#f0f9ff', fontWeight: 600, color: '#0369a1' }}
+                        />
                         <select 
                           value={promoteMemberName} 
                           onChange={(e) => setPromoteMemberName(e.target.value)} 
                           style={{ padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: 'white' }}
                           required
                         >
-                          <option value="">Selecciona un miembro...</option>
-                          {miembros.filter(m => !usuarios.some(u => u.persona?.id === m.id && (u.rol === 'LIDER' || u.rol === 'ADMIN_IGLESIA' || u.rol === 'SUPERADMIN'))).map(m => (
-                            <option key={m.id} value={m.nombre}>{m.nombre}</option>
-                          ))}
+                          {(() => {
+                            const avail = miembros.filter(m => !usuarios.some(u => u.persona?.id === m.id && (u.rol === 'LIDER' || u.rol === 'ADMIN_IGLESIA' || u.rol === 'SUPERADMIN')));
+                            const filtered = avail.filter(m => {
+                              if (!promoteMemberSearchFilter.trim()) return true;
+                              const q = promoteMemberSearchFilter.toLowerCase().trim();
+                              return (m.nombre || '').toLowerCase().includes(q) || (m.telefono || '').includes(q) || (m.correo || '').toLowerCase().includes(q);
+                            });
+                            return (
+                              <>
+                                <option value="">Selecciona un miembro ({filtered.length} encontrados)...</option>
+                                {filtered.map(m => (
+                                  <option key={m.id} value={m.nombre}>{m.nombre} {m.telefono ? `(${m.telefono})` : ''}</option>
+                                ))}
+                              </>
+                            );
+                          })()}
                         </select>
                       </div>
 
