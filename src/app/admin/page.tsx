@@ -486,6 +486,30 @@ const allSystemIcons = [
 
   const loadConfig = async () => {
     try {
+      // 1. Carga instantánea desde caché de sesión si existe
+      if (typeof window !== 'undefined') {
+        try {
+          const cachedStr = sessionStorage.getItem("igle_admin_cache");
+          if (cachedStr) {
+            const cached = JSON.parse(cachedStr);
+            if (cached.etapas) setEtapas(cached.etapas);
+            if (cached.modulos) setModulos(cached.modulos);
+            if (cached.sociedades) setSociedades(cached.sociedades);
+            if (cached.miembros) setMiembros(cached.miembros);
+            if (cached.lideres) setLideres(cached.lideres);
+            if (cached.churchData) {
+              const dataIgl = cached.churchData;
+              setChurchName(dataIgl.nombre_iglesia || "");
+              setChurchSlug(dataIgl.subdominio_o_slug || "");
+              setChurchSlogan(dataIgl.slogan || "");
+              setChurchLogoUrl(dataIgl.logo_url || "");
+              setChurchColor(dataIgl.color_principal || "#0284c7");
+              setChurchEvents(dataIgl.eventos || []);
+            }
+          }
+        } catch (e) {}
+      }
+
       const res = await fetch("/api/admin");
       if (res.status === 401 || res.status === 403) {
         alert("Acceso denegado: Solo los administradores autorizados pueden acceder al Motor de Configuración.");
@@ -515,6 +539,9 @@ const allSystemIcons = [
         fetch("/api/grupos-familia").catch(() => null),
       ]);
 
+      let dataM: any = null;
+      let dataIgl: any = null;
+
       if (resGF?.ok) {
         const dataGF = await resGF.json();
         if (dataGF.grupos) setGruposFamilia(dataGF.grupos);
@@ -540,14 +567,14 @@ const allSystemIcons = [
       }
 
       if (resM?.ok) {
-        const dataM = await resM.json();
+        dataM = await resM.json();
         if (!dataM.error && Array.isArray(dataM)) {
           setMiembros(dataM);
         }
       }
 
       if (resIgl?.ok) {
-        const dataIgl = await resIgl.json();
+        dataIgl = await resIgl.json();
         if (!dataIgl.error) {
           setChurchName(dataIgl.nombre_iglesia || "");
           setChurchSlug(dataIgl.subdominio_o_slug || "");

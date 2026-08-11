@@ -102,6 +102,31 @@ export default function Hub() {
   };
 
   useEffect(() => {
+    // 1. Intentar cargar instantáneamente desde caché de sesión si existe
+    if (typeof window !== 'undefined') {
+      try {
+        const cachedStr = sessionStorage.getItem("igle_hub_cache");
+        if (cachedStr) {
+          const cached = JSON.parse(cachedStr);
+          if (cached.churchData) setChurchData(cached.churchData);
+          if (cached.comunicados) {
+            setComunicadosList(cached.comunicados);
+            setMandatoryAnnouncements(cached.comunicados.filter((c: any) => c.esObligatorio && !c.leido));
+          }
+          if (cached.notificaciones) setNotificacionesList(cached.notificaciones);
+          if (cached.auth) {
+            setUserId(cached.auth.id);
+            setUserPersonaId(cached.auth.persona_id);
+            setUserPersonaObj(cached.auth.persona || null);
+            setUserRole(cached.auth.rol);
+            setCanSwitchRole(cached.auth.canSwitchRole || false);
+            setViewingAs(cached.auth.viewingAs || cached.auth.rol);
+          }
+          setLoading(false); // Renderizado instantáneo <50ms sin pantalla en blanco
+        }
+      } catch (e) {}
+    }
+
     const checkAuthAndLoad = async () => {
       try {
         // Disparar auth en paralelo con iglesia, eventos, proyectos, comunicados, notificaciones y formularios
@@ -134,10 +159,17 @@ export default function Hub() {
         setCanSwitchRole(dataAuth.canSwitchRole || false);
         setViewingAs(dataAuth.viewingAs || dataAuth.rol);
 
+        let latestChurchData = null;
+        let latestComunicados = null;
+        let latestNotificaciones = null;
+
         // Procesar Iglesia
         if (iglesiaRes?.ok) {
           const data = await iglesiaRes.json();
-          if (!data.error) setChurchData(data);
+          if (!data.error) {
+            latestChurchData = data;
+            setChurchData(data);
+          }
         }
 
         // Procesar Eventos
@@ -171,6 +203,7 @@ export default function Hub() {
         if (comRes?.ok) {
           const comData = await comRes.json();
           if (!comData.error) {
+            latestComunicados = comData;
             setComunicadosList(comData);
             setMandatoryAnnouncements(comData.filter((c: any) => c.esObligatorio && !c.leido));
           }
@@ -179,7 +212,22 @@ export default function Hub() {
         // Procesar Notificaciones
         if (notifRes?.ok) {
           const notifData = await notifRes.json();
-          if (!notifData.error) setNotificacionesList(notifData);
+          if (!notifData.error) {
+            latestNotificaciones = notifData;
+            setNotificacionesList(notifData);
+          }
+        }
+
+        // Guardar en caché de sesión para cargas ultrarrápidas futuras
+        if (typeof window !== 'undefined') {
+          try {
+            sessionStorage.setItem("igle_hub_cache", JSON.stringify({
+              churchData: latestChurchData,
+              comunicados: latestComunicados,
+              notificaciones: latestNotificaciones,
+              auth: dataAuth
+            }));
+          } catch (e) {}
         }
 
         // Procesar Biblioteca
