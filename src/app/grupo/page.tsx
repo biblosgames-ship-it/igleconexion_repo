@@ -476,6 +476,51 @@ function GrupoContent() {
   }, [adminConfig, activeLeaderStageId]);
 
   const handleToggleTask = async (memberId: string, taskId: string) => {
+    // 1. Optimistic Update of groupData
+    setGroupData((prevGroupData: any) => {
+      if (!prevGroupData || !prevGroupData.gruposDirigidos) return prevGroupData;
+      const updatedGrupos = prevGroupData.gruposDirigidos.map((g: any) => {
+        const updatedPersonas = g.personas?.map((p: any) => {
+          if (p.id !== memberId) return p;
+
+          const existingTasks = p.historial_tareas || [];
+          const hasTask = existingTasks.some((t: any) => t.tarea_id === taskId);
+          const newHistorial = hasTask
+            ? existingTasks.filter((t: any) => t.tarea_id !== taskId)
+            : [...existingTasks, { tarea_id: taskId, completada: true }];
+
+          const newTareasCompletadas = hasTask
+            ? (p.tareas_completadas || []).filter((id: string) => id !== taskId)
+            : [...(p.tareas_completadas || []), taskId];
+
+          return {
+            ...p,
+            historial_tareas: newHistorial,
+            tareas_completadas: newTareasCompletadas
+          };
+        });
+        return { ...g, personas: updatedPersonas };
+      });
+      return { ...prevGroupData, gruposDirigidos: updatedGrupos };
+    });
+
+    // 2. Optimistic Update of selectedMember if open in modal
+    if (selectedMember && selectedMember.id === memberId) {
+      setSelectedMember((prev: any) => {
+        if (!prev) return prev;
+        const existingTasks = prev.historial_tareas || [];
+        const hasTask = existingTasks.some((t: any) => t.tarea_id === taskId);
+        const newHistorial = hasTask
+          ? existingTasks.filter((t: any) => t.tarea_id !== taskId)
+          : [...existingTasks, { tarea_id: taskId, completada: true }];
+        const newTareasCompletadas = hasTask
+          ? (prev.tareas_completadas || []).filter((id: string) => id !== taskId)
+          : [...(prev.tareas_completadas || []), taskId];
+        return { ...prev, historial_tareas: newHistorial, tareas_completadas: newTareasCompletadas };
+      });
+    }
+
+    // 3. Send POST request in background
     try {
       const res = await fetch("/api/miembros", {
         method: "POST",
@@ -488,38 +533,8 @@ function GrupoContent() {
       const resData = await res.json();
       if (resData.error) {
         alert("Error al actualizar proceso: " + resData.error);
-      } else {
-        // Recargar datos
-        const authRes = await fetch("/api/auth");
-        const adminRes = await fetch("/api/iglesia");
-        const grupoRes = await fetch("/api/grupo");
-
-        const authData = await authRes.json();
-        const adminData = await adminRes.json();
-        const grupoDataJson = await grupoRes.json();
-
-        setProfile(authData);
-        setAdminConfig(adminData);
-        setGroupData(grupoDataJson);
-
-        // Si hay un miembro seleccionado en el modal, actualizar su estado para que cambie en tiempo real
-        if (selectedMember && selectedMember.id === memberId) {
-          let updatedM = null;
-          if (grupoDataJson.gruposDirigidos) {
-            for (const g of grupoDataJson.gruposDirigidos) {
-              const found = g.personas?.find((p: any) => p.id === memberId);
-              if (found) {
-                updatedM = found;
-                break;
-              }
-            }
-          }
-          if (updatedM) {
-            // Find and attach stage details if available
-            const stage = adminData.etapas?.find((s: any) => s.id === updatedM.etapa_id);
-            setSelectedMember({ ...updatedM, etapa: stage });
-          }
-        }
+        // Revert on error
+        await loadData();
       }
     } catch (e) {
       console.error(e);
@@ -2741,6 +2756,24 @@ function GrupoContent() {
                   onChange={async (e) => {
                     const nextEtapaId = e.target.value;
                     if (!nextEtapaId) return;
+
+                    // 1. Actualización optimista de estado (0ms de retraso)
+                    const stage = adminConfig?.etapas?.find((s: any) => s.id === nextEtapaId);
+                    setSelectedMember((prev: any) => prev ? { ...prev, etapa_id: nextEtapaId, etapa: stage || prev.etapa } : prev);
+
+                    setGroupData((prevGroupData: any) => {
+                      if (!prevGroupData || !prevGroupData.gruposDirigidos) return prevGroupData;
+                      const updatedGrupos = prevGroupData.gruposDirigidos.map((g: any) => {
+                        const updatedPersonas = g.personas?.map((p: any) => {
+                          if (p.id !== selectedMember.id) return p;
+                          return { ...p, etapa_id: nextEtapaId, etapa: stage || p.etapa };
+                        });
+                        return { ...g, personas: updatedPersonas };
+                      });
+                      return { ...prevGroupData, gruposDirigidos: updatedGrupos };
+                    });
+
+                    // 2. Envío en segundo plano
                     try {
                       const res = await fetch("/api/miembros", {
                         method: "POST",
@@ -2753,35 +2786,7 @@ function GrupoContent() {
                       const resData = await res.json();
                       if (resData.error) {
                         alert("Error al actualizar la etapa: " + resData.error);
-                      } else {
-                        // Recargar todo
-                        const authRes = await fetch("/api/auth");
-                        const adminRes = await fetch("/api/iglesia");
-                        const grupoRes = await fetch("/api/grupo");
-
-                        const authData = await authRes.json();
-                        const adminData = await adminRes.json();
-                        const grupoDataJson = await grupoRes.json();
-
-                        setProfile(authData);
-                        setAdminConfig(adminData);
-                        setGroupData(grupoDataJson);
-
-                        // Actualizar miembro seleccionado
-                        let updatedM = null;
-                        if (grupoDataJson.gruposDirigidos) {
-                          for (const g of grupoDataJson.gruposDirigidos) {
-                            const found = g.personas?.find((p: any) => p.id === selectedMember.id);
-                            if (found) {
-                              updatedM = found;
-                              break;
-                            }
-                          }
-                        }
-                        if (updatedM) {
-                          const stage = adminData.etapas?.find((s: any) => s.id === updatedM.etapa_id);
-                          setSelectedMember({ ...updatedM, etapa: stage });
-                        }
+                        await loadData();
                       }
                     } catch (err) {
                       console.error(err);

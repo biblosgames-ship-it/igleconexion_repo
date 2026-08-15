@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { getActiveChurchId } from "@/lib/active-church";
+import { getActiveChurchId, setSessionCookie } from "@/lib/active-church";
 
 export async function GET(request: Request) {
   try {
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json({ error: "El acceso rápido está deshabilitado en entornos de producción." }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const target = searchParams.get("target") || "/hub";
     const requestedRole = searchParams.get("role")?.toUpperCase() || "LIDER";
@@ -61,8 +65,8 @@ export async function GET(request: Request) {
 
     const effectiveRole = (requestedRole === "MIEMBRO" || requestedRole === "USUARIO") ? "MIEMBRO" : (requestedRole || user.rol);
 
-    // Configurar cookies fijando la iglesia exacta y el rol elegido
-    cookieStore.set("session_user_id", user.id, { path: "/", httpOnly: true });
+    // Configurar cookies fijando la iglesia exacta y el rol elegido mediante JWT firmado
+    await setSessionCookie(user.id);
     cookieStore.set("active_iglesia_id", targetChurchId, { path: "/", httpOnly: true });
     cookieStore.set("viewing_as_role", effectiveRole, { path: "/", httpOnly: true });
 
@@ -78,3 +82,4 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+

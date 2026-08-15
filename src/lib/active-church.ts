@@ -1,12 +1,74 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import * as jose from "jose";
+
+const JWT_SECRET_STRING = process.env.JWT_SECRET || "igleconexion_jwt_secret_key_2026_super_secure_9987";
+const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_STRING);
+
+export async function createSessionToken(userId: string): Promise<string> {
+  return await new jose.SignJWT({ userId })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("30d")
+    .sign(JWT_SECRET);
+}
+
+export async function verifySessionToken(token: string): Promise<string | null> {
+  try {
+    const { payload } = await jose.jwtVerify(token, JWT_SECRET);
+    if (payload && typeof payload.userId === "string") {
+      return payload.userId;
+    }
+  } catch (error) {
+    // Token is invalid, expired, or tampered with
+  }
+  return null;
+}
+
+export async function setSessionCookie(userId: string) {
+  const token = await createSessionToken(userId);
+  const cookieStore = await cookies();
+  cookieStore.set("session_token", token, {
+    path: "/",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    sameSite: "lax",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production"
+  });
+  // Clean up legacy unsigned cookie if present
+  cookieStore.delete("session_user_id");
+}
+
+export async function clearSessionCookie() {
+  const cookieStore = await cookies();
+  cookieStore.delete("session_token");
+  cookieStore.delete("session_user_id");
+  cookieStore.delete("active_iglesia_id");
+  cookieStore.delete("viewing_as_role");
+}
 
 export async function getSessionUserId(): Promise<string | undefined> {
   try {
     const cookieStore = await cookies();
-    const sessionUserId = cookieStore.get("session_user_id")?.value;
-    if (sessionUserId) {
-      return sessionUserId;
+    
+    // 1. Primary: Check signed JWT session token
+    const token = cookieStore.get("session_token")?.value;
+    if (token) {
+      const userId = await verifySessionToken(token);
+      if (userId) return userId;
+    }
+
+    // 2. Fallback / Migration: Check legacy session_user_id only if verified in database
+    const legacySessionUserId = cookieStore.get("session_user_id")?.value;
+    if (legacySessionUserId) {
+      // Validate format to prevent arbitrary string injection
+      const userExists = await prisma.usuario.findUnique({
+        where: { id: legacySessionUserId },
+        select: { id: true }
+      });
+      if (userExists) {
+        return legacySessionUserId;
+      }
     }
   } catch (e) {
     // cookies() may throw when executed outside a request context
@@ -66,3 +128,4 @@ export async function getActiveChurchId(): Promise<string> {
   }
   return "iglesia-default";
 }
+

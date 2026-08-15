@@ -1,8 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSessionUserId } from "@/lib/active-church";
 
 export async function GET() {
   try {
+    const userId = await getSessionUserId();
+    if (!userId) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+    const requestingUser = await prisma.usuario.findUnique({ where: { id: userId } });
+    if (!requestingUser || requestingUser.rol !== "SUPERADMIN") {
+      return NextResponse.json({ error: "Acceso restringido a SuperAdministrador" }, { status: 403 });
+    }
+
     // 1. Find superadmin user
     const superAdmin = await prisma.usuario.findFirst({
       where: { rol: "SUPERADMIN" },
