@@ -476,27 +476,32 @@ function GrupoContent() {
   }, [adminConfig, activeLeaderStageId]);
 
   const handleToggleTask = async (memberId: string, taskId: string) => {
-    // 1. Optimistic Update of groupData
+    if (!memberId || !taskId) return;
+
+    // 1. Optimistic Update of groupData strictly for memberId
     setGroupData((prevGroupData: any) => {
       if (!prevGroupData || !prevGroupData.gruposDirigidos) return prevGroupData;
+      
       const updatedGrupos = prevGroupData.gruposDirigidos.map((g: any) => {
         const updatedPersonas = g.personas?.map((p: any) => {
           if (p.id !== memberId) return p;
 
-          const existingTasks = p.historial_tareas || [];
-          const hasTask = existingTasks.some((t: any) => t.tarea_id === taskId);
-          const newHistorial = hasTask
-            ? existingTasks.filter((t: any) => t.tarea_id !== taskId)
-            : [...existingTasks, { tarea_id: taskId, completada: true }];
+          const existingTasks = Array.isArray(p.historial_tareas) ? [...p.historial_tareas] : [];
+          const hasTask = existingTasks.some((t: any) => {
+            if (typeof t === "string") return t === taskId;
+            return (t.tarea_id === taskId || t.id === taskId) && t.completada !== false;
+          });
 
-          const newTareasCompletadas = hasTask
-            ? (p.tareas_completadas || []).filter((id: string) => id !== taskId)
-            : [...(p.tareas_completadas || []), taskId];
+          const newHistorial = hasTask
+            ? existingTasks.filter((t: any) => {
+                const id = typeof t === "string" ? t : (t.tarea_id || t.id);
+                return id !== taskId;
+              })
+            : [...existingTasks, { id: `${memberId}-${taskId}`, persona_id: memberId, tarea_id: taskId, completada: true, fecha_completa: new Date().toISOString() }];
 
           return {
             ...p,
-            historial_tareas: newHistorial,
-            tareas_completadas: newTareasCompletadas
+            historial_tareas: newHistorial
           };
         });
         return { ...g, personas: updatedPersonas };
@@ -508,19 +513,24 @@ function GrupoContent() {
     if (selectedMember && selectedMember.id === memberId) {
       setSelectedMember((prev: any) => {
         if (!prev) return prev;
-        const existingTasks = prev.historial_tareas || [];
-        const hasTask = existingTasks.some((t: any) => t.tarea_id === taskId);
+        const existingTasks = Array.isArray(prev.historial_tareas) ? [...prev.historial_tareas] : [];
+        const hasTask = existingTasks.some((t: any) => {
+          if (typeof t === "string") return t === taskId;
+          return (t.tarea_id === taskId || t.id === taskId) && t.completada !== false;
+        });
+
         const newHistorial = hasTask
-          ? existingTasks.filter((t: any) => t.tarea_id !== taskId)
-          : [...existingTasks, { tarea_id: taskId, completada: true }];
-        const newTareasCompletadas = hasTask
-          ? (prev.tareas_completadas || []).filter((id: string) => id !== taskId)
-          : [...(prev.tareas_completadas || []), taskId];
-        return { ...prev, historial_tareas: newHistorial, tareas_completadas: newTareasCompletadas };
+          ? existingTasks.filter((t: any) => {
+              const id = typeof t === "string" ? t : (t.tarea_id || t.id);
+              return id !== taskId;
+            })
+          : [...existingTasks, { id: `${memberId}-${taskId}`, persona_id: memberId, tarea_id: taskId, completada: true, fecha_completa: new Date().toISOString() }];
+
+        return { ...prev, historial_tareas: newHistorial };
       });
     }
 
-    // 3. Send POST request in background
+    // 3. Send POST request in background & sync group data
     try {
       const res = await fetch("/api/miembros", {
         method: "POST",
@@ -533,8 +543,13 @@ function GrupoContent() {
       const resData = await res.json();
       if (resData.error) {
         alert("Error al actualizar proceso: " + resData.error);
-        // Revert on error
         await loadData();
+      } else {
+        const grupoRes = await fetch("/api/grupo");
+        const grupoDataJson = await grupoRes.json();
+        if (grupoDataJson && !grupoDataJson.error) {
+          setGroupData(grupoDataJson);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -803,11 +818,17 @@ function GrupoContent() {
 
   // Helper: Calculate progress ratio of a member
   const getMemberProgress = (member: any) => {
+    if (!member) return { ratio: 0, completed: 0, total: 0 };
     const stageTasks = activeProcesos.filter((p: any) => p.etapa_id === member.etapa_id);
-    if (stageTasks.length === 0) return { ratio: 100, completed: 0, total: 0 };
+    if (!stageTasks || stageTasks.length === 0) return { ratio: 0, completed: 0, total: 0 };
     
-    // member.historial_tareas contains completed task config ids
-    const completedTasks = member.historial_tareas?.filter((ht: any) => ht.completada).map((ht: any) => ht.tarea_id) || [];
+    // member.historial_tareas contains completed task config ids or objects
+    const completedTasks = (member.historial_tareas || []).map((ht: any) => {
+      if (typeof ht === "string") return ht;
+      if (ht && ht.completada !== false) return ht.tarea_id || ht.id;
+      return null;
+    }).filter(Boolean);
+
     const completedCount = stageTasks.filter((t: any) => completedTasks.includes(t.id)).length;
     
     return {
