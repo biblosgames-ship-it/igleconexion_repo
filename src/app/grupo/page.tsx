@@ -816,19 +816,25 @@ function GrupoContent() {
     });
   };
 
+  // Helper: Extract completed task IDs safely from a member
+  const getCompletedTaskIds = (member: any): string[] => {
+    if (!member || !Array.isArray(member.historial_tareas)) return [];
+    return member.historial_tareas
+      .map((ht: any) => {
+        if (typeof ht === "string") return ht;
+        if (ht && ht.completada !== false) return ht.tarea_id || ht.id;
+        return null;
+      })
+      .filter(Boolean) as string[];
+  };
+
   // Helper: Calculate progress ratio of a member
   const getMemberProgress = (member: any) => {
     if (!member) return { ratio: 0, completed: 0, total: 0 };
     const stageTasks = activeProcesos.filter((p: any) => p.etapa_id === member.etapa_id);
     if (!stageTasks || stageTasks.length === 0) return { ratio: 0, completed: 0, total: 0 };
     
-    // member.historial_tareas contains completed task config ids or objects
-    const completedTasks = (member.historial_tareas || []).map((ht: any) => {
-      if (typeof ht === "string") return ht;
-      if (ht && ht.completada !== false) return ht.tarea_id || ht.id;
-      return null;
-    }).filter(Boolean);
-
+    const completedTasks = getCompletedTaskIds(member);
     const completedCount = stageTasks.filter((t: any) => completedTasks.includes(t.id)).length;
     
     return {
@@ -1722,50 +1728,13 @@ function GrupoContent() {
                   const stageMembersRaw = selectedDirigido.personas?.filter((p: any) => p.etapa_id === activeLeaderStageId) || [];
                   const stageTasks = activeProcesos.filter((p: any) => p.etapa_id === activeLeaderStageId).sort((a: any, b: any) => (a.orden || 0) - (b.orden || 0));
 
-                  // Ordenar miembros: primero con alertas/etiquetas, luego tareas vencidas, luego pendientes, luego alfabético
+                  // Ordenar miembros de forma estable: primero alertas activas, luego orden alfabético por nombre
                   const stageMembers = [...stageMembersRaw].sort((a: any, b: any) => {
-                    // 0. Etiquetas/alertas activas van primero
                     const tagsA = a.etiquetas?.length || 0;
                     const tagsB = b.etiquetas?.length || 0;
                     if (tagsA > 0 && tagsB === 0) return -1;
                     if (tagsA === 0 && tagsB > 0) return 1;
-
-                    const completedA = a.historial_tareas?.filter((ht: any) => ht.completada).map((ht: any) => ht.tarea_id) || [];
-                    const pendingA = stageTasks.find((t: any) => !completedA.includes(t.id));
-                    
-                    const completedB = b.historial_tareas?.filter((ht: any) => ht.completada).map((ht: any) => ht.tarea_id) || [];
-                    const pendingB = stageTasks.find((t: any) => !completedB.includes(t.id));
-
-                    // 1. Si uno tiene tarea pendiente y el otro no
-                    if (pendingA && !pendingB) return -1;
-                    if (!pendingA && pendingB) return 1;
-                    
-                    // 2. Si ninguno tiene tareas pendientes, ordenar alfabéticamente
-                    if (!pendingA && !pendingB) {
-                      return (a.nombre || '').localeCompare(b.nombre || '');
-                    }
-
-                    // 3. Si ambos tienen tareas pendientes, ordenar por urgencia de fecha
-                    const getDaysLeft = (m: any, task: any) => {
-                      const idx = stageTasks.findIndex((t: any) => t.id === task.id);
-                      let start = new Date(m.createdAt);
-                      if (idx > 0) {
-                        const prev = stageTasks[idx - 1];
-                        const ht = m.historial_tareas?.find((h: any) => h.tarea_id === prev.id && h.completada);
-                        if (ht?.fecha_completa) {
-                          start = new Date(ht.fecha_completa);
-                        }
-                      }
-                      if (!task.dias_limite) return Infinity;
-                      const due = new Date(start);
-                      due.setDate(due.getDate() + task.dias_limite);
-                      return Math.ceil((due.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                    };
-
-                    const daysLeftA = getDaysLeft(a, pendingA);
-                    const daysLeftB = getDaysLeft(b, pendingB);
-
-                    return daysLeftA - daysLeftB;
+                    return (a.nombre || '').localeCompare(b.nombre || '');
                   });
 
                   return (
@@ -1799,7 +1768,7 @@ function GrupoContent() {
                         </div>
                       ) : stageMembers.map((m: any) => {
                         const prog = getMemberProgress(m);
-                        const completedIds = m.historial_tareas?.filter((ht: any) => ht.completada).map((ht: any) => ht.tarea_id) || [];
+                        const completedIds = getCompletedTaskIds(m);
                         const nextPendingTask = stageTasks.find((t: any) => !completedIds.includes(t.id));
                         const isCardExpanded = expandedKanbanCards.has(m.id);
                         const hasAlerts = m.etiquetas && m.etiquetas.length > 0;
@@ -1815,7 +1784,10 @@ function GrupoContent() {
                           
                           if (taskIndex > 0) {
                             const prevTask = stageTasks[taskIndex - 1];
-                            const prevHt = m.historial_tareas?.find((ht: any) => ht.tarea_id === prevTask.id && ht.completada);
+                            const prevHt = (m.historial_tareas || []).find((ht: any) => {
+                              const id = typeof ht === "string" ? ht : (ht.tarea_id || ht.id);
+                              return id === prevTask.id && ht.completada !== false;
+                            });
                             if (prevHt?.fecha_completa) {
                               startDate = new Date(prevHt.fecha_completa);
                             }
