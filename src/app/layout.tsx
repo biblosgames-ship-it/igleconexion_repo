@@ -18,11 +18,14 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: [
-      { url: "/favicon.png", type: "image/png" },
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" }
+      { url: "/favicon.ico?v=2" },
+      { url: "/favicon.png?v=2", type: "image/png" },
+      { url: "/icon-192.png?v=2", sizes: "192x192", type: "image/png" }
     ],
-    shortcut: "/favicon.png",
-    apple: "/icon-512.png",
+    shortcut: "/favicon.ico?v=2",
+    apple: [
+      { url: "/icon-512.png?v=2", sizes: "512x512", type: "image/png" }
+    ],
   },
 };
 
@@ -45,8 +48,9 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Igleconet" />
-        <link rel="icon" href="/favicon.png" type="image/png" />
-        <link rel="apple-touch-icon" href="/icon-512.png" />
+        <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
+        <link rel="icon" href="/favicon.png?v=2" type="image/png" />
+        <link rel="apple-touch-icon" href="/icon-512.png?v=2" />
       </head>
       <body>
         {children}
