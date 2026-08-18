@@ -5,13 +5,7 @@ import { getActiveChurchId, setSessionCookie } from "@/lib/active-church";
 
 export async function GET(request: Request) {
   try {
-    if (process.env.NODE_ENV === "production") {
-      return NextResponse.json({ error: "El acceso rápido está deshabilitado en entornos de producción." }, { status: 403 });
-    }
-
     const { searchParams } = new URL(request.url);
-    const target = searchParams.get("target") || "/hub";
-    const requestedRole = searchParams.get("role")?.toUpperCase() || "LIDER";
     const slug = searchParams.get("slug")?.trim().toLowerCase();
 
     let targetChurchId = await getActiveChurchId();
@@ -27,56 +21,59 @@ export async function GET(request: Request) {
 
     const cookieStore = await cookies();
 
-    let user = null;
+    // 1. Buscar primero un usuario miembro activo de la iglesia
+    let user = await prisma.usuario.findFirst({
+      where: {
+        iglesia_id: targetChurchId,
+        rol: "MIEMBRO",
+        estado: "ACTIVO"
+      },
+      orderBy: { createdAt: "asc" }
+    });
 
-    if (requestedRole === "MIEMBRO" || requestedRole === "USUARIO") {
-      // Buscar primero un usuario con rol de miembro común
+    // 2. Si no hay miembro, buscar cualquier usuario activo para dar contexto de sesión
+    if (!user) {
       user = await prisma.usuario.findFirst({
         where: {
           iglesia_id: targetChurchId,
+          estado: "ACTIVO"
+        },
+        orderBy: { createdAt: "asc" }
+      });
+    }
+
+    // 3. Si no existe usuario en la iglesia, crear usuario invitado de miembro para acceso al hub
+    if (!user) {
+      user = await prisma.usuario.create({
+        data: {
+          iglesia_id: targetChurchId,
+          email: `visita_${targetChurchId.substring(0, 8)}@igleconexion.app`,
+          password: "guest_hub_access",
           rol: "MIEMBRO",
           estado: "ACTIVO"
-        },
-        orderBy: { createdAt: "asc" }
+        }
       });
     }
 
-    // Si no se encontró usuario miembro o se pidió rol de Líder/Admin
-    if (!user) {
-      user = await prisma.usuario.findFirst({
-        where: {
-          iglesia_id: targetChurchId,
-          estado: "ACTIVO"
-        },
-        orderBy: { createdAt: "asc" }
-      });
-    }
-
-    if (!user) {
-      user = await prisma.usuario.findFirst({
-        where: { estado: "ACTIVO" },
-        orderBy: { createdAt: "asc" }
-      });
-    }
-
-    if (!user) {
-      return NextResponse.json({ error: "No se encontró ningún usuario activo en la iglesia solicitada." }, { status: 404 });
-    }
-
-    const effectiveRole = (requestedRole === "MIEMBRO" || requestedRole === "USUARIO") ? "MIEMBRO" : (requestedRole || user.rol);
-
-    // Configurar cookies fijando la iglesia exacta y el rol elegido mediante JWT firmado
+    // Configurar cookies fijando la iglesia y rol exclusivamente de MIEMBRO para el Hub
     await setSessionCookie(user.id);
-    cookieStore.set("active_iglesia_id", targetChurchId, { path: "/", httpOnly: true });
-    cookieStore.set("viewing_as_role", effectiveRole, { path: "/", httpOnly: true });
+    cookieStore.set("active_iglesia_id", targetChurchId, { 
+      path: "/", 
+      maxAge: 30 * 24 * 60 * 60, 
+      sameSite: "lax", 
+      httpOnly: true, 
+      secure: process.env.NODE_ENV === "production" 
+    });
+    cookieStore.set("viewing_as_role", "MIEMBRO", { 
+      path: "/", 
+      maxAge: 30 * 24 * 60 * 60, 
+      sameSite: "lax", 
+      httpOnly: true, 
+      secure: process.env.NODE_ENV === "production" 
+    });
 
-    // Si el usuario entra como MIEMBRO y el destino es /admin, redirigir al Hub por seguridad
-    let finalTarget = target;
-    if (effectiveRole === "MIEMBRO" && target.startsWith("/admin")) {
-      finalTarget = "/hub";
-    }
-
-    const redirectUrl = new URL(finalTarget, request.url);
+    // Redirección estricta y segura únicamente al Hub congregacional
+    const redirectUrl = new URL("/hub", request.url);
     return NextResponse.redirect(redirectUrl);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

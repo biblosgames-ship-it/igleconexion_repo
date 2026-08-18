@@ -33,24 +33,6 @@ function LiderazgoGrupoContent() {
   const [newCommentText, setNewCommentText] = useState("");
   const [commentSubmitting, setCommentSubmitting] = useState(false);
 
-  // Estados para Generador de Enlaces Mágicos de Liderazgo
-  const [magicRole, setMagicRole] = useState("LIDER");
-  const [magicTarget, setMagicTarget] = useState("/liderazgo-grupo");
-  const [generatedLink, setGeneratedLink] = useState("");
-
-  useEffect(() => {
-    const churchSlug = currentUser?.iglesia?.subdominio_o_slug || currentUser?.churchSlug || "demo";
-    const origin = typeof window !== "undefined" ? window.location.origin : "https://igleconexion-repo1-omega.vercel.app";
-    const url = `${origin}/api/auth/quick-access?slug=${encodeURIComponent(churchSlug)}&role=${magicRole}&target=${encodeURIComponent(magicTarget)}`;
-    setGeneratedLink(url);
-  }, [currentUser, magicRole, magicTarget]);
-
-  const handleCreateMagicLink = () => {
-    const churchSlug = currentUser?.iglesia?.subdominio_o_slug || currentUser?.churchSlug || "demo";
-    const origin = typeof window !== "undefined" ? window.location.origin : "https://igleconexion-repo1-omega.vercel.app";
-    const url = `${origin}/api/auth/quick-access?slug=${encodeURIComponent(churchSlug)}&role=${magicRole}&target=${encodeURIComponent(magicTarget)}`;
-    setGeneratedLink(url);
-  };
 
   const loadWorkspaceData = async () => {
     if (!id) return;
@@ -289,77 +271,7 @@ function LiderazgoGrupoContent() {
           </div>
         </section>
 
-        {/* SECCIÓN DE ACCESO RÁPIDO A LÍDERES */}
-        <section style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#166534', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              ✨ Generador de Enlace Directo para Líderes
-            </h3>
-            <span style={{ fontSize: '0.75rem', background: '#dcfce7', color: '#15803d', padding: '0.2rem 0.6rem', borderRadius: '12px', fontWeight: 700 }}>
-              Sin Contraseña ni Login
-            </span>
-          </div>
-          <p style={{ fontSize: '0.84rem', color: '#334155', margin: '0 0 1rem 0', lineHeight: '1.4' }}>
-            Genera un enlace directo para dar acceso instantáneo a tus líderes o directivos sin que tengan que ingresar contraseñas o recordar códigos.
-          </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '0.75rem' }}>
-            <div>
-              <label style={{ display: 'block', fontWeight: 700, fontSize: '0.78rem', color: '#334155', marginBottom: '0.25rem' }}>Nivel de Acceso (Rol)</label>
-              <select 
-                value={magicRole} 
-                onChange={(e) => setMagicRole(e.target.value)} 
-                style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', backgroundColor: 'white' }}
-              >
-                <option value="MIEMBRO">👤 Miembro General (Sin Acceso a Configuración)</option>
-                <option value="LIDER">🔑 Líder de Área / Directiva</option>
-                <option value="ADMIN_IGLESIA">🛡️ Administrador de Iglesia</option>
-              </select>
-            </div>
-            <div>
-              <label style={{ display: 'block', fontWeight: 700, fontSize: '0.78rem', color: '#334155', marginBottom: '0.25rem' }}>Destino al Entrar</label>
-              <select 
-                value={magicTarget} 
-                onChange={(e) => setMagicTarget(e.target.value)} 
-                style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', backgroundColor: 'white' }}
-              >
-                <option value="/liderazgo-grupo">📊 Este Panel de Liderazgo</option>
-                <option value="/hub">🌐 Hub Congregacional</option>
-                <option value="/admin">⚙️ Consola de Administración</option>
-              </select>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-              <button 
-                type="button" 
-                onClick={handleCreateMagicLink}
-                style={{ width: '100%', padding: '0.55rem', background: '#16a34a', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(22,163,74,0.2)' }}
-              >
-                ✨ Generar Enlace Mágico
-              </button>
-            </div>
-          </div>
-
-          {generatedLink && (
-            <div style={{ background: 'white', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginTop: '0.75rem' }}>
-              <input 
-                type="text" 
-                readOnly 
-                value={generatedLink} 
-                style={{ flex: 1, padding: '0.4rem', border: 'none', fontSize: '0.85rem', color: '#166534', fontWeight: 700, outline: 'none', background: 'transparent' }}
-              />
-              <button 
-                type="button" 
-                onClick={() => {
-                  navigator.clipboard.writeText(generatedLink);
-                  alert("📋 ¡Enlace Mágico para Líderes copiado al portapapeles! Ya puedes enviarlo por WhatsApp.");
-                }}
-                style={{ padding: '0.45rem 1rem', background: '#0284c7', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}
-              >
-                📋 Copiar Enlace
-              </button>
-            </div>
-          )}
-        </section>
 
         {/* Grid Principal */}
         <div className={styles.grid}>
