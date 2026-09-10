@@ -44,6 +44,7 @@ export default function TemploModule() {
   // Form states for Loans
   const [showAddLoan, setShowAddLoan] = useState(false);
   const [loanBienId, setLoanBienId] = useState('');
+  const [loanCantidad, setLoanCantidad] = useState(1);
   const [loanPersona, setLoanPersona] = useState('');
   const [loanFechaP, setLoanFechaP] = useState(new Date().toISOString().split('T')[0]);
   const [loanFechaPrev, setLoanFechaPrev] = useState('');
@@ -270,6 +271,7 @@ export default function TemploModule() {
         data: {
           bien_id: loanBienId,
           persona_nombre: loanPersona,
+          cantidad: loanCantidad,
           fecha_prestamo: loanFechaP,
           fecha_devolucion_prevista: loanFechaPrev,
           notas: loanNotas
@@ -280,6 +282,7 @@ export default function TemploModule() {
       setShowAddLoan(false);
       setLoanBienId('');
       setLoanPersona('');
+      setLoanCantidad(1);
       setLoanNotas('');
       loadAllData();
     } else {
@@ -881,9 +884,20 @@ export default function TemploModule() {
                       <select required value={loanBienId} onChange={e=>setLoanBienId(e.target.value)} style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}>
                         <option value="">Selecciona un bien...</option>
                         {bienes.filter(b=>b.estado === 'ACTIVO').map(b=> (
-                          <option key={b.id} value={b.id}>{b.nombre} ({b.ubicacion})</option>
+                          <option key={b.id} value={b.id}>{b.nombre} {b.ubicacion ? `(${b.ubicacion})` : ''} - Disp: {b.cantidad ?? 1}</option>
                         ))}
                       </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.25rem' }}>Cantidad a Prestar</label>
+                      <input 
+                        required 
+                        type="number" 
+                        min="1" 
+                        value={loanCantidad} 
+                        onChange={e => setLoanCantidad(Math.max(1, parseInt(e.target.value, 10) || 1))} 
+                        style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }} 
+                      />
                     </div>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.25rem' }}>A quién se le presta</label>
@@ -914,6 +928,7 @@ export default function TemploModule() {
                   <thead>
                     <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                       <th style={{ padding: '1rem', color: '#64748b', fontSize: '0.85rem', fontWeight: 700 }}>Artículo</th>
+                      <th style={{ padding: '1rem', color: '#64748b', fontSize: '0.85rem', fontWeight: 700, textAlign: 'center' }}>Cant.</th>
                       <th style={{ padding: '1rem', color: '#64748b', fontSize: '0.85rem', fontWeight: 700 }}>Prestado a</th>
                       <th style={{ padding: '1rem', color: '#64748b', fontSize: '0.85rem', fontWeight: 700 }}>Fecha Préstamo</th>
                       <th style={{ padding: '1rem', color: '#64748b', fontSize: '0.85rem', fontWeight: 700 }}>Fecha Límite</th>
@@ -925,7 +940,7 @@ export default function TemploModule() {
                   <tbody>
                     {prestamos.length === 0 ? (
                       <tr>
-                        <td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No hay registros de préstamos de bienes.</td>
+                        <td colSpan={8} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No hay registros de préstamos de bienes.</td>
                       </tr>
                     ) : (
                       prestamos.map(p => {
@@ -933,6 +948,19 @@ export default function TemploModule() {
                         return (
                           <tr key={p.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
                             <td style={{ padding: '1rem', fontWeight: 600, color: '#1e293b' }}>{p.bien?.nombre}</td>
+                            <td style={{ padding: '1rem', textAlign: 'center' }}>
+                              <span style={{ 
+                                display: 'inline-block',
+                                padding: '0.15rem 0.55rem', 
+                                background: '#e0f2fe', 
+                                color: '#0369a1', 
+                                borderRadius: '9999px', 
+                                fontWeight: 700, 
+                                fontSize: '0.8rem' 
+                              }}>
+                                {p.cantidad ?? 1}
+                              </span>
+                            </td>
                             <td style={{ padding: '1rem' }}>{p.persona_nombre}</td>
                             <td style={{ padding: '1rem' }}>{new Date(p.fecha_prestamo).toLocaleDateString()}</td>
                             <td style={{ padding: '1rem' }}>

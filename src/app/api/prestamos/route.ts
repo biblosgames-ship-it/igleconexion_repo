@@ -41,12 +41,15 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Bien no encontrado' }, { status: 404 });
       }
 
+      const cantidad = data.cantidad ? Math.max(1, parseInt(data.cantidad, 10)) : 1;
+
       const prestamo = await prisma.prestamoBien.create({
         data: {
           bien_id: data.bien_id,
           persona_nombre: data.persona_nombre,
           fecha_prestamo: data.fecha_prestamo ? new Date(data.fecha_prestamo) : new Date(),
           fecha_devolucion_prevista: data.fecha_devolucion_prevista ? new Date(data.fecha_devolucion_prevista) : null,
+          cantidad,
           estado: 'PRESTADO',
           notas: data.notas
         }

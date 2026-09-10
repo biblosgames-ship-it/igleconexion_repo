@@ -1213,6 +1213,7 @@ model PrestamoBien {
   fecha_prestamo            DateTime       @default(now())
   fecha_devolucion_prevista DateTime?
   fecha_devolucion_real     DateTime?
+  cantidad                  Int            @default(1)
   estado                    String         @default("PRESTADO") // PRESTADO, DEVUELTO
   notas                     String?
   createdAt                 DateTime       @default(now())
