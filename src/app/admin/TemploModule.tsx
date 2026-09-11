@@ -911,7 +911,7 @@ export default function TemploModule() {
                       <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.25rem' }}>Devolución Prevista</label>
                       <input type="date" value={loanFechaPrev} onChange={e=>setLoanFechaPrev(e.target.value)} style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }} />
                     </div>
-                    <div style={{ gridColumn: 'span 2' }}>
+                    <div style={{ gridColumn: '1 / -1' }}>
                       <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.25rem' }}>Notas adicionales / Condiciones</label>
                       <input type="text" placeholder="Estado del equipo, detalles del evento..." value={loanNotas} onChange={e=>setLoanNotas(e.target.value)} style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }} />
                     </div>
@@ -923,8 +923,158 @@ export default function TemploModule() {
                 </div>
               )}
 
-              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              {/* VISTA MÓVIL (Tarjetas con toda la información visible sin recortes) */}
+              <div className={styles.mobileLoanView}>
+                {prestamos.length === 0 ? (
+                  <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
+                    No hay registros de préstamos de bienes.
+                  </div>
+                ) : (
+                  prestamos.map(p => {
+                    const isOverdue = p.estado === 'PRESTADO' && p.fecha_devolucion_prevista && new Date(p.fecha_devolucion_prevista) < new Date();
+                    return (
+                      <div 
+                        key={p.id} 
+                        style={{ 
+                          background: 'white', 
+                          borderRadius: '12px', 
+                          border: '1px solid #e2e8f0', 
+                          padding: '1rem', 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          gap: '0.75rem',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+                        }}
+                      >
+                        {/* Cabecera: Nombre del artículo + Cantidad + Estado */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                              <h3 style={{ margin: 0, fontSize: '0.98rem', color: '#0f172a', fontWeight: 700 }}>
+                                {p.bien?.nombre}
+                              </h3>
+                              <span style={{ 
+                                display: 'inline-block',
+                                padding: '0.15rem 0.55rem', 
+                                background: '#e0f2fe', 
+                                color: '#0369a1', 
+                                borderRadius: '9999px', 
+                                fontWeight: 700, 
+                                fontSize: '0.75rem' 
+                              }}>
+                                Cant: {p.cantidad ?? 1}
+                              </span>
+                            </div>
+                            <div style={{ color: '#475569', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                              👤 Prestado a: <strong style={{ color: '#1e293b' }}>{p.persona_nombre}</strong>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem', flexShrink: 0 }}>
+                            <span style={{ 
+                              fontSize: '0.75rem', 
+                              fontWeight: 700, 
+                              padding: '0.2rem 0.55rem', 
+                              borderRadius: '999px', 
+                              background: p.estado === 'PRESTADO' ? '#fef3c7' : '#dcfce7', 
+                              color: p.estado === 'PRESTADO' ? '#d97706' : '#15803d' 
+                            }}>
+                              {p.estado}
+                            </span>
+                            {isOverdue && (
+                              <span style={{ color: '#ef4444', fontWeight: 700, fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                ⚠️ DEMORADO
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Fechas de préstamo y límite */}
+                        <div style={{ 
+                          display: 'grid', 
+                          gridTemplateColumns: '1fr 1fr', 
+                          gap: '0.5rem', 
+                          background: '#f8fafc', 
+                          padding: '0.65rem 0.75rem', 
+                          borderRadius: '8px', 
+                          fontSize: '0.82rem',
+                          border: '1px solid #f1f5f9'
+                        }}>
+                          <div>
+                            <span style={{ display: 'block', color: '#64748b', fontSize: '0.72rem', fontWeight: 600 }}>Fecha Préstamo</span>
+                            <span style={{ fontWeight: 600, color: '#1e293b' }}>
+                              {new Date(p.fecha_prestamo).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <div>
+                            <span style={{ display: 'block', color: '#64748b', fontSize: '0.72rem', fontWeight: 600 }}>Fecha Límite</span>
+                            <span style={{ fontWeight: 600, color: isOverdue ? '#ef4444' : '#1e293b' }}>
+                              {p.fecha_devolucion_prevista ? new Date(p.fecha_devolucion_prevista).toLocaleDateString() : 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Notas */}
+                        {p.notas && (
+                          <div style={{ fontSize: '0.82rem', color: '#475569', background: '#f8fafc', padding: '0.5rem 0.75rem', borderRadius: '6px', borderLeft: '3px solid #cbd5e1' }}>
+                            <strong style={{ color: '#334155' }}>Notas:</strong> {p.notas}
+                          </div>
+                        )}
+
+                        {/* Acciones */}
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.5rem', borderTop: '1px solid #f1f5f9' }}>
+                          <div>
+                            {p.estado === 'PRESTADO' && (
+                              <button 
+                                onClick={() => returnLoan(p.id)} 
+                                style={{ 
+                                  padding: '0.45rem 0.9rem', 
+                                  background: '#16a34a', 
+                                  color: 'white', 
+                                  border: 'none', 
+                                  borderRadius: '6px', 
+                                  cursor: 'pointer', 
+                                  fontSize: '0.8rem', 
+                                  fontWeight: 700,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.35rem'
+                                }}
+                              >
+                                ✓ Devolver
+                              </button>
+                            )}
+                          </div>
+                          <button 
+                            onClick={() => deleteLoan(p.id)} 
+                            style={{ 
+                              background: '#fff1f2',
+                              border: '1px solid #fecdd3',
+                              color: '#f43f5e',
+                              cursor: 'pointer',
+                              padding: '0.45rem 0.75rem',
+                              borderRadius: '6px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                            }}
+                            title="Eliminar Registro"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                            Eliminar
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* VISTA ESCRITORIO (Tabla con contenedor desplazable horizontalmente garantizado) */}
+              <div className={`${styles.desktopLoanView} ${styles.tableScrollContainer}`}>
+                <table style={{ width: '100%', minWidth: '820px', borderCollapse: 'collapse', textAlign: 'left' }}>
                   <thead>
                     <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                       <th style={{ padding: '1rem', color: '#64748b', fontSize: '0.85rem', fontWeight: 700 }}>Artículo</th>
@@ -1333,8 +1483,8 @@ export default function TemploModule() {
                 {/* Reservas List */}
                 <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                   <h3 style={{ marginTop: 0, marginBottom: '1.25rem', color: '#0f172a', fontSize: '1rem' }}>📅 Reservas de Espacios</h3>
-                  <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+                  <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                    <table style={{ width: '100%', minWidth: '650px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
                       <thead>
                         <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                           <th style={{ padding: '0.75rem', color: '#64748b', fontWeight: 700 }}>Salón</th>
