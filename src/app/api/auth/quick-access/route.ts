@@ -11,8 +11,15 @@ export async function GET(request: Request) {
     let targetChurchId = await getActiveChurchId();
 
     if (slug) {
+      const s = slug.toLowerCase().trim();
+      const altSlug = s === "torrefuerterd" || s === "torrefuerte" ? "tf" : s === "primerahiguey" ? "plenitud" : s;
       const iglesia = await prisma.iglesia.findFirst({
-        where: { subdominio_o_slug: slug }
+        where: {
+          OR: [
+            { subdominio_o_slug: s },
+            { subdominio_o_slug: altSlug }
+          ]
+        }
       });
       if (iglesia) {
         targetChurchId = iglesia.id;
@@ -42,17 +49,23 @@ export async function GET(request: Request) {
       });
     }
 
-    // 3. Si no existe usuario en la iglesia, crear usuario invitado de miembro para acceso al hub
+    // 3. Si no existe usuario en la iglesia, buscar o crear usuario invitado de miembro para acceso al hub
     if (!user) {
-      user = await prisma.usuario.create({
-        data: {
-          iglesia_id: targetChurchId,
-          email: `visita_${targetChurchId.substring(0, 8)}@igleconexion.app`,
-          password: "guest_hub_access",
-          rol: "MIEMBRO",
-          estado: "ACTIVO"
-        }
+      const guestEmail = `visita_${targetChurchId.substring(0, 8)}@igleconexion.app`;
+      user = await prisma.usuario.findUnique({
+        where: { email: guestEmail }
       });
+      if (!user) {
+        user = await prisma.usuario.create({
+          data: {
+            iglesia_id: targetChurchId,
+            email: guestEmail,
+            password: "guest_hub_access",
+            rol: "MIEMBRO",
+            estado: "ACTIVO"
+          }
+        });
+      }
     }
 
     // Configurar cookies fijando la iglesia y rol exclusivamente de MIEMBRO para el Hub

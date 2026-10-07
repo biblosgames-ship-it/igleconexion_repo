@@ -11,6 +11,17 @@ async function ensureSuperAdminExists() {
     where: { rol: "SUPERADMIN" }
   });
   if (!superAdmin) {
+    superAdmin = await prisma.usuario.findUnique({
+      where: { email: "alexpalacio29@gmail.com" }
+    });
+    if (superAdmin && superAdmin.rol !== "SUPERADMIN") {
+      superAdmin = await prisma.usuario.update({
+        where: { id: superAdmin.id },
+        data: { rol: "SUPERADMIN" }
+      });
+    }
+  }
+  if (!superAdmin) {
     let defaultChurch = await prisma.iglesia.findFirst();
     if (!defaultChurch) {
       defaultChurch = await prisma.iglesia.create({
@@ -65,17 +76,34 @@ export async function GET() {
     // Auto-link u obtener la persona real del usuario en la iglesia activa seleccionada
     const searchChurchId = activeChurchId || user.iglesia_id;
     if (user.rol === "SUPERADMIN" || user.rol === "ADMIN_IGLESIA") {
-      let foundPersona = await prisma.persona.findFirst({
-        where: {
-          correo: user.email,
-          ...(searchChurchId ? { iglesia_id: searchChurchId } : {})
-        },
-        include: {
-          etapa: true,
-          grupo_conexion: { include: { sociedad: true } },
-          historial_tareas: { where: { completada: true } },
-        },
-      });
+      let foundPersona = null;
+      if (user.persona_id) {
+        foundPersona = await prisma.persona.findFirst({
+          where: {
+            id: user.persona_id,
+            ...(searchChurchId ? { iglesia_id: searchChurchId } : {})
+          },
+          include: {
+            etapa: true,
+            grupo_conexion: { include: { sociedad: true } },
+            historial_tareas: { where: { completada: true } },
+          },
+        });
+      }
+
+      if (!foundPersona) {
+        foundPersona = await prisma.persona.findFirst({
+          where: {
+            correo: user.email,
+            ...(searchChurchId ? { iglesia_id: searchChurchId } : {})
+          },
+          include: {
+            etapa: true,
+            grupo_conexion: { include: { sociedad: true } },
+            historial_tareas: { where: { completada: true } },
+          },
+        });
+      }
 
       if (!foundPersona && user.persona_id) {
         foundPersona = await prisma.persona.findUnique({
@@ -94,128 +122,44 @@ export async function GET() {
       }
     }
 
-    // Role switching: if user is SUPERADMIN and wants to view as MIEMBRO
-    if (viewingAsRole === "MIEMBRO" && user.rol === "SUPERADMIN" && user.persona_id) {
-      let miembroUser = await prisma.usuario.findFirst({
-        where: {
-          persona_id: user.persona_id,
-          iglesia_id: user.iglesia_id,
-          rol: "MIEMBRO",
-        },
-        select: {
-          id: true,
-          iglesia_id: true,
-          email: true,
-          password: true,
-          rol: true,
-          estado: true,
-          persona_id: true,
-          paginas_acceso: true,
-          persona: {
-            select: {
-              id: true,
-              nombre: true,
-              telefono: true,
-              fecha_nacimiento: true,
-              sexo: true,
-              foto_url: true,
-              correo: true,
-              etapa_id: true,
-              etapa: { select: { nombre_etapa: true } },
-              grupo_conexion: {
-                select: {
-                  nombre_grupo: true,
-                  sociedad: { select: { nombre_sociedad: true } },
-                },
-              },
-              historial_tareas: {
-                where: { completada: true },
-                select: { tarea_id: true },
-              },
-            },
-          },
-        },
-      });
-
-      if (!miembroUser) {
-        miembroUser = await prisma.usuario.create({
-          data: {
-            iglesia_id: user.iglesia_id,
-            email: user.email,
-            password: user.password,
-            rol: "MIEMBRO",
-            persona_id: user.persona_id,
-            estado: "ACTIVO",
-          },
-          select: {
-            id: true,
-            iglesia_id: true,
-            email: true,
-            password: true,
-            rol: true,
-            estado: true,
-            persona_id: true,
-            paginas_acceso: true,
-            persona: {
-              select: {
-                id: true,
-                nombre: true,
-                telefono: true,
-                fecha_nacimiento: true,
-                sexo: true,
-                foto_url: true,
-                correo: true,
-                etapa_id: true,
-                etapa: { select: { nombre_etapa: true } },
-                grupo_conexion: {
-                  select: {
-                    nombre_grupo: true,
-                    sociedad: { select: { nombre_sociedad: true } },
-                  },
-                },
-                historial_tareas: {
-                  where: { completada: true },
-                  select: { tarea_id: true },
-                },
-              },
-            },
-          },
-        });
-      }
-
-      if (miembroUser) {
-        const resp: any = mapUserToResponse(miembroUser);
-        resp.viewingAs = "MIEMBRO";
-        resp.canSwitchRole = true;
-        return NextResponse.json(resp);
-      }
-    }
-
-    // If superadmin is viewing as SUPERADMIN (or default), include switch info
-    if (user.rol === "SUPERADMIN" && user.persona_id) {
-      const resp: any = mapUserToResponse(user, activeChurchId);
-      resp.viewingAs = "SUPERADMIN";
-      resp.canSwitchRole = true;
-      return NextResponse.json(resp);
-    }
-
+    // 1. Validar suspensiones para usuarios regulares
     if (user.rol !== "SUPERADMIN") {
       const church = await prisma.iglesia.findUnique({ where: { id: user.iglesia_id } });
       if (church?.estado === "SUSPENDIDO") {
+        cookieStore.delete("session_token");
         cookieStore.delete("session_user_id");
         cookieStore.delete("active_iglesia_id");
         return NextResponse.json({ error: "La iglesia asociada a esta cuenta ha sido suspendida. Contacte a soporte." }, { status: 403 });
       }
       if (church && (church.estado_pago === "VENCIDO" || (church.fecha_vencimiento && new Date(church.fecha_vencimiento).getTime() < Date.now()))) {
+        cookieStore.delete("session_token");
         cookieStore.delete("session_user_id");
         cookieStore.delete("active_iglesia_id");
         return NextResponse.json({ error: "La licencia de su iglesia ha vencido o el pago mensual está pendiente. Contacte al administrador." }, { status: 403 });
       }
       if (user.estado === "SUSPENDIDO") {
+        cookieStore.delete("session_token");
         cookieStore.delete("session_user_id");
         cookieStore.delete("active_iglesia_id");
         return NextResponse.json({ error: "Su cuenta de usuario ha sido suspendida. Contacte a soporte." }, { status: 403 });
       }
+    }
+
+    // 2. Cambio de rol (vista como MIEMBRO para administradores)
+    if (viewingAsRole === "MIEMBRO" && (user.rol === "SUPERADMIN" || user.rol === "ADMIN_IGLESIA")) {
+      const resp: any = mapUserToResponse(user, searchChurchId);
+      resp.rol = "MIEMBRO";
+      resp.viewingAs = "MIEMBRO";
+      resp.canSwitchRole = true;
+      return NextResponse.json(resp);
+    }
+
+    // 3. Vista por defecto para administradores con capacidad de alternar
+    if (user.rol === "SUPERADMIN" || user.rol === "ADMIN_IGLESIA") {
+      const resp: any = mapUserToResponse(user, searchChurchId);
+      resp.viewingAs = user.rol;
+      resp.canSwitchRole = true;
+      return NextResponse.json(resp);
     }
 
     return NextResponse.json(mapUserToResponse(user, activeChurchId));
@@ -339,14 +283,23 @@ export async function POST(request: Request) {
     // 1c. Cambiar modo de vista (Admin <-> Miembro)
     if (action === "switch-role") {
       const { viewingAs } = body;
-      if (viewingAs === "SUPERADMIN" || viewingAs === "MIEMBRO") {
-        cookieStore.set("viewing_as_role", viewingAs, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
+      if (viewingAs === "SUPERADMIN" || viewingAs === "MIEMBRO" || viewingAs === "ADMIN_IGLESIA") {
+        cookieStore.set("viewing_as_role", viewingAs, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: process.env.NODE_ENV === "production" });
         return NextResponse.json({ success: true, viewingAs });
       }
       // If no viewingAs, toggle current
       const currentView = cookieStore.get("viewing_as_role")?.value;
-      const newView = currentView === "MIEMBRO" ? "SUPERADMIN" : "MIEMBRO";
-      cookieStore.set("viewing_as_role", newView, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
+      const sessionUserId = await getSessionUserId();
+      let defaultAdminRole = "SUPERADMIN";
+      if (sessionUserId) {
+        const currentUser = await prisma.usuario.findUnique({
+          where: { id: sessionUserId },
+          select: { rol: true }
+        });
+        if (currentUser?.rol === "ADMIN_IGLESIA") defaultAdminRole = "ADMIN_IGLESIA";
+      }
+      const newView = currentView === "MIEMBRO" ? defaultAdminRole : "MIEMBRO";
+      cookieStore.set("viewing_as_role", newView, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: process.env.NODE_ENV === "production" });
       return NextResponse.json({ success: true, viewingAs: newView });
     }
 
@@ -355,21 +308,28 @@ export async function POST(request: Request) {
       const { churchId } = body;
       let targetChurchId = churchId;
       if (!targetChurchId && slug) {
-        const iglesia = await prisma.iglesia.findUnique({
-          where: { subdominio_o_slug: slug }
+        const s = slug.toLowerCase().trim();
+        const altSlug = s === "torrefuerterd" || s === "torrefuerte" ? "tf" : s === "primerahiguey" ? "plenitud" : s;
+        const iglesia = await prisma.iglesia.findFirst({
+          where: {
+            OR: [
+              { subdominio_o_slug: s },
+              { subdominio_o_slug: altSlug }
+            ]
+          }
         });
         if (iglesia) targetChurchId = iglesia.id;
       }
       if (!targetChurchId) {
         return NextResponse.json({ error: "Se requiere el código, slug o ID de la iglesia" }, { status: 400 });
       }
-      cookieStore.set("active_iglesia_id", targetChurchId, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
+      cookieStore.set("active_iglesia_id", targetChurchId, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: process.env.NODE_ENV === "production" });
       return NextResponse.json({ success: true, iglesiaId: targetChurchId });
     }
 
     // 2. Manejo de Registro/Asignación Directa de Persona (Backward Compatibility)
     if (userId) {
-      let usuario = await prisma.usuario.findFirst({
+      let usuario: any = await prisma.usuario.findFirst({
         where: { persona_id: userId },
         select: {
           id: true, iglesia_id: true, email: true, password: true, rol: true,
@@ -393,34 +353,51 @@ export async function POST(request: Request) {
         });
 
         if (persona) {
-          usuario = await prisma.usuario.create({
-            data: {
-              iglesia_id: persona.iglesia_id,
-              email: persona.correo || `${persona.nombre.toLowerCase().replace(/\s+/g, "")}@igleconexion.com`,
-              password: "password123",
-              rol: "MIEMBRO",
-              persona_id: persona.id
-            },
-            select: {
-              id: true, iglesia_id: true, email: true, password: true, rol: true,
-              estado: true, persona_id: true, paginas_acceso: true,
-              persona: {
-                select: {
-                  id: true, nombre: true, telefono: true, fecha_nacimiento: true,
-                  sexo: true, foto_url: true, correo: true, etapa_id: true,
-                  etapa: { select: { nombre_etapa: true } },
-                  grupo_conexion: { select: { nombre_grupo: true, sociedad: { select: { nombre_sociedad: true } } } },
-                  historial_tareas: { where: { completada: true }, select: { tarea_id: true } },
+          const emailToUse = persona.correo || `${persona.nombre.toLowerCase().replace(/\s+/g, "")}@igleconexion.com`;
+          const existingWithEmail = await prisma.usuario.findUnique({
+            where: { email: emailToUse }
+          });
+          if (existingWithEmail) {
+            if (!existingWithEmail.persona_id) {
+              await prisma.usuario.update({
+                where: { id: existingWithEmail.id },
+                data: { persona_id: persona.id }
+              });
+            }
+            usuario = await prisma.usuario.findUnique({
+              where: { id: existingWithEmail.id },
+              include: { persona: true }
+            });
+          } else {
+            usuario = await prisma.usuario.create({
+              data: {
+                iglesia_id: persona.iglesia_id,
+                email: emailToUse,
+                password: "password123",
+                rol: "MIEMBRO",
+                persona_id: persona.id
+              },
+              select: {
+                id: true, iglesia_id: true, email: true, password: true, rol: true,
+                estado: true, persona_id: true, paginas_acceso: true,
+                persona: {
+                  select: {
+                    id: true, nombre: true, telefono: true, fecha_nacimiento: true,
+                    sexo: true, foto_url: true, correo: true, etapa_id: true,
+                    etapa: { select: { nombre_etapa: true } },
+                    grupo_conexion: { select: { nombre_grupo: true, sociedad: { select: { nombre_sociedad: true } } } },
+                    historial_tareas: { where: { completada: true }, select: { tarea_id: true } },
+                  }
                 }
               }
-            }
-          });
+            });
+          }
         }
       }
 
       if (usuario) {
-        cookieStore.set("session_user_id", usuario.id, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
-        cookieStore.set("active_iglesia_id", usuario.iglesia_id, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: true });
+        await setSessionCookie(usuario.id);
+        cookieStore.set("active_iglesia_id", usuario.iglesia_id, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: process.env.NODE_ENV === "production" });
         return NextResponse.json(mapUserToResponse(usuario));
       }
 
@@ -483,8 +460,15 @@ export async function POST(request: Request) {
       if (isSuperAdminPassValid) {
         let activeChurchId = superAdminCandidate.iglesia_id;
         if (slug) {
-          const targetChurch = await prisma.iglesia.findUnique({
-            where: { subdominio_o_slug: slug },
+          const s = slug.toLowerCase().trim();
+          const altSlug = s === "torrefuerterd" || s === "torrefuerte" ? "tf" : s === "primerahiguey" ? "plenitud" : s;
+          const targetChurch = await prisma.iglesia.findFirst({
+            where: {
+              OR: [
+                { subdominio_o_slug: s },
+                { subdominio_o_slug: altSlug }
+              ]
+            },
           });
           if (targetChurch) {
             activeChurchId = targetChurch.id;
@@ -493,33 +477,35 @@ export async function POST(request: Request) {
 
         await setSessionCookie(superAdminCandidate.id);
         cookieStore.set("active_iglesia_id", activeChurchId, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: process.env.NODE_ENV === "production" });
+        cookieStore.delete("viewing_as_role");
 
-        if (!superAdminCandidate.persona_id) {
-          let foundPersona = await prisma.persona.findFirst({
-            where: { iglesia_id: activeChurchId, correo: email },
+        let foundPersona = null;
+        if (superAdminCandidate.persona_id) {
+          foundPersona = await prisma.persona.findFirst({
+            where: { id: superAdminCandidate.persona_id, iglesia_id: activeChurchId }
           });
-
-          if (foundPersona) {
-            await prisma.usuario.update({
-              where: { id: superAdminCandidate.id },
-              data: { persona_id: foundPersona.id },
-            });
-            superAdminCandidate.persona_id = foundPersona.id;
-            const fullPersona = await prisma.persona.findUnique({
-              where: { id: foundPersona.id },
-              select: {
-                id: true, nombre: true, telefono: true, fecha_nacimiento: true,
-                sexo: true, foto_url: true, correo: true, etapa_id: true,
-                etapa: { select: { nombre_etapa: true } },
-                grupo_conexion: { select: { nombre_grupo: true, sociedad: { select: { nombre_sociedad: true } } } },
-                historial_tareas: { where: { completada: true }, select: { tarea_id: true } },
-              },
-            });
-            (superAdminCandidate as any).persona = fullPersona;
-          }
+        }
+        if (!foundPersona) {
+          foundPersona = await prisma.persona.findFirst({
+            where: { iglesia_id: activeChurchId, correo: email }
+          });
+        }
+        if (foundPersona) {
+          const fullPersona = await prisma.persona.findUnique({
+            where: { id: foundPersona.id },
+            select: {
+              id: true, nombre: true, telefono: true, fecha_nacimiento: true,
+              sexo: true, foto_url: true, correo: true, etapa_id: true,
+              etapa: { select: { nombre_etapa: true } },
+              grupo_conexion: { select: { nombre_grupo: true, sociedad: { select: { nombre_sociedad: true } } } },
+              historial_tareas: { where: { completada: true }, select: { tarea_id: true } },
+            },
+          });
+          (superAdminCandidate as any).persona = fullPersona;
+          (superAdminCandidate as any).persona_id = fullPersona?.id;
         }
 
-        const resp: any = mapUserToResponse(superAdminCandidate);
+        const resp: any = mapUserToResponse(superAdminCandidate, activeChurchId);
         resp.iglesia_id = activeChurchId;
         if (superAdminCandidate.persona_id) {
           resp.canSwitchRole = true;
@@ -534,8 +520,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Se requiere el código o slug de la iglesia" }, { status: 400 });
     }
 
-    const iglesia = await prisma.iglesia.findUnique({
-      where: { subdominio_o_slug: slug }
+    const s = slug.toLowerCase().trim();
+    const altSlug = s === "torrefuerterd" || s === "torrefuerte" ? "tf" : s === "primerahiguey" ? "plenitud" : s;
+    const iglesia = await prisma.iglesia.findFirst({
+      where: {
+        OR: [
+          { subdominio_o_slug: s },
+          { subdominio_o_slug: altSlug }
+        ]
+      }
     });
 
     if (!iglesia) {
@@ -622,6 +615,7 @@ export async function POST(request: Request) {
     // Guardar cookies de sesión y redirigir
     await setSessionCookie(user.id);
     cookieStore.set("active_iglesia_id", user.iglesia_id, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: process.env.NODE_ENV === "production" });
+    cookieStore.delete("viewing_as_role");
 
     return NextResponse.json(mapUserToResponse(user));
 

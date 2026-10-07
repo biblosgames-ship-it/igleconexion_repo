@@ -190,6 +190,7 @@ export default function SuperAdminPage() {
       console.error("Error setting active church via API:", err);
     }
     document.cookie = `active_iglesia_id=${church.id}; path=/; max-age=31536000; SameSite=Lax`;
+    document.cookie = `viewing_as_role=SUPERADMIN; path=/; max-age=31536000; SameSite=Lax`;
     window.location.href = "/admin";
   };
 
