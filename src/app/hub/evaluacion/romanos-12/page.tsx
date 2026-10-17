@@ -569,7 +569,7 @@ export default function BiblosTestRomanos12Page() {
               </div>
             </div>
 
-            <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ marginTop: '2.5rem', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '0.75rem' }}>
               <button
                 type="button"
                 onClick={() => setPasoActual(1)}
@@ -578,18 +578,44 @@ export default function BiblosTestRomanos12Page() {
                   color: 'white',
                   border: 'none',
                   borderRadius: '12px',
-                  padding: '0.85rem 2rem',
-                  fontSize: '1rem',
+                  padding: '1rem 2rem',
+                  fontSize: '1.05rem',
                   fontWeight: 800,
                   cursor: 'pointer',
-                  boxShadow: `0 4px 12px ${iglesiaColor}40`,
+                  boxShadow: `0 4px 14px ${iglesiaColor}40`,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.5rem'
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  width: '100%'
                 }}
               >
                 <span>Comenzar Evaluación</span>
                 <span>→</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowShareModal(true)}
+                style={{
+                  background: '#f8fafc',
+                  color: '#475569',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '12px',
+                  padding: '0.85rem 1.5rem',
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  width: '100%',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                }}
+              >
+                <span>📲</span>
+                <span>Compartir este formulario</span>
               </button>
             </div>
           </div>
