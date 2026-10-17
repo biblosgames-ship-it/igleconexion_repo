@@ -1,8 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import styles from "./admin.module.css";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import GoogleCalendarIcon from "@/components/GoogleCalendarIcon";
 
 const FinanzasModule = dynamic(() => import("./FinanzasModule"), {
   ssr: false,
@@ -1212,12 +1213,13 @@ const allSystemIcons = [
             newEventsList.push({
               id: "gcal-" + Date.now() + "-" + Math.random().toString(36).substring(2, 6),
               titulo: gEv.titulo,
-              descripcion: gEv.descripcion || "Evento sincronizado desde Google Calendar",
+              descripcion: gEv.descripcion || "",
               tipo: gEv.tipo || "ESPECIAL",
               fecha: gEv.fecha,
               hora: gEv.hora,
               diaSemana: "Lunes",
-              sociedadId: null
+              sociedadId: null,
+              origen: "google_calendar"
             });
             importadosCount++;
           }
@@ -1416,6 +1418,51 @@ const allSystemIcons = [
   const [showAddMiembroGroupModal, setShowAddMiembroGroupModal] = useState(false);
   const [newMiembroPuesto, setNewMiembroPuesto] = useState("LIDER");
   const [newMiembroUsuarioId, setNewMiembroUsuarioId] = useState("");
+  const [directivoSearchFilter, setDirectivoSearchFilter] = useState("");
+  const [selectedDirectivoCandidateId, setSelectedDirectivoCandidateId] = useState("");
+
+  // Listado unificado y filtrable para asignar a directivas (usuarios líderes y miembros de la iglesia)
+  const availableDirectivoCandidates = useMemo(() => {
+    const list: { id: string; type: 'usuario' | 'persona'; rawId: string; name: string; detail: string; searchStr: string }[] = [];
+    const personaIdsCovered = new Set<string>();
+
+    usuarios.forEach((u: any) => {
+      if (u.persona?.id) {
+        personaIdsCovered.add(u.persona.id);
+      }
+      const name = u.persona?.nombre || u.email.split("@")[0];
+      const rolStr = u.rol === 'SUPERADMIN' ? 'Superadmin' : u.rol === 'ADMIN_IGLESIA' ? 'Admin' : 'Líder';
+      list.push({
+        id: `u_${u.id}`,
+        type: 'usuario',
+        rawId: u.id,
+        name: name,
+        detail: `${rolStr} • ${u.email}`,
+        searchStr: `${name} ${u.email} ${u.persona?.telefono || ''}`.toLowerCase()
+      });
+    });
+
+    miembros.forEach((m: any) => {
+      if (!personaIdsCovered.has(m.id)) {
+        list.push({
+          id: `m_${m.id}`,
+          type: 'persona',
+          rawId: m.id,
+          name: m.nombre,
+          detail: `Miembro • ${m.sociedad || 'General'}${m.telefono ? ` • Tel: ${m.telefono}` : ''}`,
+          searchStr: `${m.nombre} ${m.correo || ''} ${m.telefono || ''}`.toLowerCase()
+        });
+      }
+    });
+
+    return list.sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
+  }, [usuarios, miembros]);
+
+  const filteredDirectivoCandidates = useMemo(() => {
+    if (!directivoSearchFilter.trim()) return availableDirectivoCandidates;
+    const q = directivoSearchFilter.toLowerCase().trim();
+    return availableDirectivoCandidates.filter(c => c.searchStr.includes(q));
+  }, [availableDirectivoCandidates, directivoSearchFilter]);
 
   // Estados para tickets de soporte técnico
   const [supportTickets, setSupportTickets] = useState<any[]>([]);
@@ -2213,7 +2260,27 @@ const allSystemIcons = [
 
   const handleAddMiembroGrupo = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedGrupoTrabajoId || !newMiembroUsuarioId) return;
+    const candidateId = selectedDirectivoCandidateId || (newMiembroUsuarioId ? `u_${newMiembroUsuarioId}` : "");
+    if (!selectedGrupoTrabajoId || !candidateId) {
+      alert("Por favor busca y selecciona a un líder o miembro.");
+      return;
+    }
+
+    const candidate = availableDirectivoCandidates.find(c => c.id === candidateId);
+    let payload: any = {
+      grupo_trabajo_id: selectedGrupoTrabajoId,
+      puesto: newMiembroPuesto || "LIDER"
+    };
+
+    if (candidate) {
+      if (candidate.type === "usuario") {
+        payload.usuario_id = candidate.rawId;
+      } else {
+        payload.persona_id = candidate.rawId;
+      }
+    } else if (newMiembroUsuarioId) {
+      payload.usuario_id = newMiembroUsuarioId;
+    }
 
     try {
       const res = await fetch("/api/liderazgo", {
@@ -2221,17 +2288,15 @@ const allSystemIcons = [
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "addMiembroGrupo",
-          data: {
-            grupo_trabajo_id: selectedGrupoTrabajoId,
-            usuario_id: newMiembroUsuarioId,
-            puesto: newMiembroPuesto
-          }
+          data: payload
         })
       });
       const data = await res.json();
       if (!data.error) {
         setNewMiembroPuesto("LIDER");
         setNewMiembroUsuarioId("");
+        setSelectedDirectivoCandidateId("");
+        setDirectivoSearchFilter("");
         setShowAddMiembroGroupModal(false);
         await loadConfig();
       } else {
@@ -2239,6 +2304,7 @@ const allSystemIcons = [
       }
     } catch (err) {
       console.error(err);
+      alert("Error al intentar asignar a la directiva.");
     }
   };
 
@@ -3328,7 +3394,9 @@ const allSystemIcons = [
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 700, borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem', marginBottom: '1rem', color: '#1e293b' }}>
                   ⚙️ Módulos Especiales
                 </h3>
-                <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.85rem 1.1rem', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                
+                {/* Switch Grupos de Familias */}
+                <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.85rem 1.1rem', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
                   <div>
                     <strong style={{ color: '#166534', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                       🏡 Habilitar Estructura de Grupos de Familias (Cultos de Hogar)
@@ -3347,6 +3415,43 @@ const allSystemIcons = [
                     {churchUsarGruposFamilia ? 'Módulo Activado' : 'Módulo Desactivado'}
                   </label>
                 </div>
+
+                {/* Switch BiblosTest: Romanos 12 */}
+                <div style={{ backgroundColor: '#f5f3ff', border: '1px solid #ddd6fe', padding: '0.85rem 1.1rem', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  <div style={{ flex: '1 1 300px' }}>
+                    <strong style={{ color: '#5b21b6', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      📖 BiblosTest: Evaluación Espiritual y Dones (Romanos 12)
+                    </strong>
+                    <p style={{ margin: '0.2rem 0 0.5rem 0', fontSize: '0.8rem', color: '#6d28d9' }}>
+                      Habilita la evaluación bíblica interactiva en el Hub para que los creyentes evalúen su vida espiritual, descubran su principal don ministerial y reciban recomendaciones personalizadas.
+                    </p>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <a 
+                        href="/hub/evaluacion/romanos-12" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{ fontSize: '0.78rem', color: '#6d28d9', fontWeight: 700, textDecoration: 'underline' }}
+                      >
+                        🔍 Ver Evaluación en Vivo
+                      </a>
+                    </div>
+                  </div>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.88rem', color: '#5b21b6', backgroundColor: 'white', padding: '0.4rem 0.85rem', borderRadius: '8px', border: '1px solid #c4b5fd' }}>
+                    <input 
+                      type="checkbox"
+                      checked={churchOpcionesRegistro?.activar_biblostest_romanos12 !== false}
+                      onChange={(e) => {
+                        setChurchOpcionesRegistro({
+                          ...churchOpcionesRegistro,
+                          activar_biblostest_romanos12: e.target.checked
+                        });
+                      }}
+                      style={{ accentColor: '#7c3aed', transform: 'scale(1.2)' }}
+                    />
+                    {churchOpcionesRegistro?.activar_biblostest_romanos12 !== false ? 'BiblosTest Activado' : 'BiblosTest Desactivado'}
+                  </label>
+                </div>
+
               </div>
 
               {/* Guardar Cambios Generales */}
@@ -3547,7 +3652,17 @@ const allSystemIcons = [
                             </td>
                             <td>{tipoText}</td>
                             <td>{ev.hora ? `@ ${ev.hora}` : 'Sin hora'}</td>
-                            <td style={{ color: '#64748b' }}>{ev.descripcion}</td>
+                            <td style={{ color: '#64748b' }}>
+                              {ev.descripcion && !ev.descripcion.toLowerCase().includes("sincronizado desde google") && !ev.descripcion.toLowerCase().includes("evento sincronizado desde google") ? (
+                                ev.descripcion
+                              ) : (ev.id?.startsWith("gcal-") || ev.origen === "google_calendar") ? (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', color: '#64748b' }}>
+                                  <GoogleCalendarIcon size={14} /> Google Calendar
+                                </span>
+                              ) : (
+                                '-'
+                              )}
+                            </td>
                             <td style={{ textAlign: 'center' }}>
                               <button 
                                 type="button" 
@@ -6012,46 +6127,117 @@ const allSystemIcons = [
 
               {/* MODAL 5: AGREGAR MIEMBRO A GRUPO DE TRABAJO */}
               {showAddMiembroGroupModal && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
-                  <div style={{ backgroundColor: 'white', borderRadius: '12px', maxWidth: '400px', width: '100%', padding: '1.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.15)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                      <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: '#0f172a' }}>➕ Asignar Directivo a Grupo</h3>
-                      <button onClick={() => setShowAddMiembroGroupModal(false)} style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflowY: 'auto' }}>
+                  <div style={{ backgroundColor: 'white', borderRadius: '16px', maxWidth: '460px', width: '100%', maxHeight: '90vh', overflowY: 'auto', padding: '1.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.15)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>➕ Asignar Directivo a Grupo</h3>
+                      <button onClick={() => { setShowAddMiembroGroupModal(false); setDirectivoSearchFilter(""); }} style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>&times;</button>
                     </div>
 
                     <form onSubmit={handleAddMiembroGrupo} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                        <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>Grupo Destino</label>
-                        <div style={{ padding: '0.5rem', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Área / Grupo de Trabajo</label>
+                        <div style={{ padding: '0.5rem 0.75rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700, fontSize: '0.88rem', color: '#0369a1' }}>
                           💼 {liderazgoGrupos.find(g => g.id === selectedGrupoTrabajoId)?.nombre || 'Grupo Seleccionado'}
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                        <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>Seleccionar Usuario</label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b' }}>
+                            Buscar Líder o Miembro por Nombre o Apellido
+                          </label>
+                          {directivoSearchFilter.trim() && (
+                            <span style={{ fontSize: '0.72rem', color: '#0284c7', fontWeight: 700 }}>
+                              {filteredDirectivoCandidates.length} encontrados
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Buscador en tiempo real */}
+                        <div style={{ position: 'relative' }}>
+                          <input 
+                            type="text" 
+                            placeholder="🔍 Escribe parte del nombre o apellido..." 
+                            value={directivoSearchFilter}
+                            onChange={(e) => setDirectivoSearchFilter(e.target.value)}
+                            style={{ 
+                              width: '100%', 
+                              padding: '0.55rem 2rem 0.55rem 0.75rem', 
+                              borderRadius: '8px', 
+                              border: '1.5px solid #0284c7', 
+                              fontSize: '0.85rem', 
+                              outline: 'none', 
+                              backgroundColor: '#f0f9ff', 
+                              fontWeight: 600, 
+                              color: '#0369a1',
+                              boxShadow: '0 1px 2px rgba(2, 132, 199, 0.08)' 
+                            }}
+                            autoFocus
+                          />
+                          {directivoSearchFilter && (
+                            <button
+                              type="button"
+                              onClick={() => setDirectivoSearchFilter("")}
+                              style={{
+                                position: 'absolute',
+                                right: '8px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: 'none',
+                                border: 'none',
+                                color: '#64748b',
+                                cursor: 'pointer',
+                                fontSize: '0.85rem',
+                                fontWeight: 'bold'
+                              }}
+                              title="Limpiar búsqueda"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Selector de personas filtradas */}
                         <select 
-                          value={newMiembroUsuarioId} 
-                          onChange={(e) => setNewMiembroUsuarioId(e.target.value)} 
-                          style={{ padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: 'white' }}
+                          value={selectedDirectivoCandidateId} 
+                          onChange={(e) => setSelectedDirectivoCandidateId(e.target.value)} 
+                          style={{ 
+                            width: '100%', 
+                            padding: '0.55rem', 
+                            borderRadius: '8px', 
+                            border: '1px solid #cbd5e1', 
+                            backgroundColor: 'white', 
+                            fontSize: '0.85rem' 
+                          }}
                           required
+                          size={filteredDirectivoCandidates.length > 0 && directivoSearchFilter ? Math.min(6, Math.max(2, filteredDirectivoCandidates.length + 1)) : 1}
                         >
-                          <option value="">Selecciona un usuario/líder...</option>
-                          {usuarios.map(u => (
-                            <option key={u.id} value={u.id}>
-                              👤 {u.persona?.nombre || u.email.split("@")[0]} ({u.email})
+                          <option value="">-- Selecciona de la lista ({filteredDirectivoCandidates.length} disponibles) --</option>
+                          {filteredDirectivoCandidates.map(c => (
+                            <option key={c.id} value={c.id}>
+                              👤 {c.name} — {c.detail}
                             </option>
                           ))}
                         </select>
+
+                        {filteredDirectivoCandidates.length === 0 && (
+                          <span style={{ fontSize: '0.75rem', color: '#ef4444', fontStyle: 'italic', marginTop: '0.2rem' }}>
+                            ⚠️ No se encontró a nadie con &quot;{directivoSearchFilter}&quot;. Revisa el nombre o intenta con el apellido.
+                          </span>
+                        )}
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                        <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>Cargo / Puesto</label>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Cargo / Puesto en la Directiva</label>
                         <select 
                           value={newMiembroPuesto}
                           onChange={(e) => setNewMiembroPuesto(e.target.value)}
-                          style={{ padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: 'white' }}
+                          style={{ padding: '0.55rem', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: 'white', fontSize: '0.85rem' }}
                           required
                         >
+                          <option value="Presidente">👑 Presidente</option>
+                          <option value="Vicepresidente">Vicepresidente</option>
                           <option value="Director">Director</option>
                           <option value="Subdirector">Subdirector</option>
                           <option value="Secretario">Secretario</option>
@@ -6066,7 +6252,7 @@ const allSystemIcons = [
                         </select>
                       </div>
 
-                      <button type="submit" className={styles.btnPrimary} style={{ width: '100%', padding: '0.6rem', marginTop: '0.5rem' }}>
+                      <button type="submit" className={styles.btnPrimary} style={{ width: '100%', padding: '0.65rem', marginTop: '0.5rem', fontWeight: 700 }}>
                         💾 Asignar Directivo
                       </button>
                     </form>
@@ -9060,7 +9246,25 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
   // Modal Asignación de Integrante
   const [assignGrupoId, setAssignGrupoId] = useState<string | null>(null);
   const [selectedPersonaId, setSelectedPersonaId] = useState("");
+  const [searchPersonaGf, setSearchPersonaGf] = useState("");
   const [assignAllFamily, setAssignAllFamily] = useState(true);
+
+  // Modal Asignación de Líder / Directiva a Grupo de Familia
+  const [assignLiderGfGrupoId, setAssignLiderGfGrupoId] = useState<string | null>(null);
+  const [selectedLiderPersonaId, setSelectedLiderPersonaId] = useState("");
+  const [searchLiderGf, setSearchLiderGf] = useState("");
+
+  const filteredPersonasGf = useMemo(() => {
+    if (!searchPersonaGf.trim()) return miembros;
+    const q = searchPersonaGf.toLowerCase().trim();
+    return miembros.filter((m: any) => (m.nombre || '').toLowerCase().includes(q) || (m.familia_codigo || '').toLowerCase().includes(q));
+  }, [miembros, searchPersonaGf]);
+
+  const filteredLideresGf = useMemo(() => {
+    if (!searchLiderGf.trim()) return miembros;
+    const q = searchLiderGf.toLowerCase().trim();
+    return miembros.filter((m: any) => (m.nombre || '').toLowerCase().includes(q) || (m.telefono || '').includes(q));
+  }, [miembros, searchLiderGf]);
 
   const fetchGruposFamilia = async () => {
     setLoading(true);
@@ -9377,32 +9581,29 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
                 ) : (
                   <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic' }}>Sin líderes asignados</span>
                 )}
-                <select
-                  value=""
-                  onChange={async (e) => {
-                    const val = e.target.value;
-                    if (!val) return;
-                    const res = await fetch("/api/grupos-familia", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        action: "addLiderGrupoFamilia",
-                        data: { grupo_familia_id: gf.id, persona_id: val }
-                      })
-                    });
-                    const resData = await res.json();
-                    if (resData.error) {
-                      alert(resData.error);
-                    }
-                    fetchGruposFamilia();
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAssignLiderGfGrupoId(gf.id);
+                    setSearchLiderGf("");
+                    setSelectedLiderPersonaId("");
                   }}
-                  style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: 'white' }}
+                  style={{
+                    background: '#e0f2fe',
+                    color: '#0369a1',
+                    border: '1px solid #bae6fd',
+                    padding: '0.25rem 0.65rem',
+                    borderRadius: '6px',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.3rem'
+                  }}
                 >
-                  <option value="">+ Añadir Líder al Grupo...</option>
-                  {miembros.map((m: any) => (
-                    <option key={m.id} value={m.id}>{m.nombre}</option>
-                  ))}
-                </select>
+                  ➕ Añadir Líder / Directivo
+                </button>
               </div>
 
               {/* Integrantes asignados */}
@@ -9444,20 +9645,39 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
       {/* Modal Asignar Persona a Grupo de Familia */}
       {assignGrupoId && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }} onClick={() => setAssignGrupoId(null)}>
-          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', width: '100%', maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ margin: '0 0 1rem 0', color: '#0f172a', fontSize: '1.1rem', fontWeight: 800 }}>➕ Asignar Miembro a Grupo de Familia</h3>
+          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '16px', width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
+              <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.1rem', fontWeight: 800 }}>➕ Asignar Miembro a Grupo de Familia</h3>
+              <button onClick={() => setAssignGrupoId(null)} style={{ border: 'none', background: 'transparent', fontSize: '1.4rem', cursor: 'pointer', color: '#64748b' }}>&times;</button>
+            </div>
             
             <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Seleccionar Persona</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Buscar por Nombre o Apellido</label>
+                {searchPersonaGf.trim() && (
+                  <span style={{ fontSize: '0.72rem', color: '#0284c7', fontWeight: 700 }}>
+                    {filteredPersonasGf.length} encontrados
+                  </span>
+                )}
+              </div>
+              <input 
+                type="text" 
+                placeholder="🔍 Escribe parte del nombre o apellido..." 
+                value={searchPersonaGf} 
+                onChange={(e) => setSearchPersonaGf(e.target.value)} 
+                style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #0284c7', fontSize: '0.85rem', outline: 'none', backgroundColor: '#f0f9ff', fontWeight: 600, color: '#0369a1', marginBottom: '0.5rem' }} 
+                autoFocus
+              />
               <select 
                 value={selectedPersonaId} 
                 onChange={(e) => setSelectedPersonaId(e.target.value)}
                 style={{ width: '100%', padding: '0.55rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.88rem', background: 'white' }}
+                size={searchPersonaGf ? Math.min(6, Math.max(2, filteredPersonasGf.length + 1)) : 1}
               >
-                <option value="">Buscar persona...</option>
-                {miembros.map((m: any) => (
+                <option value="">-- Selecciona de la lista ({filteredPersonasGf.length} disponibles) --</option>
+                {filteredPersonasGf.map((m: any) => (
                   <option key={m.id} value={m.id}>
-                    {m.nombre} {m.familia_codigo ? `(Código Fam: ${m.familia_codigo})` : ''}
+                    👤 {m.nombre} {m.familia_codigo ? `(Código Fam: ${m.familia_codigo})` : ''}
                   </option>
                 ))}
               </select>
@@ -9478,6 +9698,88 @@ function GruposFamiliaAdminSection({ miembros, lideres, etapas }: { miembros: an
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
               <button onClick={() => setAssignGrupoId(null)} style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '0.5rem 1rem', borderRadius: '6px', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}>Cancelar</button>
               <button onClick={handleAssignPersona} style={{ background: '#0284c7', color: 'white', border: 'none', padding: '0.5rem 1.25rem', borderRadius: '6px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}>Guardar Asignación</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Asignar Líder / Directiva a Grupo de Familia */}
+      {assignLiderGfGrupoId && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }} onClick={() => setAssignLiderGfGrupoId(null)}>
+          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '16px', width: '100%', maxWidth: '460px', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
+              <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.1rem', fontWeight: 800 }}>👤 Asignar Líder a Directiva</h3>
+              <button onClick={() => setAssignLiderGfGrupoId(null)} style={{ border: 'none', background: 'transparent', fontSize: '1.4rem', cursor: 'pointer', color: '#64748b' }}>&times;</button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b' }}>Buscar por Nombre o Apellido</label>
+                  {searchLiderGf.trim() && (
+                    <span style={{ fontSize: '0.72rem', color: '#0284c7', fontWeight: 700 }}>
+                      {filteredLideresGf.length} encontrados
+                    </span>
+                  )}
+                </div>
+                <input 
+                  type="text" 
+                  placeholder="🔍 Escribe parte del nombre o apellido..." 
+                  value={searchLiderGf} 
+                  onChange={(e) => setSearchLiderGf(e.target.value)} 
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #0284c7', fontSize: '0.85rem', outline: 'none', backgroundColor: '#f0f9ff', fontWeight: 600, color: '#0369a1' }} 
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>Seleccionar Persona</label>
+                <select 
+                  value={selectedLiderPersonaId} 
+                  onChange={(e) => setSelectedLiderPersonaId(e.target.value)}
+                  style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', background: 'white' }}
+                  size={searchLiderGf ? Math.min(6, Math.max(2, filteredLideresGf.length + 1)) : 1}
+                >
+                  <option value="">-- Selecciona de la lista ({filteredLideresGf.length} disponibles) --</option>
+                  {filteredLideresGf.map((m: any) => (
+                    <option key={m.id} value={m.id}>
+                      👤 {m.nombre} {m.telefono ? `(${m.telefono})` : ''}
+                    </option>
+                  ))}
+                </select>
+                {filteredLideresGf.length === 0 && (
+                  <p style={{ color: '#ef4444', fontSize: '0.78rem', margin: '0.3rem 0 0 0', fontStyle: 'italic' }}>
+                    No se encontró a nadie con &quot;{searchLiderGf}&quot;.
+                  </p>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button onClick={() => setAssignLiderGfGrupoId(null)} style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '0.5rem 1rem', borderRadius: '6px', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}>Cancelar</button>
+                <button 
+                  disabled={!selectedLiderPersonaId}
+                  onClick={async () => {
+                    const res = await fetch("/api/grupos-familia", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        action: "addLiderGrupoFamilia",
+                        data: { grupo_familia_id: assignLiderGfGrupoId, persona_id: selectedLiderPersonaId }
+                      })
+                    });
+                    const resData = await res.json();
+                    if (resData.error) {
+                      alert(resData.error);
+                    } else {
+                      setAssignLiderGfGrupoId(null);
+                      fetchGruposFamilia();
+                    }
+                  }} 
+                  style={{ background: selectedLiderPersonaId ? '#0284c7' : '#94a3b8', color: 'white', border: 'none', padding: '0.5rem 1.25rem', borderRadius: '6px', fontWeight: 700, fontSize: '0.85rem', cursor: selectedLiderPersonaId ? 'pointer' : 'not-allowed' }}
+                >
+                  Confirmar Asignación
+                </button>
+              </div>
             </div>
           </div>
         </div>

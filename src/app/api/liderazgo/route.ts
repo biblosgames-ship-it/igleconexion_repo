@@ -158,24 +158,76 @@ export async function POST(request: Request) {
       }
 
       case "addMiembroGrupo": {
-        const { grupo_trabajo_id, usuario_id, puesto } = data;
-        
-        // Registrar miembro
+        const { grupo_trabajo_id, usuario_id, persona_id, puesto } = data;
+        let targetUserId = usuario_id;
+
+        // Si se envió persona_id directamente, buscar o crear la cuenta de usuario para este miembro
+        if (!targetUserId && persona_id) {
+          let user = await prisma.usuario.findFirst({
+            where: { persona_id }
+          });
+
+          if (!user) {
+            const persona = await prisma.persona.findUnique({ where: { id: persona_id } });
+            if (persona) {
+              const generatedEmail = persona.correo && persona.correo.trim()
+                ? persona.correo.trim()
+                : `${persona.nombre.toLowerCase().replace(/[^a-z0-9]/g, "")}_${persona.id.slice(0, 4)}@igleconexion.local`;
+
+              user = await prisma.usuario.findUnique({ where: { email: generatedEmail } });
+              if (!user) {
+                user = await prisma.usuario.create({
+                  data: {
+                    iglesia_id: defaultIglesiaId,
+                    email: generatedEmail,
+                    password: "password123",
+                    rol: "LIDER",
+                    persona_id: persona.id,
+                  }
+                });
+              } else if (!user.persona_id) {
+                user = await prisma.usuario.update({
+                  where: { id: user.id },
+                  data: { persona_id: persona.id, rol: "LIDER" }
+                });
+              }
+            }
+          }
+          targetUserId = user?.id;
+        }
+
+        if (!targetUserId) {
+          return NextResponse.json({ error: "No se seleccionó un líder o miembro válido." }, { status: 400 });
+        }
+
+        // Evitar duplicados en el mismo grupo de directiva
+        const existingMiembro = await prisma.miembroGrupoTrabajo.findFirst({
+          where: {
+            grupo_trabajo_id,
+            usuario_id: targetUserId
+          }
+        });
+
+        if (existingMiembro) {
+          return NextResponse.json({ error: "Esta persona ya forma parte de la directiva de este grupo." }, { status: 400 });
+        }
+
+        // Registrar miembro en la directiva
         const newMiembro = await prisma.miembroGrupoTrabajo.create({
           data: {
             grupo_trabajo_id,
-            usuario_id,
+            usuario_id: targetUserId,
             puesto: puesto || "LIDER"
           }
         });
 
-        // Asegurarse de que el usuario promovido tenga el rol de LIDER en la tabla Usuario
+        // Asegurarse de que el usuario tenga rol de LIDER
         const user = await prisma.usuario.findUnique({
-          where: { id: usuario_id }
+          where: { id: targetUserId }
         });
         if (user && user.rol === "MIEMBRO") {
           await prisma.usuario.update({
-            where: { id: usuario_id },
+            where: { id: targetUserId },
             data: { rol: "LIDER" }
           });
         }

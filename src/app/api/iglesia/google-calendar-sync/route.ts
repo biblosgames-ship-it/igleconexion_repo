@@ -139,27 +139,35 @@ export async function POST(request: Request) {
     const newEventsToAdd: any[] = [];
     let countImportados = 0;
 
+    const cleanedExistingEvents = existingEvents.map((e: any) => {
+      if (e.descripcion && (e.descripcion.toLowerCase().includes("sincronizado desde google") || e.descripcion.toLowerCase().includes("evento sincronizado desde google"))) {
+        return { ...e, descripcion: "", origen: "google_calendar" };
+      }
+      return e;
+    });
+
     for (const gEv of parsedEvents) {
-      const yaExisteEnAgenda = existingEvents.some(
-        e => e.titulo?.toLowerCase().trim() === gEv.titulo?.toLowerCase().trim() && e.fecha === gEv.fecha
+      const yaExisteEnAgenda = cleanedExistingEvents.some(
+        (e: any) => e.titulo?.toLowerCase().trim() === gEv.titulo?.toLowerCase().trim() && e.fecha === gEv.fecha
       );
 
       if (!yaExisteEnAgenda) {
         newEventsToAdd.push({
           id: "gcal-" + Date.now() + "-" + Math.random().toString(36).substring(2, 6),
           titulo: gEv.titulo,
-          descripcion: gEv.descripcion || "Sincronizado desde Google Calendar",
+          descripcion: gEv.descripcion || "",
           tipo: "ESPECIAL",
           fecha: gEv.fecha,
           hora: gEv.hora,
           diaSemana: "Lunes",
-          sociedadId: null
+          sociedadId: null,
+          origen: "google_calendar"
         });
         countImportados++;
       }
     }
 
-    const updatedEventsList = [...existingEvents, ...newEventsToAdd];
+    const updatedEventsList = [...cleanedExistingEvents, ...newEventsToAdd];
 
     // Persistir directamente los eventos Y la URL guardada del calendario
     await prisma.iglesia.update({

@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import styles from "./hub.module.css";
 import Link from "next/link";
+import GoogleCalendarIcon from "@/components/GoogleCalendarIcon";
 
 export default function Hub() {
   const [churchData, setChurchData] = useState<any>(null);
@@ -499,6 +500,21 @@ export default function Hub() {
     }
   };
 
+  const isGoogleSyncDesc = (desc?: string) => {
+    if (!desc) return true;
+    const lower = desc.toLowerCase().trim();
+    return lower === "sincronizado desde google calendar" ||
+           lower === "evento sincronizado desde google calendar" ||
+           lower.startsWith("sincronizado desde google") ||
+           lower.startsWith("evento sincronizado desde google");
+  };
+
+  const isGoogleEvent = (ev: any) => {
+    return ev?.origen === "google_calendar" ||
+           ev?.id?.toString().startsWith("gcal-") ||
+           (ev?.descripcion && isGoogleSyncDesc(ev.descripcion));
+  };
+
   const regularEvents = events.filter((ev: any) => ev.tipo === "REGULAR");
   
   const hoyStr = new Date().toISOString().split("T")[0];
@@ -652,6 +668,14 @@ export default function Hub() {
                 <span className={styles.navIconLabel}>Biblioteca</span>
               </button>
             </Link>
+            {churchData?.opciones_registro?.activar_biblostest_romanos12 !== false && (
+              <Link href="/hub/evaluacion/romanos-12" title="BiblosTest: Evaluación Espiritual Romanos 12">
+                <button className={styles.navIcon} type="button" onClick={() => setMobileNavOpen(false)}>
+                  <span style={{ fontSize: '1.25rem', lineHeight: '22px' }}>📖</span>
+                  <span className={styles.navIconLabel}>BiblosTest</span>
+                </button>
+              </Link>
+            )}
             <button className={styles.navIcon} onClick={() => { setShowOracionModal(true); setOracionEnviado(false); setMobileNavOpen(false); }} title="Petición de Oración">
               <img src="/Iconos SVG/Peticiones.svg" alt="Oración" style={{ width: 22, height: 22, objectFit: 'contain' }} />
               <span className={styles.navIconLabel}>Oración</span>
@@ -908,12 +932,45 @@ export default function Hub() {
         )}
 
         {/* 📋 SECCIÓN ACCIONES PENDIENTES / DESTACADAS (PARA TI - SIDE BY SIDE STRIPS) */}
-        {((promoEvent && !isPromoRegistered) || (promoProyecto && !hasPledgedPromo) || pendingFormId || (pendingFormsList && pendingFormsList.length > 0)) && (
+        {((promoEvent && !isPromoRegistered) || (promoProyecto && !hasPledgedPromo) || pendingFormId || (pendingFormsList && pendingFormsList.length > 0) || (churchData?.opciones_registro?.activar_biblostest_romanos12 !== false)) && (
           <section style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginTop: '-0.5rem', marginBottom: '2rem' }}>
             <h3 style={{ margin: 0, fontSize: '1rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>
               ✨ Para ti (Acciones Destacadas)
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+
+              {/* Tarjeta BiblosTest: Romanos 12 */}
+              {churchData?.opciones_registro?.activar_biblostest_romanos12 !== false && (
+                <Link href="/hub/evaluacion/romanos-12" style={{ textDecoration: 'none' }}>
+                  <div 
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.85rem 1.15rem',
+                      background: 'linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%)',
+                      border: '1px solid #ddd6fe',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.03)'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.borderColor = '#7c3aed'}
+                    onMouseOut={(e) => e.currentTarget.style.borderColor = '#ddd6fe'}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                      <div style={{ fontSize: '1.5rem', background: '#ede9fe', padding: '0.4rem 0.6rem', borderRadius: '10px', color: '#6d28d9' }}>📖</div>
+                      <div>
+                        <strong style={{ display: 'block', color: '#1e293b', fontSize: '0.95rem', marginBottom: '0.1rem' }}>
+                          BiblosTest: Romanos 12
+                        </strong>
+                        <span style={{ color: '#64748b', fontSize: '0.82rem' }}>Descubre tu don espiritual y evalúa tu vida a la luz de la Palabra.</span>
+                      </div>
+                    </div>
+                    <span style={{ color: '#7c3aed', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0 }}>Evaluarme →</span>
+                  </div>
+                </Link>
+              )}
               
               {/* Tarjeta Promesa de Fe */}
               {promoProyecto && !hasPledgedPromo && (
@@ -1149,7 +1206,9 @@ export default function Hub() {
                           </span>
                         )}
                       </div>
-                      {ev.descripcion && <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>{ev.descripcion}</p>}
+                      {ev.descripcion && !isGoogleSyncDesc(ev.descripcion) && (
+                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>{ev.descripcion}</p>
+                      )}
                     </div>
                   );
                 })}
@@ -1181,27 +1240,53 @@ export default function Hub() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {specialEvents.map((ev: any) => {
                   const linkedSoc = sociedades.find((s: any) => s.id === ev.sociedadId);
+                  const isGcal = isGoogleEvent(ev);
+                  const hasCustomDesc = ev.descripcion && !isGoogleSyncDesc(ev.descripcion);
+
                   return (
                     <div key={ev.id} style={{ borderLeft: `3px solid #f59e0b`, paddingLeft: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                        <strong style={{ color: '#1e293b', fontSize: '0.9rem' }}>{ev.titulo}</strong>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#d97706', background: '#fef3c7', padding: '1px 5px', borderRadius: '4px' }}>
+                        <strong style={{ color: '#0f172a', fontSize: '0.92rem', fontWeight: 700 }}>{ev.titulo}</strong>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#d97706', background: '#fef3c7', padding: '1px 6px', borderRadius: '4px' }}>
                           🗓️ {formatFriendlyDate(ev.fecha)} {ev.hora ? `@ ${ev.hora}` : ''}
                         </span>
                         {linkedSoc && (
-                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#0369a1', background: '#e0f2fe', padding: '1px 5px', borderRadius: '4px' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#0369a1', background: '#e0f2fe', padding: '1px 6px', borderRadius: '4px' }}>
                             👥 {linkedSoc.nombre_sociedad.slice(0, 18)}
                           </span>
                         )}
+                        {isGcal && (
+                          <span title="Evento de Google Calendar" style={{ display: 'inline-flex', alignItems: 'center', marginLeft: 'auto' }}>
+                            <GoogleCalendarIcon size={14} />
+                          </span>
+                        )}
                       </div>
-                      {ev.descripcion && (
-                        <div style={{ fontSize: '0.81rem', color: '#475569', backgroundColor: '#f8fafc', padding: '0.4rem 0.65rem', borderRadius: '6px', borderLeft: '2px solid #f59e0b', marginTop: '0.25rem', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
-                          📝 {ev.descripcion}
-                        </div>
+                      {hasCustomDesc && (
+                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.15rem 0 0 0', lineHeight: '1.4', whiteSpace: 'pre-wrap' }}>
+                          {ev.descripcion}
+                        </p>
                       )}
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {(specialEvents.some((ev: any) => isGoogleEvent(ev)) || socials?.google_calendar_url) && (
+              <div style={{
+                marginTop: 'auto',
+                paddingTop: '0.65rem',
+                borderTop: '1px solid #f1f5f9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                gap: '0.4rem',
+                color: '#94a3b8',
+                fontSize: '0.72rem',
+                fontWeight: 500
+              }}>
+                <span>Google Calendar</span>
+                <GoogleCalendarIcon size={14} />
               </div>
             )}
           </div>
@@ -1591,7 +1676,9 @@ export default function Hub() {
                               <span style={{ fontSize: '0.78rem', color: color, fontWeight: 700, display: 'block', marginBottom: '0.15rem' }}>
                                 Todos los {ev.diaSemana} {ev.hora ? `@ ${ev.hora}` : ''}
                               </span>
-                              {ev.descripcion && <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0 }}>{ev.descripcion}</p>}
+                              {ev.descripcion && !isGoogleSyncDesc(ev.descripcion) && (
+                                <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0 }}>{ev.descripcion}</p>
+                              )}
                             </div>
                           );
                         })}
@@ -1610,27 +1697,53 @@ export default function Hub() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         {specialEvents.map((ev: any) => {
                           const linkedSoc = sociedades.find((s: any) => s.id === ev.sociedadId);
+                          const isGcal = isGoogleEvent(ev);
+                          const hasCustomDesc = ev.descripcion && !isGoogleSyncDesc(ev.descripcion);
+
                           return (
                             <div key={ev.id} style={{ borderLeft: '3px solid #f59e0b', paddingLeft: '0.75rem' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.15rem' }}>
-                                <strong style={{ color: '#1e293b', fontSize: '0.88rem' }}>{ev.titulo}</strong>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap', marginBottom: '0.15rem' }}>
+                                <strong style={{ color: '#0f172a', fontSize: '0.9rem', fontWeight: 700 }}>{ev.titulo}</strong>
                                 {linkedSoc && (
                                   <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#0369a1', background: '#e0f2fe', padding: '1px 4px', borderRadius: '4px' }}>
                                     {linkedSoc.nombre_sociedad.slice(0, 15)}
+                                  </span>
+                                )}
+                                {isGcal && (
+                                  <span title="Evento de Google Calendar" style={{ display: 'inline-flex', alignItems: 'center', opacity: 0.85 }}>
+                                    <GoogleCalendarIcon size={13} />
                                   </span>
                                 )}
                               </div>
                               <span style={{ fontSize: '0.78rem', color: '#d97706', fontWeight: 700, display: 'block', marginBottom: '0.15rem' }}>
                                 🗓️ {formatFriendlyDate(ev.fecha)} {ev.hora ? `@ ${ev.hora}` : ''}
                               </span>
-                              {ev.descripcion && (
-                                <div style={{ fontSize: '0.81rem', color: '#475569', backgroundColor: '#f8fafc', padding: '0.4rem 0.65rem', borderRadius: '6px', borderLeft: '2px solid #f59e0b', marginTop: '0.25rem', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
-                                  📝 {ev.descripcion}
-                                </div>
+                              {hasCustomDesc && (
+                                <p style={{ fontSize: '0.81rem', color: '#64748b', margin: '0.15rem 0 0 0', lineHeight: '1.4', whiteSpace: 'pre-wrap' }}>
+                                  {ev.descripcion}
+                                </p>
                               )}
                             </div>
                           );
                         })}
+
+                        {(specialEvents.some((ev: any) => isGoogleEvent(ev)) || socials?.google_calendar_url) && (
+                          <div style={{
+                            marginTop: '0.5rem',
+                            paddingTop: '0.65rem',
+                            borderTop: '1px solid #f1f5f9',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'flex-end',
+                            gap: '0.4rem',
+                            color: '#94a3b8',
+                            fontSize: '0.72rem',
+                            fontWeight: 500
+                          }}>
+                            <span>Sincronizado con Google Calendar</span>
+                            <GoogleCalendarIcon size={14} />
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
