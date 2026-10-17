@@ -422,6 +422,95 @@ const allSystemIcons = [
   const [generatedHubLink, setGeneratedHubLink] = useState("");
   const [copiedHubLink, setCopiedHubLink] = useState(false);
 
+  // Estados para Editor de Preguntas de BiblosTest
+  const [showBiblosEditorModal, setShowBiblosEditorModal] = useState(false);
+  const [biblosSeccionesEdit, setBiblosSeccionesEdit] = useState<any[]>([]);
+  const [biblosLoadingPreguntas, setBiblosLoadingPreguntas] = useState(false);
+  const [biblosGuardandoPreguntas, setBiblosGuardandoPreguntas] = useState(false);
+  const [biblosEsPersonalizado, setBiblosEsPersonalizado] = useState(false);
+  const [biblosFiltroSeccion, setBiblosFiltroSeccion] = useState("TODAS");
+  const [biblosSearchPregunta, setBiblosSearchPregunta] = useState("");
+  const [copiedBiblosLink, setCopiedBiblosLink] = useState(false);
+
+  const handleOpenBiblosEditor = async () => {
+    setShowBiblosEditorModal(true);
+    setBiblosLoadingPreguntas(true);
+    try {
+      const res = await fetch("/api/evaluaciones/romanos-12/preguntas");
+      if (res.ok) {
+        const data = await res.json();
+        setBiblosSeccionesEdit(data.secciones || []);
+        setBiblosEsPersonalizado(Boolean(data.esPersonalizado));
+      }
+    } catch (e) {
+      console.error("Error al cargar preguntas de BiblosTest", e);
+    } finally {
+      setBiblosLoadingPreguntas(false);
+    }
+  };
+
+  const handleGuardarPreguntasBiblos = async () => {
+    setBiblosGuardandoPreguntas(true);
+    try {
+      const res = await fetch("/api/evaluaciones/romanos-12/preguntas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ secciones: biblosSeccionesEdit })
+      });
+      if (res.ok) {
+        setBiblosEsPersonalizado(true);
+        alert("✅ Preguntas de BiblosTest guardadas exitosamente.");
+        setShowBiblosEditorModal(false);
+      } else {
+        const err = await res.json();
+        alert("Error al guardar preguntas: " + (err.error || "Error desconocido"));
+      }
+    } catch (e) {
+      alert("Error de conexión al guardar preguntas.");
+    } finally {
+      setBiblosGuardandoPreguntas(false);
+    }
+  };
+
+  const handleRestablecerPreguntasBiblos = async () => {
+    if (!confirm("¿Estás seguro de restablecer todas las preguntas a los textos bíblicos originales? Se descartarán las modificaciones personalizadas.")) {
+      return;
+    }
+    setBiblosGuardandoPreguntas(true);
+    try {
+      const res = await fetch("/api/evaluaciones/romanos-12/preguntas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "restablecer" })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBiblosSeccionesEdit(data.secciones || []);
+        setBiblosEsPersonalizado(false);
+        alert("✅ Preguntas restablecidas a los textos originales.");
+      }
+    } catch (e) {
+      alert("Error al restablecer preguntas.");
+    } finally {
+      setBiblosGuardandoPreguntas(false);
+    }
+  };
+
+  const handleUpdatePreguntaTexto = (seccionId: string, preguntaId: string, campo: string, nuevoValor: string) => {
+    setBiblosSeccionesEdit(prev => {
+      return prev.map(sec => {
+        if (sec.id !== seccionId) return sec;
+        return {
+          ...sec,
+          preguntas: sec.preguntas?.map((p: any) => {
+            if (p.id !== preguntaId) return p;
+            return { ...p, [campo]: nuevoValor };
+          })
+        };
+      });
+    });
+  };
+
   useEffect(() => {
     const slugToUse = churchSlug || "demo";
     const origin = typeof window !== "undefined" ? window.location.origin : "https://igleconexion-repo1-omega.vercel.app";
@@ -3425,7 +3514,7 @@ const allSystemIcons = [
                     <p style={{ margin: '0.2rem 0 0.5rem 0', fontSize: '0.8rem', color: '#6d28d9' }}>
                       Habilita la evaluación bíblica interactiva en el Hub para que los creyentes evalúen su vida espiritual, descubran su principal don ministerial y reciban recomendaciones personalizadas.
                     </p>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
                       <a 
                         href="/hub/evaluacion/romanos-12" 
                         target="_blank" 
@@ -3434,6 +3523,84 @@ const allSystemIcons = [
                       >
                         🔍 Ver Evaluación en Vivo
                       </a>
+                      <button
+                        type="button"
+                        onClick={handleOpenBiblosEditor}
+                        style={{
+                          background: '#7c3aed',
+                          color: 'white',
+                          border: 'none',
+                          padding: '0.35rem 0.75rem',
+                          borderRadius: '6px',
+                          fontWeight: 700,
+                          fontSize: '0.78rem',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                          boxShadow: '0 2px 4px rgba(124, 58, 237, 0.25)'
+                        }}
+                      >
+                        ✏️ Editar Preguntas y Textos
+                      </button>
+                    </div>
+
+                    {/* Generador de Enlace Directo para Compartir */}
+                    <div style={{ marginTop: '0.85rem', background: 'white', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #ddd6fe', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '0.78rem', color: '#5b21b6', fontWeight: 700 }}>
+                        📲 Enlace para Compartir con el Perfil de tu Iglesia:
+                      </span>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <input
+                          type="text"
+                          readOnly
+                          value={`${typeof window !== "undefined" ? window.location.origin : ""}/api/auth/quick-access?slug=${encodeURIComponent(churchSlug || "demo")}&redirect=/hub/evaluacion/romanos-12`}
+                          style={{ flex: '1 1 240px', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.82rem', color: '#334155', background: '#f8fafc', outline: 'none' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = `${window.location.origin}/api/auth/quick-access?slug=${encodeURIComponent(churchSlug || "demo")}&redirect=/hub/evaluacion/romanos-12`;
+                            navigator.clipboard.writeText(url);
+                            setCopiedBiblosLink(true);
+                            setTimeout(() => setCopiedBiblosLink(false), 2500);
+                          }}
+                          style={{
+                            background: copiedBiblosLink ? '#16a34a' : '#7c3aed',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0.45rem 0.85rem',
+                            borderRadius: '6px',
+                            fontWeight: 700,
+                            fontSize: '0.8rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {copiedBiblosLink ? '✅ ¡Copiado!' : '📋 Copiar Enlace'}
+                        </button>
+                        <a
+                          href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`¡Hola! Te invito a realizar la evaluación espiritual y descubrir tus dones según Romanos 12 en nuestra iglesia ${churchName || ""}. Puedes completarla aquí: ${typeof window !== "undefined" ? window.location.origin : ""}/api/auth/quick-access?slug=${encodeURIComponent(churchSlug || "demo")}&redirect=/hub/evaluacion/romanos-12`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            background: '#25D366',
+                            color: 'white',
+                            textDecoration: 'none',
+                            padding: '0.45rem 0.85rem',
+                            borderRadius: '6px',
+                            fontWeight: 700,
+                            fontSize: '0.8rem',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem'
+                          }}
+                        >
+                          💬 WhatsApp
+                        </a>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.72rem', color: '#6d28d9' }}>
+                        Al abrir este enlace, la persona entrará directamente al perfil de tu iglesia sin tener que ingresar códigos ni contraseñas.
+                      </p>
                     </div>
                   </div>
                   <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.88rem', color: '#5b21b6', backgroundColor: 'white', padding: '0.4rem 0.85rem', borderRadius: '8px', border: '1px solid #c4b5fd' }}>
@@ -3453,6 +3620,225 @@ const allSystemIcons = [
                 </div>
 
               </div>
+
+              {/* MODAL DE EDICIÓN DE PREGUNTAS BIBLOSTEST */}
+              {showBiblosEditorModal && (
+                <div 
+                  style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(15, 23, 42, 0.65)',
+                    backdropFilter: 'blur(4px)',
+                    zIndex: 99999,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '1.5rem'
+                  }}
+                  onClick={() => setShowBiblosEditorModal(false)}
+                >
+                  <div
+                    style={{
+                      background: 'white',
+                      borderRadius: '16px',
+                      maxWidth: '850px',
+                      width: '100%',
+                      maxHeight: '90vh',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                      overflow: 'hidden'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Header Modal */}
+                    <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontSize: '1.3rem' }}>✏️</span>
+                          <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.2rem', fontWeight: 800 }}>
+                            Editar Preguntas de BiblosTest (Romanos 12)
+                          </h3>
+                          <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '12px', fontWeight: 700, background: biblosEsPersonalizado ? '#dcfce7' : '#f1f5f9', color: biblosEsPersonalizado ? '#16a34a' : '#64748b' }}>
+                            {biblosEsPersonalizado ? 'Personalizado' : 'Textos Originales'}
+                          </span>
+                        </div>
+                        <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
+                          Corrige errores tipográficos o adapta la redacción de las preguntas para tu congregación.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowBiblosEditorModal(false)}
+                        style={{ background: 'none', border: 'none', fontSize: '1.25rem', color: '#94a3b8', cursor: 'pointer', padding: '0.2rem' }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    {/* Filtros y Búsqueda */}
+                    <div style={{ padding: '0.85rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center', background: 'white' }}>
+                      <div style={{ flex: '1 1 200px' }}>
+                        <input
+                          type="text"
+                          placeholder="🔍 Buscar en preguntas..."
+                          value={biblosSearchPregunta}
+                          onChange={(e) => setBiblosSearchPregunta(e.target.value)}
+                          style={{ width: '100%', padding: '0.45rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none' }}
+                        />
+                      </div>
+                      <div style={{ flex: '1 1 220px' }}>
+                        <select
+                          value={biblosFiltroSeccion}
+                          onChange={(e) => setBiblosFiltroSeccion(e.target.value)}
+                          style={{ width: '100%', padding: '0.45rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none' }}
+                        >
+                          <option value="TODAS">Ver Todas las Secciones</option>
+                          {biblosSeccionesEdit.filter(s => s.preguntas && s.preguntas.length > 0).map(s => (
+                            <option key={s.id} value={s.id}>{s.versiculoRef} - {s.titulo}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Lista de Preguntas Editables */}
+                    <div style={{ padding: '1.25rem 1.5rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                      {biblosLoadingPreguntas ? (
+                        <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
+                          ⏳ Cargando preguntas de BiblosTest...
+                        </div>
+                      ) : (
+                        biblosSeccionesEdit
+                          .filter(s => biblosFiltroSeccion === "TODAS" || s.id === biblosFiltroSeccion)
+                          .filter(s => s.preguntas && s.preguntas.length > 0)
+                          .map((sec) => {
+                            const preguntasFiltradas = sec.preguntas.filter((p: any) => 
+                              !biblosSearchPregunta || p.pregunta.toLowerCase().includes(biblosSearchPregunta.toLowerCase())
+                            );
+
+                            if (preguntasFiltradas.length === 0) return null;
+
+                            return (
+                              <div key={sec.id} style={{ background: '#f8fafc', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+                                <div style={{ marginBottom: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>
+                                  <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#7c3aed', textTransform: 'uppercase' }}>
+                                    {sec.versiculoRef}
+                                  </span>
+                                  <h4 style={{ margin: '0.1rem 0 0 0', color: '#0f172a', fontSize: '1rem', fontWeight: 800 }}>
+                                    {sec.titulo}
+                                  </h4>
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                  {preguntasFiltradas.map((p: any, idx: number) => (
+                                    <div key={p.id} style={{ background: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                                        <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155' }}>
+                                          Pregunta #{idx + 1} ({p.versiculo}):
+                                        </label>
+                                        <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>ID: {p.id}</span>
+                                      </div>
+                                      
+                                      <textarea
+                                        value={p.pregunta || ''}
+                                        onChange={(e) => handleUpdatePreguntaTexto(sec.id, p.id, 'pregunta', e.target.value)}
+                                        rows={2}
+                                        style={{ width: '100%', padding: '0.5rem 0.65rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem', color: '#0f172a', resize: 'vertical', outline: 'none' }}
+                                      />
+
+                                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
+                                        <div>
+                                          <span style={{ fontSize: '0.72rem', color: '#64748b', display: 'block', marginBottom: '2px' }}>Etiqueta Mínima (1):</span>
+                                          <input
+                                            type="text"
+                                            value={p.minLabel || ''}
+                                            onChange={(e) => handleUpdatePreguntaTexto(sec.id, p.id, 'minLabel', e.target.value)}
+                                            style={{ width: '100%', padding: '0.35rem 0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.8rem', color: '#334155' }}
+                                          />
+                                        </div>
+                                        <div>
+                                          <span style={{ fontSize: '0.72rem', color: '#64748b', display: 'block', marginBottom: '2px' }}>Etiqueta Máxima (10):</span>
+                                          <input
+                                            type="text"
+                                            value={p.maxLabel || ''}
+                                            onChange={(e) => handleUpdatePreguntaTexto(sec.id, p.id, 'maxLabel', e.target.value)}
+                                            style={{ width: '100%', padding: '0.35rem 0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.8rem', color: '#334155' }}
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })
+                      )}
+                    </div>
+
+                    {/* Footer Modal con Acciones */}
+                    <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                      <button
+                        type="button"
+                        onClick={handleRestablecerPreguntasBiblos}
+                        disabled={biblosGuardandoPreguntas}
+                        style={{
+                          background: 'white',
+                          color: '#dc2626',
+                          border: '1px solid #fca5a5',
+                          borderRadius: '8px',
+                          padding: '0.5rem 1rem',
+                          fontWeight: 700,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        🔄 Restablecer Textos Originales
+                      </button>
+
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          type="button"
+                          onClick={() => setShowBiblosEditorModal(false)}
+                          style={{
+                            background: 'white',
+                            color: '#64748b',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '8px',
+                            padding: '0.5rem 1rem',
+                            fontWeight: 700,
+                            fontSize: '0.85rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleGuardarPreguntasBiblos}
+                          disabled={biblosGuardandoPreguntas}
+                          style={{
+                            background: '#7c3aed',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '0.5rem 1.5rem',
+                            fontWeight: 800,
+                            fontSize: '0.85rem',
+                            cursor: biblosGuardandoPreguntas ? 'wait' : 'pointer',
+                            boxShadow: '0 2px 6px rgba(124, 58, 237, 0.3)'
+                          }}
+                        >
+                          {biblosGuardandoPreguntas ? 'Guardando...' : '💾 Guardar Cambios'}
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              )}
 
               {/* Guardar Cambios Generales */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>

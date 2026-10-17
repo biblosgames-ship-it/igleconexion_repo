@@ -85,8 +85,13 @@ export async function GET(request: Request) {
       secure: process.env.NODE_ENV === "production" 
     });
 
-    // Redirección estricta y segura únicamente al Hub congregacional
-    const redirectUrl = new URL("/hub", request.url);
+    // Redirección segura a la ruta solicitada o al Hub por defecto
+    const redirectParam = searchParams.get("redirect");
+    const targetPath = (redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//"))
+      ? redirectParam
+      : "/hub";
+
+    const redirectUrl = new URL(targetPath, request.url);
     return NextResponse.redirect(redirectUrl);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

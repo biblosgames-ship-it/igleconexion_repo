@@ -613,13 +613,18 @@ export function calcularResultadoBiblosTest(
   respuestasEscala: Record<string, number>,
   rankingDones: Record<number, number>,
   donSeleccionadoId: number | null,
-  diligenciasJesus: string[]
+  diligenciasJesus: string[],
+  seccionesPersonalizadas?: SeccionEvaluacion[]
 ): ResultadoEvaluacion {
+  const seccionesActivas = seccionesPersonalizadas && seccionesPersonalizadas.length > 0 
+    ? seccionesPersonalizadas 
+    : SECCIONES_EVALUACION;
+
   // 1. Calcular promedio general y desglose por sección
   let sumaTotal = 0;
   let totalPreguntas = 0;
 
-  const desgloseSecciones = SECCIONES_EVALUACION.map((sec) => {
+  const desgloseSecciones = seccionesActivas.map((sec) => {
     if (!sec.preguntas || sec.preguntas.length === 0) {
       return null;
     }
@@ -718,7 +723,7 @@ export function calcularResultadoBiblosTest(
     puntaje: number;
   }> = [];
 
-  SECCIONES_EVALUACION.forEach((sec) => {
+  seccionesActivas.forEach((sec) => {
     if (sec.preguntas) {
       sec.preguntas.forEach((p) => {
         const val = respuestasEscala[p.id] || 0;

@@ -8,7 +8,8 @@ import {
   DONES_ROMANOS_12,
   calcularResultadoBiblosTest,
   ResultadoEvaluacion,
-  DonEspiritual
+  DonEspiritual,
+  SeccionEvaluacion
 } from '@/lib/biblostest-romanos12';
 
 export default function BiblosTestRomanos12Page() {
@@ -19,9 +20,13 @@ export default function BiblosTestRomanos12Page() {
   const [submitting, setSubmitting] = useState(false);
   const [authData, setAuthData] = useState<any>(null);
   const [iglesiaColor, setIglesiaColor] = useState('#0284c7');
+  const [secciones, setSecciones] = useState<SeccionEvaluacion[]>(SECCIONES_EVALUACION);
 
   // Estado del paso actual (0: Introducción, 1 a 11: Secciones bíblicas, 12: Resultados)
   const [pasoActual, setPasoActual] = useState(0);
+
+  const STORAGE_KEY_PROGRESO = 'biblostest_romanos12_progreso';
+  const STORAGE_KEY_RESULTADO = 'biblostest_romanos12_ultimo_resultado';
 
   // Estados del formulario
   const [respuestasEscala, setRespuestasEscala] = useState<Record<string, number>>({});
@@ -31,8 +36,20 @@ export default function BiblosTestRomanos12Page() {
   const [donSeleccionadoId, setDonSeleccionadoId] = useState<number | null>(null);
   const [diligenciasJesus, setDiligenciasJesus] = useState<string[]>(['', '', '', '', '']);
 
-  // Estado del resultado final
+  // Estado del resultado final y aviso de restauración
   const [resultadoFinal, setResultadoFinal] = useState<ResultadoEvaluacion | null>(null);
+  const [avisoRestaurado, setAvisoRestaurado] = useState(false);
+
+  // Estados de compartir con acceso directo a la iglesia
+  const [churchSlug, setChurchSlug] = useState('demo');
+  const [churchNombre, setChurchNombre] = useState('Mi Iglesia');
+  const [copiedShareLink, setCopiedShareLink] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+
+  const getShareUrl = () => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${origin}/api/auth/quick-access?slug=${encodeURIComponent(churchSlug)}&redirect=/hub/evaluacion/romanos-12`;
+  };
 
   useEffect(() => {
     cargarDatosIniciales();
@@ -40,10 +57,39 @@ export default function BiblosTestRomanos12Page() {
 
   const cargarDatosIniciales = async () => {
     try {
-      const [authRes, iglRes, evalRes] = await Promise.all([
+      // 1. Restaurar progreso guardado de inmediato desde localStorage para no perder avance
+      if (typeof window !== 'undefined') {
+        try {
+          const guardadoStr = localStorage.getItem(STORAGE_KEY_PROGRESO);
+          if (guardadoStr) {
+            const guardado = JSON.parse(guardadoStr);
+            if (guardado.respuestasEscala && Object.keys(guardado.respuestasEscala).length > 0) {
+              setRespuestasEscala(guardado.respuestasEscala);
+            }
+            if (guardado.rankingDones) {
+              setRankingDones(guardado.rankingDones);
+            }
+            if (guardado.donSeleccionadoId !== undefined) {
+              setDonSeleccionadoId(guardado.donSeleccionadoId);
+            }
+            if (guardado.diligenciasJesus && Array.isArray(guardado.diligenciasJesus)) {
+              setDiligenciasJesus(guardado.diligenciasJesus);
+            }
+            if (guardado.pasoActual && guardado.pasoActual > 0 && guardado.pasoActual < 12) {
+              setPasoActual(guardado.pasoActual);
+              setAvisoRestaurado(true);
+            }
+          }
+        } catch (storageErr) {
+          console.error('Error al restaurar progreso local:', storageErr);
+        }
+      }
+
+      const [authRes, iglRes, evalRes, pregRes] = await Promise.all([
         fetch('/api/auth').catch(() => null),
         fetch('/api/iglesia').catch(() => null),
-        fetch('/api/evaluaciones/romanos-12').catch(() => null)
+        fetch('/api/evaluaciones/romanos-12').catch(() => null),
+        fetch('/api/evaluaciones/romanos-12/preguntas').catch(() => null)
       ]);
 
       if (authRes && authRes.ok) {
@@ -56,6 +102,12 @@ export default function BiblosTestRomanos12Page() {
         if (iData.color_principal) {
           setIglesiaColor(iData.color_principal);
         }
+        if (iData.subdominio_o_slug) {
+          setChurchSlug(iData.subdominio_o_slug);
+        }
+        if (iData.nombre_iglesia) {
+          setChurchNombre(iData.nombre_iglesia);
+        }
       }
 
       if (evalRes && evalRes.ok) {
@@ -64,10 +116,49 @@ export default function BiblosTestRomanos12Page() {
           setResultadoFinal(eData.miResultado);
         }
       }
+
+      if (pregRes && pregRes.ok) {
+        const pData = await pregRes.json();
+        if (pData.secciones && Array.isArray(pData.secciones) && pData.secciones.length > 0) {
+          setSecciones(pData.secciones);
+        }
+      }
     } catch (err) {
       console.error('Error al inicializar formulario BiblosTest:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Auto-guardado en tiempo real en localStorage en cada cambio
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !loading && pasoActual > 0 && pasoActual < 12) {
+      try {
+        const dataGuardar = {
+          pasoActual,
+          respuestasEscala,
+          rankingDones,
+          donSeleccionadoId,
+          diligenciasJesus,
+          updatedAt: Date.now()
+        };
+        localStorage.setItem(STORAGE_KEY_PROGRESO, JSON.stringify(dataGuardar));
+      } catch (e) {}
+    }
+  }, [pasoActual, respuestasEscala, rankingDones, donSeleccionadoId, diligenciasJesus, loading]);
+
+  const handleReiniciarProgreso = () => {
+    if (confirm('¿Deseas reiniciar la evaluación y borrar tus respuestas guardadas para comenzar desde cero?')) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(STORAGE_KEY_PROGRESO);
+      }
+      setRespuestasEscala({});
+      setRankingDones({ 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4 });
+      setDonSeleccionadoId(null);
+      setDiligenciasJesus(['', '', '', '', '']);
+      setPasoActual(0);
+      setAvisoRestaurado(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -92,7 +183,7 @@ export default function BiblosTestRomanos12Page() {
     if (paso === 0) return true;
 
     const seccionIndex = paso - 1;
-    const seccion = SECCIONES_EVALUACION[seccionIndex];
+    const seccion = secciones[seccionIndex];
     if (!seccion) return true;
 
     if (seccion.esDones) {
@@ -147,12 +238,21 @@ export default function BiblosTestRomanos12Page() {
         respuestasEscala,
         rankingDones,
         donSeleccionadoId,
-        diligenciasJesus
+        diligenciasJesus,
+        secciones
       );
 
       setResultadoFinal(resultadoCalculado);
       setPasoActual(12); // Pantalla de resultados
       window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Limpiar progreso de borrador y guardar ultimo resultado local
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.removeItem(STORAGE_KEY_PROGRESO);
+          localStorage.setItem(STORAGE_KEY_RESULTADO, JSON.stringify(resultadoCalculado));
+        } catch (e) {}
+      }
 
       // Persistir en servidor
       await fetch('/api/evaluaciones/romanos-12', {
@@ -170,6 +270,130 @@ export default function BiblosTestRomanos12Page() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleDescargarDirecta = () => {
+    if (!resultadoFinal) return;
+
+    const fechaHoy = new Date().toLocaleDateString('es-ES', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+
+    const nombreUsuario = authData?.user?.persona?.nombre 
+      ? `${authData.user.persona.nombre} ${authData.user.persona.apellido || ''}`.trim()
+      : (authData?.user?.email || 'Creyente');
+
+    const htmlDoc = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BiblosTest: Romanos 12 - Resumen Oficial</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f8fafc; color: #1e293b; margin: 0; padding: 20px; line-height: 1.5; }
+    .container { max-width: 720px; margin: 0 auto; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+    .header { text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 20px; margin-bottom: 24px; }
+    .badge { display: inline-block; background: #e0f2fe; color: #0284c7; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; text-transform: uppercase; }
+    h1 { margin: 8px 0 4px 0; font-size: 24px; color: #0f172a; }
+    .meta { font-size: 13px; color: #64748b; }
+    .score-card { background: #f8fafc; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 24px; border: 1px solid #e2e8f0; }
+    .score-num { font-size: 48px; font-weight: 900; color: #0f172a; }
+    .don-card { border-left: 6px solid ${resultadoFinal.donPrincipal.color || '#8b5cf6'}; background: #faf5ff; padding: 20px; border-radius: 8px; margin-bottom: 24px; }
+    .prio-item { border-left: 4px solid #ef4444; background: #fff1f2; padding: 12px; border-radius: 6px; margin-bottom: 10px; }
+    .progress-bar-bg { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-top: 4px; }
+    .progress-bar-fill { height: 100%; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <span class="badge">📖 Reporte Oficial BiblosTest: Romanos 12</span>
+      <h1>Evaluación Espiritual y Dones</h1>
+      <div class="meta">Creyente: <strong>${nombreUsuario}</strong> • Fecha: ${fechaHoy}</div>
+    </div>
+
+    <div class="score-card">
+      <div style="font-size: 32px; margin-bottom: 4px;">${resultadoFinal.categoriaEspiritual.insignia}</div>
+      <div style="font-size: 13px; font-weight: 800; color: ${resultadoFinal.categoriaEspiritual.color}; text-transform: uppercase;">
+        ${resultadoFinal.categoriaEspiritual.titulo}
+      </div>
+      <div class="score-num">${resultadoFinal.promedioGeneral} <span style="font-size: 18px; color: #64748b;">/ 10</span> (${resultadoFinal.porcentajeGeneral}%)</div>
+      <p style="margin: 8px 0 0 0; font-size: 14px; color: #475569;">${resultadoFinal.categoriaEspiritual.descripcion}</p>
+    </div>
+
+    <div class="don-card">
+      <div style="font-size: 12px; font-weight: 800; color: ${resultadoFinal.donPrincipal.color || '#8b5cf6'}; text-transform: uppercase;">
+        Tu Principal Don Espiritual (Romanos 12:6-8)
+      </div>
+      <h2 style="margin: 4px 0 10px 0; font-size: 22px; color: #0f172a;">${resultadoFinal.donPrincipal.icono} ${resultadoFinal.donPrincipal.nombre}</h2>
+      <p style="margin: 0 0 14px 0; font-size: 14px; color: #334155; font-style: italic;">"${resultadoFinal.donPrincipal.parrafo}"</p>
+      
+      <div style="background: white; padding: 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e2e8f0;">
+        <strong style="color: #166534; font-size: 13px;">🏛️ Ministerios Recomendados en la Iglesia:</strong>
+        <p style="margin: 4px 0 0 0; font-size: 13px; color: #15803d;">${resultadoFinal.donPrincipal.ministeriosRecomendados}</p>
+      </div>
+
+      <div style="background: white; padding: 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e2e8f0;">
+        <strong style="color: #1e40af; font-size: 13px;">📖 Estudio Bíblico Recomendado:</strong>
+        <p style="margin: 4px 0 0 0; font-size: 13px; color: #1d4ed8;">${resultadoFinal.donPrincipal.estudioBiblicoRecomendado}</p>
+      </div>
+
+      <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <strong style="color: #92400e; font-size: 13px;">💡 Consejo de Mayordomía:</strong>
+        <p style="margin: 4px 0 0 0; font-size: 13px; color: #b45309;">${resultadoFinal.donPrincipal.consejosPracticos}</p>
+      </div>
+    </div>
+
+    <h3 style="color: #0f172a; margin: 24px 0 12px 0;">🎯 Cosas que Debes Priorizar para Crecer</h3>
+    ${resultadoFinal.prioridades.map((prio, idx) => `
+      <div class="prio-item">
+        <div style="font-size: 11px; font-weight: 800; color: #be123c; text-transform: uppercase;">Prioridad ${idx + 1} • ${prio.versiculo} (Puntaje: ${prio.puntaje}/10)</div>
+        <div style="font-weight: 700; color: #881337; margin: 4px 0; font-size: 13px;">${prio.pregunta}</div>
+        <div style="font-size: 12px; color: #4c0519; margin-bottom: 4px;">📖 <strong>Principio Bíblico:</strong> ${prio.motivoBiblico}</div>
+        <div style="font-size: 12px; color: #0f172a; background: white; padding: 6px; border-radius: 4px;">🚀 <strong>Paso Práctico:</strong> ${prio.planAccion}</div>
+      </div>
+    `).join('')}
+
+    ${resultadoFinal.diligenciasJesus && resultadoFinal.diligenciasJesus.length > 0 ? `
+      <h3 style="color: #0f172a; margin: 24px 0 12px 0;">🔥 Tus 5 Diligencias de Jesús (Romanos 12:11)</h3>
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px;">
+        ${resultadoFinal.diligenciasJesus.map((d, i) => `
+          <div style="margin-bottom: 6px; font-size: 13px; color: #334155;"><strong>${i + 1}.</strong> ${d}</div>
+        `).join('')}
+      </div>
+    ` : ''}
+
+    <h3 style="color: #0f172a; margin: 24px 0 12px 0;">📊 Desglose por Áreas Evaluadas</h3>
+    ${resultadoFinal.desgloseSecciones.map((sec) => `
+      <div style="margin-bottom: 10px;">
+        <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700;">
+          <span>${sec.titulo}</span>
+          <span>${sec.promedio} / 10</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" style="width: ${sec.porcentaje}%; background: ${sec.promedio >= 7.5 ? '#16a34a' : sec.promedio >= 5 ? '#f59e0b' : '#ef4444'};"></div>
+        </div>
+      </div>
+    `).join('')}
+
+    <div style="margin-top: 30px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 14px;">
+      Documento generado por IgleConexión • BiblosTest: Romanos 12
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const blob = new Blob([htmlDoc], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `BiblosTest_Romanos12_${new Date().toISOString().slice(0, 10)}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   if (loading) {
@@ -208,24 +432,48 @@ export default function BiblosTestRomanos12Page() {
             </button>
           </Link>
 
-          {resultadoFinal && pasoActual < 12 && (
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <button
               type="button"
-              onClick={() => setPasoActual(12)}
+              onClick={() => setShowShareModal(true)}
               style={{
-                background: '#e0f2fe',
-                border: '1px solid #7dd3fc',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                background: '#f5f3ff',
+                border: '1px solid #ddd6fe',
                 padding: '0.5rem 1rem',
                 borderRadius: '10px',
-                color: '#0284c7',
+                color: '#6d28d9',
                 fontWeight: 700,
-                fontSize: '0.85rem',
-                cursor: 'pointer'
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+                boxShadow: '0 1px 2px rgba(109, 40, 217, 0.08)'
               }}
+              title="Compartir evaluación con enlace directo a nuestra iglesia"
             >
-              🏆 Ver Mi Último Resultado
+              <span>📲</span> Compartir
             </button>
-          )}
+
+            {resultadoFinal && pasoActual < 12 && (
+              <button
+                type="button"
+                onClick={() => setPasoActual(12)}
+                style={{
+                  background: '#e0f2fe',
+                  border: '1px solid #7dd3fc',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '10px',
+                  color: '#0284c7',
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer'
+                }}
+              >
+                🏆 Ver Mi Último Resultado
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Banner Principal del Test */}
@@ -256,8 +504,8 @@ export default function BiblosTestRomanos12Page() {
           {pasoActual > 0 && pasoActual <= 11 && (
             <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: '#cbd5e1', marginBottom: '0.4rem', fontWeight: 600 }}>
-                <span>Paso {pasoActual} de 11: {SECCIONES_EVALUACION[pasoActual - 1]?.versiculoRef}</span>
-                <span>{Math.round((pasoActual / 11) * 100)}% Completado</span>
+                <span>Paso {pasoActual} de {secciones.length}: {secciones[pasoActual - 1]?.versiculoRef}</span>
+                <span>{Math.round((pasoActual / (secciones.length || 11)) * 100)}% Completado</span>
               </div>
               <div style={{ height: '8px', background: 'rgba(255,255,255,0.15)', borderRadius: '999px', overflow: 'hidden' }}>
                 <div
@@ -351,11 +599,39 @@ export default function BiblosTestRomanos12Page() {
         {/* PASOS 1 A 11: SECCIONES BÍBLICAS */}
         {/* ======================================================== */}
         {pasoActual >= 1 && pasoActual <= 11 && (() => {
-          const seccion = SECCIONES_EVALUACION[pasoActual - 1];
+          const seccion = secciones[pasoActual - 1];
           if (!seccion) return null;
 
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+              {/* Banner de Progreso Guardado Automáticamente */}
+              <div 
+                style={{ 
+                  background: '#fef3c7', 
+                  border: '1px solid #fde68a', 
+                  borderRadius: '12px', 
+                  padding: '0.65rem 1rem', 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  flexWrap: 'wrap', 
+                  gap: '0.5rem',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#92400e', fontSize: '0.86rem', fontWeight: 600 }}>
+                  <span>💾</span>
+                  <span>Progreso guardado automáticamente. Si sales de la app, continuarás en el <strong>Paso {pasoActual} de {secciones.length}</strong>.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleReiniciarProgreso}
+                  style={{ background: 'none', border: 'none', color: '#b45309', fontSize: '0.78rem', textDecoration: 'underline', cursor: 'pointer', fontWeight: 700 }}
+                >
+                  Reiniciar desde cero
+                </button>
+              </div>
 
               {/* Tarjeta de Versículo Base */}
               <div
@@ -533,7 +809,7 @@ export default function BiblosTestRomanos12Page() {
               )}
 
               {/* Preguntas de Escala del 1 al 10 */}
-              {seccion.preguntas && seccion.preguntas.map((p) => {
+              {seccion.preguntas && seccion.preguntas.map((p: any) => {
                 const valorSeleccionado = respuestasEscala[p.id] || null;
                 return (
                   <div
@@ -923,6 +1199,30 @@ export default function BiblosTestRomanos12Page() {
 
             {/* Botones de Acción Final */}
             <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap', marginTop: '1rem' }}>
+              {/* Opción 1: Descarga Directa del Resumen */}
+              <button
+                type="button"
+                onClick={handleDescargarDirecta}
+                style={{
+                  background: '#059669',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  padding: '0.85rem 1.6rem',
+                  fontWeight: 800,
+                  fontSize: '0.95rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 10px rgba(5, 150, 105, 0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+                title="Descarga directamente un archivo con todo tu resultado sin pasar por opciones de impresora"
+              >
+                <span>📥</span> Descargar Resumen Directo
+              </button>
+
+              {/* Opción 2: Imprimir en Papel */}
               <button
                 type="button"
                 onClick={() => window.print()}
@@ -931,7 +1231,7 @@ export default function BiblosTestRomanos12Page() {
                   color: '#334155',
                   border: '1px solid #cbd5e1',
                   borderRadius: '12px',
-                  padding: '0.85rem 1.75rem',
+                  padding: '0.85rem 1.5rem',
                   fontWeight: 800,
                   fontSize: '0.95rem',
                   cursor: 'pointer',
@@ -940,14 +1240,46 @@ export default function BiblosTestRomanos12Page() {
                   alignItems: 'center',
                   gap: '0.5rem'
                 }}
+                title="Abre la ventana de la impresora para imprimir en papel"
               >
-                <span>🖨️</span> Imprimir / Guardar PDF
+                <span>🖨️</span> Imprimir en Papel
+              </button>
+
+              {/* Opción 3: Compartir con Hermanos / Amigos */}
+              <button
+                type="button"
+                onClick={() => setShowShareModal(true)}
+                style={{
+                  background: '#6d28d9',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  padding: '0.85rem 1.6rem',
+                  fontWeight: 800,
+                  fontSize: '0.95rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 10px rgba(109, 40, 217, 0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+                title="Comparte la evaluación vinculada directamente al perfil de tu iglesia"
+              >
+                <span>📲</span> Compartir con Hermanos
               </button>
 
               <button
                 type="button"
                 onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    localStorage.removeItem(STORAGE_KEY_PROGRESO);
+                  }
+                  setRespuestasEscala({});
+                  setRankingDones({ 1: 4, 2: 4, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4 });
+                  setDonSeleccionadoId(null);
+                  setDiligenciasJesus(['', '', '', '', '']);
                   setPasoActual(0);
+                  setAvisoRestaurado(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 style={{
@@ -983,6 +1315,125 @@ export default function BiblosTestRomanos12Page() {
               </button>
             </div>
 
+          </div>
+        )}
+
+        {/* MODAL PARA COMPARTIR EVALUACIÓN DE LA IGLESIA */}
+        {showShareModal && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(15, 23, 42, 0.65)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 99999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1rem'
+            }}
+            onClick={() => setShowShareModal(false)}
+          >
+            <div
+              style={{
+                background: 'white',
+                borderRadius: '16px',
+                maxWidth: '520px',
+                width: '100%',
+                padding: '1.75rem',
+                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1rem'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '1.5rem' }}>📲</span>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#0f172a', fontWeight: 800 }}>
+                    Compartir BiblosTest
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowShareModal(false)}
+                  style={{ background: 'none', border: 'none', fontSize: '1.25rem', color: '#94a3b8', cursor: 'pointer' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <p style={{ margin: 0, color: '#475569', fontSize: '0.9rem', lineHeight: '1.5' }}>
+                Comparte este enlace para que cualquier hermano o visitante ingrese <strong>directamente al perfil de {churchNombre}</strong> y complete su evaluación sin tener que registrarse previamente ni ingresar códigos.
+              </p>
+
+              <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700 }}>Enlace directo de tu iglesia:</span>
+                <input
+                  type="text"
+                  readOnly
+                  value={getShareUrl()}
+                  style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.82rem', color: '#0f172a', background: 'white', outline: 'none' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(getShareUrl());
+                    setCopiedShareLink(true);
+                    setTimeout(() => setCopiedShareLink(false), 2500);
+                  }}
+                  style={{
+                    flex: '1 1 140px',
+                    padding: '0.75rem 1rem',
+                    background: copiedShareLink ? '#16a34a' : iglesiaColor,
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '10px',
+                    fontWeight: 700,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.4rem',
+                    boxShadow: `0 2px 6px ${iglesiaColor}33`
+                  }}
+                >
+                  <span>{copiedShareLink ? '✅' : '📋'}</span>
+                  <span>{copiedShareLink ? '¡Enlace Copiado!' : 'Copiar Enlace'}</span>
+                </button>
+
+                <a
+                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`¡Hola! Te invito a realizar la evaluación espiritual y descubrir tus dones según Romanos 12 en nuestra iglesia ${churchNombre}. Puedes completarla aquí: ${getShareUrl()}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    flex: '1 1 140px',
+                    padding: '0.75rem 1rem',
+                    background: '#25D366',
+                    color: 'white',
+                    textDecoration: 'none',
+                    borderRadius: '10px',
+                    fontWeight: 700,
+                    fontSize: '0.88rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.4rem',
+                    boxShadow: '0 2px 6px rgba(37, 211, 102, 0.3)'
+                  }}
+                >
+                  <span>💬</span> WhatsApp
+                </a>
+              </div>
+            </div>
           </div>
         )}
 

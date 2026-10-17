@@ -116,12 +116,27 @@ export async function POST(request: Request) {
       emailInvitado = ''
     } = body;
 
+    const iglesia = await prisma.iglesia.findUnique({
+      where: { id: iglesiaId },
+      select: { opciones_registro: true }
+    });
+    let seccionesCustom = undefined;
+    if (iglesia?.opciones_registro) {
+      try {
+        const parsed = JSON.parse(iglesia.opciones_registro);
+        if (parsed.biblostest_preguntas && Array.isArray(parsed.biblostest_preguntas) && parsed.biblostest_preguntas.length > 0) {
+          seccionesCustom = parsed.biblostest_preguntas;
+        }
+      } catch (e) {}
+    }
+
     // 1. Calcular resultado completo con el motor teológico de Romanos 12
     const resultado = calcularResultadoBiblosTest(
       respuestasEscala,
       rankingDones,
       donSeleccionadoId,
-      diligenciasJesus
+      diligenciasJesus,
+      seccionesCustom
     );
 
     // 2. Comprobar si el usuario está logueado
