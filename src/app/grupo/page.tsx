@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import styles from "./grupo.module.css";
@@ -69,6 +69,12 @@ function GrupoContent() {
   const [attendanceTitle, setAttendanceTitle] = useState("Reunión Semanal del Grupo");
   const [presentIds, setPresentIds] = useState<string[]>([]);
   const [attendanceSubmitting, setAttendanceSubmitting] = useState(false);
+  const [editingAttendanceId, setEditingAttendanceId] = useState<string | null>(null);
+  const [attendanceSortOrder, setAttendanceSortOrder] = useState<"desc" | "asc">("desc");
+  const [expandedAttendanceHistId, setExpandedAttendanceHistId] = useState<string | null>(null);
+  const [absenceSortCriteria, setAbsenceSortCriteria] = useState<"total" | "consecutive" | "name">("total");
+  const [expandedMemberHistoryId, setExpandedMemberHistoryId] = useState<string | null>(null);
+  const attendanceFormRef = useRef<HTMLDivElement>(null);
 
   // Agreement states
   const [agreementTitle, setAgreementTitle] = useState("");
@@ -703,14 +709,16 @@ function GrupoContent() {
     if (!selectedDirigido) return;
     setAttendanceSubmitting(true);
     try {
+      const isEditing = !!editingAttendanceId;
       const res = await fetch("/api/grupo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "addAttendance",
+          action: isEditing ? "updateAttendance" : "addAttendance",
           data: {
-            grupo_conexion_id: selectedDirigido.id,
+            ...(isEditing ? { id: editingAttendanceId } : { grupo_conexion_id: selectedDirigido.id }),
             fecha: attendanceDate,
+            titulo_reunion: attendanceTitle.trim() || "Reunión Semanal del Grupo",
             presentes_ids: presentIds,
           },
         }),
@@ -719,8 +727,11 @@ function GrupoContent() {
       if (data.error) {
         alert("Error: " + data.error);
       } else {
-        alert("¡Asistencia registrada con éxito!");
-        // Reset checklist
+        alert(isEditing ? "¡Asistencia actualizada con éxito!" : "¡Asistencia registrada con éxito!");
+        // Reset checklist & editing state
+        setEditingAttendanceId(null);
+        setAttendanceDate(new Date().toISOString().split("T")[0]);
+        setAttendanceTitle("Reunión Semanal del Grupo");
         setPresentIds(selectedDirigido.personas?.map((p: any) => p.id) || []);
         await loadData();
       }
@@ -729,6 +740,54 @@ function GrupoContent() {
       alert("Error de red.");
     } finally {
       setAttendanceSubmitting(false);
+    }
+  };
+
+  const handleEditAttendance = (a: any) => {
+    setEditingAttendanceId(a.id);
+    const dateFormatted = getAttendanceInputDate(a.fecha);
+    setAttendanceDate(dateFormatted);
+    setAttendanceTitle(a.titulo_reunion || "Reunión Semanal del Grupo");
+    setPresentIds(Array.isArray(a.presentes_ids) ? [...a.presentes_ids] : []);
+    if (attendanceFormRef.current) {
+      attendanceFormRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const handleCancelEditAttendance = () => {
+    setEditingAttendanceId(null);
+    setAttendanceDate(new Date().toISOString().split("T")[0]);
+    setAttendanceTitle("Reunión Semanal del Grupo");
+    setPresentIds(selectedDirigido?.personas?.map((p: any) => p.id) || []);
+  };
+
+  const handleDeleteAttendance = async (attendanceId: string, fechaStr: string) => {
+    const formatted = formatFriendlyDate(fechaStr);
+    if (!confirm(`¿Estás seguro de que deseas eliminar la asistencia del ${formatted}? Podrás volver a pasarla desde cero.`)) {
+      return;
+    }
+    try {
+      const res = await fetch("/api/grupo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "deleteAttendance",
+          data: { id: attendanceId },
+        }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        alert("Error al eliminar la asistencia: " + data.error);
+      } else {
+        alert("Asistencia eliminada correctamente.");
+        if (editingAttendanceId === attendanceId) {
+          handleCancelEditAttendance();
+        }
+        await loadData();
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error de conexión al eliminar la asistencia.");
     }
   };
 
@@ -808,12 +867,43 @@ function GrupoContent() {
   // Helper: Format Dates
   const formatFriendlyDate = (dateStr: string) => {
     if (!dateStr) return "";
+    const clean = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+    const parts = clean.split("-");
+    if (parts.length === 3) {
+      const [year, month, day] = parts;
+      return `${day}/${month}/${year}`;
+    }
     const date = new Date(dateStr);
     return date.toLocaleDateString("es-ES", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
     });
+  };
+
+  const formatFriendlyDateWithDay = (dateStr: string) => {
+    if (!dateStr) return "";
+    const clean = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+    const parts = clean.split("-");
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const d = new Date(year, month, day, 12, 0, 0);
+      const weekday = d.toLocaleDateString("es-ES", { weekday: "long" });
+      const capitalized = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+      return `${capitalized}, ${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("es-ES", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
+  };
+
+  const getAttendanceInputDate = (dateVal: string | Date) => {
+    if (!dateVal) return new Date().toISOString().split("T")[0];
+    if (typeof dateVal === "string") {
+      return dateVal.split("T")[0];
+    }
+    return new Date(dateVal).toISOString().split("T")[0];
   };
 
   // Helper: Extract completed task IDs safely from a member
@@ -2082,10 +2172,47 @@ function GrupoContent() {
               <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
                 <div className={styles.dashboardLayout}>
                   {/* Form column */}
-                  <div className={styles.card}>
-                    <div className={styles.cardHeader}>
-                      <h2 className={styles.cardTitle}>📝 Hoja de Registro de Asistencia</h2>
+                  <div className={styles.card} ref={attendanceFormRef}>
+                    <div className={styles.cardHeader} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <h2 className={styles.cardTitle}>
+                        {editingAttendanceId ? "✏️ Modificar Hoja de Asistencia" : "📝 Hoja de Registro de Asistencia"}
+                      </h2>
+                      {editingAttendanceId && (
+                        <span style={{ fontSize: "0.75rem", background: "#fef3c7", color: "#b45309", padding: "2px 8px", borderRadius: "12px", fontWeight: 700 }}>
+                          Modo Edición
+                        </span>
+                      )}
                     </div>
+
+                    {editingAttendanceId && (
+                      <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", padding: "0.75rem 1rem", borderRadius: "8px", marginBottom: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
+                        <div>
+                          <strong style={{ fontSize: "0.85rem", color: "#1e40af", display: "block" }}>
+                            ✏️ Editando Asistencia del {formatFriendlyDate(attendanceDate)}
+                          </strong>
+                          <span style={{ fontSize: "0.75rem", color: "#3b82f6" }}>
+                            Puedes modificar la fecha, el título o la lista de presentes. Luego haz clic en "Guardar Cambios".
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleCancelEditAttendance}
+                          style={{
+                            background: "#ffffff",
+                            border: "1px solid #cbd5e1",
+                            borderRadius: "6px",
+                            padding: "0.35rem 0.75rem",
+                            fontSize: "0.75rem",
+                            fontWeight: 700,
+                            color: "#475569",
+                            cursor: "pointer",
+                            whiteSpace: "nowrap"
+                          }}
+                        >
+                          ✕ Cancelar
+                        </button>
+                      </div>
+                    )}
 
                     <form onSubmit={handleSaveAttendance} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
@@ -2112,7 +2239,39 @@ function GrupoContent() {
                       </div>
 
                       <div className={styles.formGroup}>
-                        <label className={styles.label}>Marcar Asistentes</label>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem", flexWrap: "wrap", gap: "0.5rem" }}>
+                          <label className={styles.label} style={{ margin: 0 }}>
+                            Marcar Asistentes ({presentIds.length} de {selectedDirigido.personas?.length || 0} presentes)
+                          </label>
+                          <div style={{ display: "flex", gap: "0.35rem" }}>
+                            <button
+                              type="button"
+                              onClick={() => setPresentIds(selectedDirigido.personas?.map((p: any) => p.id) || [])}
+                              style={{ fontSize: "0.72rem", padding: "2px 8px", background: "#dcfce7", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: "4px", cursor: "pointer", fontWeight: 700 }}
+                            >
+                              ✓ Todos
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setPresentIds([])}
+                              style={{ fontSize: "0.72rem", padding: "2px 8px", background: "#f1f5f9", color: "#64748b", border: "1px solid #cbd5e1", borderRadius: "4px", cursor: "pointer", fontWeight: 700 }}
+                            >
+                              ✕ Ninguno
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const currentSet = new Set(presentIds);
+                                const inverted = (selectedDirigido.personas || []).filter((p: any) => !currentSet.has(p.id)).map((p: any) => p.id);
+                                setPresentIds(inverted);
+                              }}
+                              style={{ fontSize: "0.72rem", padding: "2px 8px", background: "#f3e8ff", color: "#7c3aed", border: "1px solid #e9d5ff", borderRadius: "4px", cursor: "pointer", fontWeight: 700 }}
+                            >
+                              🔄 Invertir
+                            </button>
+                          </div>
+                        </div>
+
                         <div className={styles.attendanceGrid}>
                           {selectedDirigido.personas && selectedDirigido.personas.length > 0 ? (
                             selectedDirigido.personas.map((p: any) => {
@@ -2121,6 +2280,10 @@ function GrupoContent() {
                                 <div
                                   key={p.id}
                                   className={styles.attendanceRow}
+                                  style={{
+                                    backgroundColor: isChecked ? "#f0fdf4" : "white",
+                                    borderColor: isChecked ? "#bbf7d0" : "#e2e8f0"
+                                  }}
                                   onClick={() => {
                                     if (isChecked) {
                                       setPresentIds(presentIds.filter((id) => id !== p.id));
@@ -2130,8 +2293,12 @@ function GrupoContent() {
                                   }}
                                 >
                                   <div className={styles.attendanceCheck}>
-                                    <span>{isChecked ? "☑" : "☐"}</span>
-                                    <span>{p.nombre}</span>
+                                    <span style={{ fontSize: "1.1rem", color: isChecked ? "#16a34a" : "#94a3b8" }}>
+                                      {isChecked ? "☑" : "☐"}
+                                    </span>
+                                    <span style={{ fontWeight: isChecked ? 600 : 400, color: isChecked ? "#15803d" : "#1e293b" }}>
+                                      {p.nombre}
+                                    </span>
                                   </div>
                                   <span style={{ fontSize: "0.75rem", color: "#64748b" }}>
                                     {p.etapa?.nombre_etapa}
@@ -2147,46 +2314,227 @@ function GrupoContent() {
                         </div>
                       </div>
 
-                      <button
-                        type="submit"
-                        className={styles.primaryBtn}
-                        disabled={attendanceSubmitting || !selectedDirigido.personas?.length}
-                      >
-                        {attendanceSubmitting ? "Registrando..." : "💾 Guardar Hoja de Asistencia"}
-                      </button>
+                      <div style={{ display: "flex", gap: "0.75rem" }}>
+                        <button
+                          type="submit"
+                          className={styles.primaryBtn}
+                          disabled={attendanceSubmitting || !selectedDirigido.personas?.length}
+                          style={{ flex: 1 }}
+                        >
+                          {attendanceSubmitting
+                            ? (editingAttendanceId ? "Guardando cambios..." : "Registrando...")
+                            : (editingAttendanceId ? "💾 Guardar Cambios en Asistencia" : "💾 Guardar Hoja de Asistencia")}
+                        </button>
+                        {editingAttendanceId && (
+                          <button
+                            type="button"
+                            className={styles.secondaryBtn}
+                            onClick={handleCancelEditAttendance}
+                          >
+                            ✕ Cancelar
+                          </button>
+                        )}
+                      </div>
                     </form>
                   </div>
 
                   {/* History column */}
                   <div className={styles.card}>
-                    <div className={styles.cardHeader}>
-                      <h2 className={styles.cardTitle}>📜 Historial de Asistencias</h2>
+                    <div className={styles.cardHeader} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
+                      <div>
+                        <h2 className={styles.cardTitle}>📜 Historial de Asistencias</h2>
+                        <span style={{ fontSize: "0.75rem", color: "#64748b" }}>
+                          {selectedDirigido.asistencias?.length || 0} reuniones registradas
+                        </span>
+                      </div>
+                      {selectedDirigido.asistencias && selectedDirigido.asistencias.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setAttendanceSortOrder(prev => prev === "desc" ? "asc" : "desc")}
+                          style={{
+                            fontSize: "0.75rem",
+                            padding: "4px 10px",
+                            borderRadius: "6px",
+                            border: "1px solid #cbd5e1",
+                            background: "#f8fafc",
+                            color: "#334155",
+                            cursor: "pointer",
+                            fontWeight: 600,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px"
+                          }}
+                          title="Alternar orden por fechas"
+                        >
+                          📅 {attendanceSortOrder === "desc" ? "Más recientes primero ⬇️" : "Más antiguas primero ⬆️"}
+                        </button>
+                      )}
                     </div>
 
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", maxHeight: "480px", overflowY: "auto" }}>
                       {selectedDirigido.asistencias && selectedDirigido.asistencias.length > 0 ? (
-                        selectedDirigido.asistencias.map((a: any) => {
-                          const totalMembers = selectedDirigido.personas?.length || 0;
-                          const presentCount = a.presentes_ids?.length || 0;
-                          const pct = totalMembers > 0 ? Math.round((presentCount / totalMembers) * 100) : 0;
+                        (() => {
+                          const sortedAsistencias = [...selectedDirigido.asistencias].sort((a: any, b: any) => {
+                            const timeA = new Date(a.fecha).getTime();
+                            const timeB = new Date(b.fecha).getTime();
+                            return attendanceSortOrder === "desc" ? timeB - timeA : timeA - timeB;
+                          });
 
-                          return (
-                            <div key={a.id} className={styles.attendanceHistItem}>
-                              <div>
-                                <strong style={{ display: "block", fontSize: "0.88rem" }}>{a.titulo_reunion || "Reunión"}</strong>
-                                <span style={{ fontSize: "0.75rem", color: "#64748b" }}>🗓️ {formatFriendlyDate(a.fecha)}</span>
+                          return sortedAsistencias.map((a: any) => {
+                            const totalMembers = selectedDirigido.personas?.length || 0;
+                            const presentCount = a.presentes_ids?.length || 0;
+                            const pct = totalMembers > 0 ? Math.round((presentCount / totalMembers) * 100) : 0;
+                            const isBeingEdited = editingAttendanceId === a.id;
+                            const isExpanded = expandedAttendanceHistId === a.id;
+
+                            const presentesPersonas = (selectedDirigido.personas || []).filter((p: any) => a.presentes_ids?.includes(p.id));
+                            const ausentesPersonas = (selectedDirigido.personas || []).filter((p: any) => !a.presentes_ids?.includes(p.id));
+
+                            return (
+                              <div
+                                key={a.id}
+                                style={{
+                                  background: isBeingEdited ? "#eff6ff" : "#ffffff",
+                                  border: `1px solid ${isBeingEdited ? "#3b82f6" : "#e2e8f0"}`,
+                                  borderRadius: "8px",
+                                  padding: "0.75rem",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "0.5rem"
+                                }}
+                              >
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem", flexWrap: "wrap" }}>
+                                  <div>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                                      <strong style={{ fontSize: "0.88rem", color: "#0f172a" }}>
+                                        {a.titulo_reunion || "Reunión"}
+                                      </strong>
+                                      {isBeingEdited && (
+                                        <span style={{ fontSize: "0.7rem", background: "#dbeafe", color: "#1d4ed8", padding: "1px 6px", borderRadius: "10px", fontWeight: 700 }}>
+                                          ✏️ En edición
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span style={{ fontSize: "0.75rem", color: "#64748b", display: "block", marginTop: "2px" }}>
+                                      🗓️ {formatFriendlyDateWithDay(a.fecha)}
+                                    </span>
+                                  </div>
+
+                                  <span style={{
+                                    fontSize: "0.8rem",
+                                    padding: "2px 8px",
+                                    borderRadius: "4px",
+                                    fontWeight: 700,
+                                    backgroundColor: pct > 70 ? "#ecfdf5" : pct > 40 ? "#fffbeb" : "#fef2f2",
+                                    color: pct > 70 ? "#065f46" : pct > 40 ? "#b45309" : "#991b1b"
+                                  }}>
+                                    {presentCount}/{totalMembers} ({pct}%)
+                                  </span>
+                                </div>
+
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "0.4rem", borderTop: "1px solid #f1f5f9" }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedAttendanceHistId(isExpanded ? null : a.id)}
+                                    style={{
+                                      background: "none",
+                                      border: "none",
+                                      color: "#0284c7",
+                                      fontSize: "0.75rem",
+                                      fontWeight: 600,
+                                      cursor: "pointer",
+                                      padding: 0
+                                    }}
+                                  >
+                                    {isExpanded ? "▲ Ocultar lista" : "▼ Ver quiénes asistieron"}
+                                  </button>
+
+                                  <div style={{ display: "flex", gap: "0.35rem" }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleEditAttendance(a)}
+                                      style={{
+                                        background: isBeingEdited ? "#0284c7" : "#f0f9ff",
+                                        color: isBeingEdited ? "#ffffff" : "#0284c7",
+                                        border: "1px solid #bae6fd",
+                                        borderRadius: "6px",
+                                        padding: "3px 8px",
+                                        fontSize: "0.75rem",
+                                        fontWeight: 700,
+                                        cursor: "pointer",
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: "3px"
+                                      }}
+                                      title="Abrir esta asistencia para editarla"
+                                    >
+                                      ✏️ Editar
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteAttendance(a.id, a.fecha)}
+                                      style={{
+                                        background: "#fff1f2",
+                                        color: "#e11d48",
+                                        border: "1px solid #fecdd3",
+                                        borderRadius: "6px",
+                                        padding: "3px 8px",
+                                        fontSize: "0.75rem",
+                                        fontWeight: 700,
+                                        cursor: "pointer",
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: "3px"
+                                      }}
+                                      title="Eliminar esta asistencia para volver a pasarla"
+                                    >
+                                      🗑️ Borrar
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {isExpanded && (
+                                  <div style={{ background: "#f8fafc", padding: "0.6rem", borderRadius: "6px", fontSize: "0.75rem", marginTop: "0.25rem", border: "1px solid #e2e8f0" }}>
+                                    <div style={{ marginBottom: "0.4rem" }}>
+                                      <strong style={{ color: "#16a34a", display: "block", marginBottom: "2px" }}>
+                                        ✅ Presentes ({presentesPersonas.length}):
+                                      </strong>
+                                      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                                        {presentesPersonas.length > 0 ? (
+                                          presentesPersonas.map((p: any) => (
+                                            <span key={p.id} style={{ background: "#dcfce7", color: "#15803d", padding: "1px 6px", borderRadius: "4px", fontSize: "0.72rem" }}>
+                                              {p.nombre}
+                                            </span>
+                                          ))
+                                        ) : (
+                                          <span style={{ color: "#94a3b8", fontStyle: "italic" }}>Ninguno</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <strong style={{ color: "#dc2626", display: "block", marginBottom: "2px" }}>
+                                        ❌ Ausentes ({ausentesPersonas.length}):
+                                      </strong>
+                                      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                                        {ausentesPersonas.length > 0 ? (
+                                          ausentesPersonas.map((p: any) => (
+                                            <span key={p.id} style={{ background: "#fee2e2", color: "#b91c1c", padding: "1px 6px", borderRadius: "4px", fontSize: "0.72rem" }}>
+                                              {p.nombre}
+                                            </span>
+                                          ))
+                                        ) : (
+                                          <span style={{ color: "#16a34a", fontStyle: "italic" }}>Ninguno (¡100% de asistencia!)</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
-                              <span style={{ fontSize: "0.8rem", padding: "2px 8px", borderRadius: "4px", fontWeight: 700, 
-                                backgroundColor: pct > 70 ? "#ecfdf5" : pct > 40 ? "#fffbeb" : "#fef2f2",
-                                color: pct > 70 ? "#065f46" : pct > 40 ? "#b45309" : "#991b1b"
-                              }}>
-                                {presentCount}/{totalMembers} ({pct}%)
-                              </span>
-                            </div>
-                          );
-                        })
+                            );
+                          });
+                        })()
                       ) : (
-                        <p style={{ fontSize: "0.85rem", color: "#94a3b8", textAlign: "center", padding: "1rem" }}>
+                        <p style={{ fontSize: "0.85rem", color: "#94a3b8", textAlign: "center", padding: "1.5rem" }}>
                           No hay registros guardados.
                         </p>
                       )}
@@ -2212,20 +2560,31 @@ function GrupoContent() {
                     );
                   }
 
-                  // Calcular estadísticas de asistencia
+                  // Orden cronológico de las asistencias (más recientes primero) para el cálculo de rachas e historial
+                  const cronoSortedAsistencias = [...asistencias].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+
+                  // Calcular estadísticas individuales de asistencia y recopilar historial por fechas
                   const miembrosStats = personas.map((p: any) => {
                     let faltasTotales = 0;
-                    asistencias.forEach((a: any) => {
-                      if (!a.presentes_ids?.includes(p.id)) {
+                    const historialFechas: { id: string; fecha: string; titulo: string; asistio: boolean }[] = [];
+
+                    cronoSortedAsistencias.forEach((a: any) => {
+                      const asistio = !!a.presentes_ids?.includes(p.id);
+                      if (!asistio) {
                         faltasTotales++;
                       }
+                      historialFechas.push({
+                        id: a.id,
+                        fecha: a.fecha,
+                        titulo: a.titulo_reunion || "Reunión",
+                        asistio,
+                      });
                     });
 
-                    // Calcular faltas consecutivas (racha de inasistencias en las últimas reuniones)
+                    // Calcular faltas consecutivas (racha de inasistencias en las reuniones más recientes)
                     let faltasConsecutivas = 0;
-                    const sortedAsistencias = [...asistencias].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
-                    for (const a of sortedAsistencias) {
-                      if (!a.presentes_ids?.includes(p.id)) {
+                    for (const hf of historialFechas) {
+                      if (!hf.asistio) {
                         faltasConsecutivas++;
                       } else {
                         break;
@@ -2236,35 +2595,107 @@ function GrupoContent() {
                       ...p,
                       faltasTotales,
                       faltasConsecutivas,
+                      historialFechas,
                       totalReuniones: asistencias.length,
                     };
                   });
 
-                  // Ordenar: mayor cantidad de faltas consecutivas primero, luego faltas totales, luego por nombre
-                  const miembrosOrdenados = [...miembrosStats].sort((a, b) => {
-                    if (b.faltasConsecutivas !== a.faltasConsecutivas) {
-                      return b.faltasConsecutivas - a.faltasConsecutivas;
-                    }
-                    if (b.faltasTotales !== a.faltasTotales) {
-                      return b.faltasTotales - a.faltasTotales;
-                    }
-                    return a.nombre.localeCompare(b.nombre);
-                  });
+                  // Filtrar los que no asistieron (tienen al menos 1 falta)
+                  const absentList = miembrosStats.filter((m: any) => m.faltasTotales > 0);
 
-                  const absentList = miembrosOrdenados.filter(m => m.faltasTotales > 0);
+                  // Ordenar la lista: POR DEFECTO Y PRINCIPALMENTE por los que tienen mayor inasistencia acumulada (faltasTotales desc)
+                  const sortedAbsentList = [...absentList].sort((a: any, b: any) => {
+                    if (absenceSortCriteria === "total") {
+                      // Mayor cantidad de inasistencias acumuladas primero
+                      if (b.faltasTotales !== a.faltasTotales) {
+                        return b.faltasTotales - a.faltasTotales;
+                      }
+                      if (b.faltasConsecutivas !== a.faltasConsecutivas) {
+                        return b.faltasConsecutivas - a.faltasConsecutivas;
+                      }
+                      return a.nombre.localeCompare(b.nombre);
+                    } else if (absenceSortCriteria === "consecutive") {
+                      // Mayor racha de inasistencias consecutivas primero
+                      if (b.faltasConsecutivas !== a.faltasConsecutivas) {
+                        return b.faltasConsecutivas - a.faltasConsecutivas;
+                      }
+                      if (b.faltasTotales !== a.faltasTotales) {
+                        return b.faltasTotales - a.faltasTotales;
+                      }
+                      return a.nombre.localeCompare(b.nombre);
+                    } else {
+                      // Alfabético
+                      return a.nombre.localeCompare(b.nombre);
+                    }
+                  });
 
                   return (
                     <div className={styles.card}>
-                      <div className={styles.cardHeader} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div className={styles.cardHeader} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
                         <div>
                           <h2 className={styles.cardTitle}>📊 Reporte de Alertas de Ausencia y Seguimiento</h2>
                           <p style={{ fontSize: "0.8rem", color: "#64748b", margin: "0.2rem 0 0 0" }}>
-                            Alerta a los líderes sobre miembros que han dejado de asistir para darles acompañamiento oportuno.
+                            Monitorea a los miembros organizados por nivel de inasistencia y consulta su historial en cada fecha para dar acompañamiento oportuno.
                           </p>
                         </div>
+
+                        {absentList.length > 0 && (
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                            <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569" }}>Ordenar por:</span>
+                            <div style={{ display: "inline-flex", borderRadius: "6px", border: "1px solid #cbd5e1", overflow: "hidden" }}>
+                              <button
+                                type="button"
+                                onClick={() => setAbsenceSortCriteria("total")}
+                                style={{
+                                  padding: "4px 10px",
+                                  fontSize: "0.75rem",
+                                  fontWeight: 700,
+                                  border: "none",
+                                  cursor: "pointer",
+                                  background: absenceSortCriteria === "total" ? "#0284c7" : "#f8fafc",
+                                  color: absenceSortCriteria === "total" ? "#ffffff" : "#475569"
+                                }}
+                              >
+                                🔻 Mayor Inasistencia
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setAbsenceSortCriteria("consecutive")}
+                                style={{
+                                  padding: "4px 10px",
+                                  fontSize: "0.75rem",
+                                  fontWeight: 700,
+                                  border: "none",
+                                  borderLeft: "1px solid #cbd5e1",
+                                  borderRight: "1px solid #cbd5e1",
+                                  cursor: "pointer",
+                                  background: absenceSortCriteria === "consecutive" ? "#0284c7" : "#f8fafc",
+                                  color: absenceSortCriteria === "consecutive" ? "#ffffff" : "#475569"
+                                }}
+                              >
+                                🚨 Racha Consecutiva
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setAbsenceSortCriteria("name")}
+                                style={{
+                                  padding: "4px 10px",
+                                  fontSize: "0.75rem",
+                                  fontWeight: 700,
+                                  border: "none",
+                                  cursor: "pointer",
+                                  background: absenceSortCriteria === "name" ? "#0284c7" : "#f8fafc",
+                                  color: absenceSortCriteria === "name" ? "#ffffff" : "#475569"
+                                }}
+                              >
+                                🔤 Nombre A-Z
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
-                      {absentList.length === 0 ? (
+                      {sortedAbsentList.length === 0 ? (
                         <div style={{ textAlign: "center", padding: "2.5rem 1rem", color: "#16a34a" }}>
                           <span style={{ fontSize: "2rem" }}>🎉</span>
                           <h4 style={{ margin: "0.5rem 0 0.25rem 0", fontWeight: 700 }}>¡Asistencia Perfecta!</h4>
@@ -2275,12 +2706,12 @@ function GrupoContent() {
                           {/* Cabecera de la tabla de reporte */}
                           <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1.25fr 1.75fr", padding: "0.5rem 1rem", backgroundColor: "#f1f5f9", borderRadius: "6px", fontWeight: "bold", fontSize: "0.8rem", color: "#475569" }}>
                             <span>Miembro / Creyente</span>
-                            <span style={{ textAlign: "center" }}>Ausencias</span>
+                            <span style={{ textAlign: "center" }}>Inasistencias</span>
                             <span>Estado / Alerta</span>
                             <span style={{ textAlign: "right" }}>Acción</span>
                           </div>
 
-                          {absentList.map((m: any) => {
+                          {sortedAbsentList.map((m: any, idx: number) => {
                             const pctAsistencia = Math.round(((m.totalReuniones - m.faltasTotales) / m.totalReuniones) * 100);
                             
                             // Determinar nivel de alerta
@@ -2303,84 +2734,194 @@ function GrupoContent() {
                             const cleanNumber = whatsappNumber ? whatsappNumber.replace(/[^0-9]/g, "") : "";
                             const message = `Hola ${m.nombre}, te extrañamos hoy en la reunión de nuestro grupo "${selectedDirigido.nombre_grupo}". ¡Esperamos que estés bien y verte la próxima semana! ⛪`;
                             const waUrl = cleanNumber ? `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}` : "";
+                            const isDetailExpanded = expandedMemberHistoryId === m.id;
 
                             return (
                               <div 
                                 key={m.id}
                                 style={{ 
-                                  display: "grid", 
-                                  gridTemplateColumns: "2fr 1fr 1.25fr 1.75fr", 
-                                  alignItems: "center", 
+                                  display: "flex",
+                                  flexDirection: "column",
                                   padding: "0.75rem 1rem", 
                                   backgroundColor: m.faltasConsecutivas >= 2 ? "#fff5f5" : "white", 
                                   border: `1px solid ${m.faltasConsecutivas >= 2 ? "#fed7d7" : "#e2e8f0"}`, 
                                   borderRadius: "8px",
-                                  fontSize: "0.85rem"
+                                  fontSize: "0.85rem",
+                                  gap: "0.5rem"
                                 }}
                               >
-                                <div style={{ display: "flex", flexDirection: "column" }}>
-                                  <span style={{ fontWeight: 600, color: "#1e293b" }}>{m.nombre}</span>
-                                  <span style={{ fontSize: "0.75rem", color: "#64748b" }}>📱 {m.telefono || "Sin teléfono"}</span>
+                                <div style={{ 
+                                  display: "grid", 
+                                  gridTemplateColumns: "2fr 1fr 1.25fr 1.75fr", 
+                                  alignItems: "center"
+                                }}>
+                                  <div style={{ display: "flex", flexDirection: "column" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                                      <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "#94a3b8" }}>#{idx + 1}</span>
+                                      <span style={{ fontWeight: 600, color: "#1e293b" }}>{m.nombre}</span>
+                                    </div>
+                                    <span style={{ fontSize: "0.75rem", color: "#64748b" }}>📱 {m.telefono || "Sin teléfono"}</span>
+                                  </div>
+                                  <div style={{ textAlign: "center", fontWeight: 700, color: m.faltasConsecutivas >= 2 ? "#ef4444" : "#475569" }}>
+                                    {m.faltasTotales} / {m.totalReuniones}
+                                    <span style={{ display: "block", fontSize: "0.7rem", color: "#94a3b8", fontWeight: 500 }}>
+                                      ({pctAsistencia}% asistencia)
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span style={{ 
+                                      fontSize: "0.72rem", 
+                                      padding: "3px 8px", 
+                                      borderRadius: "12px", 
+                                      fontWeight: 700,
+                                      border: `1px solid ${alertColor.border}`,
+                                      backgroundColor: alertColor.bg,
+                                      color: alertColor.text,
+                                      display: "inline-block"
+                                    }}>
+                                      {alertLabel}
+                                    </span>
+                                  </div>
+                                  <div style={{ display: "flex", gap: "0.35rem", justifyContent: "flex-end", flexWrap: "wrap" }}>
+                                    {m.telefono && (
+                                      <a 
+                                        href={`tel:${m.telefono}`}
+                                        className={styles.primaryBtn}
+                                        style={{ 
+                                          display: "inline-flex", 
+                                          alignItems: "center", 
+                                          gap: "0.25rem", 
+                                          padding: "0.3rem 0.6rem", 
+                                          fontSize: "0.75rem",
+                                          textDecoration: "none",
+                                          backgroundColor: m.faltasConsecutivas >= 2 ? "#ef4444" : "#0284c7"
+                                        }}
+                                      >
+                                        📞 Llamar
+                                      </a>
+                                    )}
+                                    {waUrl && (
+                                      <a 
+                                        href={waUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={styles.primaryBtn}
+                                        style={{ 
+                                          display: "inline-flex", 
+                                          alignItems: "center", 
+                                          gap: "0.25rem", 
+                                          padding: "0.3rem 0.6rem", 
+                                          fontSize: "0.75rem",
+                                          textDecoration: "none",
+                                          backgroundColor: "#25d366"
+                                        }}
+                                      >
+                                        💬 WhatsApp
+                                      </a>
+                                    )}
+                                    {!m.telefono && !waUrl && (
+                                      <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontStyle: "italic" }}>Sin contacto</span>
+                                    )}
+                                  </div>
                                 </div>
-                                <div style={{ textAlign: "center", fontWeight: 700, color: m.faltasConsecutivas >= 2 ? "#ef4444" : "#475569" }}>
-                                  {m.faltasTotales} / {m.totalReuniones}
-                                  <span style={{ display: "block", fontSize: "0.7rem", color: "#94a3b8", fontWeight: 500 }}>
-                                    ({pctAsistencia}% asistencia)
-                                  </span>
-                                </div>
-                                <div>
-                                  <span style={{ 
-                                    fontSize: "0.72rem", 
-                                    padding: "3px 8px", 
-                                    borderRadius: "12px", 
-                                    fontWeight: 700,
-                                    border: `1px solid ${alertColor.border}`,
-                                    backgroundColor: alertColor.bg,
-                                    color: alertColor.text,
-                                    display: "inline-block"
-                                  }}>
-                                    {alertLabel}
-                                  </span>
-                                </div>
-                                <div style={{ display: "flex", gap: "0.35rem", justifyContent: "flex-end", flexWrap: "wrap" }}>
-                                  {m.telefono && (
-                                    <a 
-                                      href={`tel:${m.telefono}`}
-                                      className={styles.primaryBtn}
-                                      style={{ 
-                                        display: "inline-flex", 
-                                        alignItems: "center", 
-                                        gap: "0.25rem", 
-                                        padding: "0.3rem 0.6rem", 
-                                        fontSize: "0.75rem",
-                                        textDecoration: "none",
-                                        backgroundColor: m.faltasConsecutivas >= 2 ? "#ef4444" : "#0284c7"
+
+                                {/* HISTORIAL CON RELACIÓN AL ORDEN DE LAS FECHAS */}
+                                <div style={{ borderTop: "1px dashed #e2e8f0", paddingTop: "0.5rem" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.4rem" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", flexWrap: "wrap" }}>
+                                      <span style={{ fontSize: "0.72rem", color: "#475569", fontWeight: 700 }}>
+                                        🗓️ Historial por fechas:
+                                      </span>
+                                      {m.historialFechas.slice(0, 8).map((hf: any) => (
+                                        <span
+                                          key={hf.id}
+                                          title={`${hf.titulo} (${formatFriendlyDateWithDay(hf.fecha)}): ${hf.asistio ? "Presente" : "Inasistencia"}`}
+                                          style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            gap: "2px",
+                                            padding: "2px 6px",
+                                            borderRadius: "4px",
+                                            fontSize: "0.72rem",
+                                            fontWeight: 700,
+                                            backgroundColor: hf.asistio ? "#ecfdf5" : "#fef2f2",
+                                            color: hf.asistio ? "#059669" : "#dc2626",
+                                            border: `1px solid ${hf.asistio ? "#a7f3d0" : "#fecaca"}`,
+                                            cursor: "help"
+                                          }}
+                                        >
+                                          {hf.asistio ? "✓" : "✗"} {formatFriendlyDate(hf.fecha)}
+                                        </span>
+                                      ))}
+                                      {m.historialFechas.length > 8 && (
+                                        <span style={{ fontSize: "0.7rem", color: "#94a3b8" }}>
+                                          +{m.historialFechas.length - 8} más
+                                        </span>
+                                      )}
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setExpandedMemberHistoryId(isDetailExpanded ? null : m.id)}
+                                      style={{
+                                        background: "transparent",
+                                        border: "none",
+                                        color: "#0284c7",
+                                        fontSize: "0.74rem",
+                                        fontWeight: 700,
+                                        cursor: "pointer",
+                                        padding: "2px 4px",
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: "3px"
                                       }}
                                     >
-                                      📞 Llamar
-                                    </a>
-                                  )}
-                                  {waUrl && (
-                                    <a 
-                                      href={waUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className={styles.primaryBtn}
-                                      style={{ 
-                                        display: "inline-flex", 
-                                        alignItems: "center", 
-                                        gap: "0.25rem", 
-                                        padding: "0.3rem 0.6rem", 
-                                        fontSize: "0.75rem",
-                                        textDecoration: "none",
-                                        backgroundColor: "#25d366"
-                                      }}
-                                    >
-                                      💬 WhatsApp
-                                    </a>
-                                  )}
-                                  {!m.telefono && !waUrl && (
-                                    <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontStyle: "italic" }}>Sin contacto</span>
+                                      {isDetailExpanded ? "▲ Ocultar desglose" : "▼ Desglose de fechas"}
+                                    </button>
+                                  </div>
+
+                                  {/* Desglose cronológico detallado cuando se expande */}
+                                  {isDetailExpanded && (
+                                    <div style={{ marginTop: "0.6rem", background: "#f8fafc", padding: "0.6rem 0.75rem", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                                      <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#334155", display: "block", marginBottom: "0.4rem" }}>
+                                        📅 Historial detallado por fechas de {m.nombre} ({m.faltasTotales} inasistencias en {m.totalReuniones} reuniones):
+                                      </span>
+                                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "0.4rem" }}>
+                                        {m.historialFechas.map((hf: any) => (
+                                          <div
+                                            key={hf.id}
+                                            style={{
+                                              display: "flex",
+                                              alignItems: "center",
+                                              justifyContent: "space-between",
+                                              padding: "0.35rem 0.6rem",
+                                              borderRadius: "5px",
+                                              background: hf.asistio ? "#ffffff" : "#fff1f2",
+                                              border: `1px solid ${hf.asistio ? "#e2e8f0" : "#fecdd3"}`,
+                                              fontSize: "0.75rem"
+                                            }}
+                                          >
+                                            <div>
+                                              <strong style={{ display: "block", color: "#1e293b", fontSize: "0.74rem" }}>
+                                                {formatFriendlyDateWithDay(hf.fecha)}
+                                              </strong>
+                                              <span style={{ fontSize: "0.7rem", color: "#64748b" }}>
+                                                {hf.titulo}
+                                              </span>
+                                            </div>
+                                            <span style={{
+                                              padding: "2px 6px",
+                                              borderRadius: "4px",
+                                              fontWeight: 800,
+                                              fontSize: "0.7rem",
+                                              background: hf.asistio ? "#dcfce7" : "#fee2e2",
+                                              color: hf.asistio ? "#16a34a" : "#dc2626"
+                                            }}>
+                                              {hf.asistio ? "Presente" : "Ausente"}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
                                   )}
                                 </div>
                               </div>

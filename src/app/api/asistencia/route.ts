@@ -66,6 +66,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, record: newAttendance });
     }
 
+    if (action === 'updateAttendance') {
+      const { id, fecha, titulo_reunion, presentes_ids } = data;
+      if (!id) {
+        return NextResponse.json({ error: 'Falta el ID de la asistencia' }, { status: 400 });
+      }
+      const updated = await prisma.asistenciaReunion.update({
+        where: { id },
+        data: {
+          ...(fecha ? { fecha: new Date(fecha) } : {}),
+          ...(titulo_reunion !== undefined ? { titulo_reunion } : {}),
+          ...(presentes_ids !== undefined ? { presentes_ids: JSON.stringify(presentes_ids || []) } : {}),
+        }
+      });
+      return NextResponse.json({ success: true, record: updated });
+    }
+
     if (action === 'deleteAttendance') {
       const { id } = data;
       await prisma.asistenciaReunion.delete({

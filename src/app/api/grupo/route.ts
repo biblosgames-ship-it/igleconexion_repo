@@ -327,11 +327,12 @@ export async function POST(request: Request) {
       }
 
       case "addAttendance": {
-        const { grupo_conexion_id, fecha, presentes_ids } = data;
+        const { grupo_conexion_id, fecha, titulo_reunion, presentes_ids } = data;
         const newAttendance = await prisma.asistenciaReunion.create({
           data: {
             grupo_conexion_id,
             fecha: new Date(fecha),
+            titulo_reunion: titulo_reunion || "Reunión Semanal del Grupo",
             presentes_ids: JSON.stringify(presentes_ids || []),
           },
         });
@@ -370,6 +371,33 @@ export async function POST(request: Request) {
         }
 
         return NextResponse.json(newAttendance);
+      }
+
+      case "updateAttendance": {
+        const { id, fecha, titulo_reunion, presentes_ids } = data;
+        if (!id) {
+          return NextResponse.json({ error: "Falta el ID del registro de asistencia" }, { status: 400 });
+        }
+        const updatedAttendance = await prisma.asistenciaReunion.update({
+          where: { id },
+          data: {
+            ...(fecha ? { fecha: new Date(fecha) } : {}),
+            ...(titulo_reunion !== undefined ? { titulo_reunion } : {}),
+            ...(presentes_ids !== undefined ? { presentes_ids: JSON.stringify(presentes_ids || []) } : {}),
+          },
+        });
+        return NextResponse.json(updatedAttendance);
+      }
+
+      case "deleteAttendance": {
+        const { id } = data;
+        if (!id) {
+          return NextResponse.json({ error: "Falta el ID del registro de asistencia" }, { status: 400 });
+        }
+        await prisma.asistenciaReunion.delete({
+          where: { id },
+        });
+        return NextResponse.json({ success: true });
       }
 
       case "addAgreement": {

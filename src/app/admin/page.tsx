@@ -1462,6 +1462,9 @@ const allSystemIcons = [
   const [filterEtapa, setFilterEtapa] = useState("");
   const [filtersActive, setFiltersActive] = useState(false);
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
+  const [filterEstadoUsuario, setFilterEstadoUsuario] = useState(""); // "" | "PENDIENTE" | "ACTIVO" | "SIN_USUARIO"
+  const [memberPageSize, setMemberPageSize] = useState<number | "all">("all");
+  const [memberCurrentPage, setMemberCurrentPage] = useState<number>(1);
   const [selectedModuloId, setSelectedModuloId] = useState("all");
   const [selectedModuloIds, setSelectedModuloIds] = useState<string[]>(["all"]);
   const [editingLiderId, setEditingLiderId] = useState<string | null>(null);
@@ -1586,10 +1589,6 @@ const allSystemIcons = [
   const [editLabelMinisterios, setEditLabelMinisterios] = useState("");
   const [editLabelInstituciones, setEditLabelInstituciones] = useState("");
 
-  const filteredMiembros = miembros.filter(m =>
-    m.nombre.toLowerCase().includes(memberSearchTerm.toLowerCase())
-  );
-
   // Helper para calcular edad
   const calcEdad = (fn: string | null | undefined): number | null => {
     if (!fn) return null;
@@ -1610,34 +1609,53 @@ const allSystemIcons = [
   const uniqueSociedades = [...new Set(miembros.map(m => m.sociedad).filter(s => s && s !== 'Sociedad General'))].sort();
 
   // Filtros avanzados del listado (Tab 7)
-  const hasActiveFilters = filtersActive || filterSexo || filterEdadMin || filterEdadMax || filterGrupoConexion || filterProfesion || filterNivelAcademico || filterEstadoCivil || filterEtapa || memberSearchTerm;
+  const hasActiveFilters = filtersActive || filterSexo || filterEdadMin || filterEdadMax || filterGrupoConexion || filterProfesion || filterNivelAcademico || filterEstadoCivil || filterEtapa || filterEstadoUsuario || memberSearchTerm;
 
-  const displayMiembros = (() => {
-    if (!hasActiveFilters) {
-      return [...miembros].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()).slice(0, 20);
+  const filteredMiembros = miembros.filter(m => {
+    if (filterSexo && m.sexo !== filterSexo) return false;
+    if (filterEdadMin || filterEdadMax) {
+      const edad = calcEdad(m.fecha_nacimiento);
+      if (edad === null) return false;
+      if (filterEdadMin && edad < parseInt(filterEdadMin)) return false;
+      if (filterEdadMax && edad > parseInt(filterEdadMax)) return false;
     }
-    return miembros.filter(m => {
-      if (filterSexo && m.sexo !== filterSexo) return false;
-      if (filterEdadMin || filterEdadMax) {
-        const edad = calcEdad(m.fecha_nacimiento);
-        if (edad === null) return false;
-        if (filterEdadMin && edad < parseInt(filterEdadMin)) return false;
-        if (filterEdadMax && edad > parseInt(filterEdadMax)) return false;
+    if (filterGrupoConexion && m.grupo_conexion !== filterGrupoConexion && m.sociedad !== filterGrupoConexion) return false;
+    if (filterProfesion && (m.profesion_oficio || '') !== filterProfesion) return false;
+    if (filterNivelAcademico && (m.nivel_academico || '') !== filterNivelAcademico) return false;
+    if (filterEstadoCivil && (m.estado_civil || '') !== filterEstadoCivil) return false;
+    if (filterEtapa && m.etapa_id !== filterEtapa) return false;
+    if (filterEstadoUsuario) {
+      if (filterEstadoUsuario === "PENDIENTE") {
+        if (!m.usuario || m.usuario.estado !== "PENDIENTE") return false;
+      } else if (filterEstadoUsuario === "ACTIVO") {
+        if (!m.usuario || m.usuario.estado !== "ACTIVO") return false;
+      } else if (filterEstadoUsuario === "SIN_USUARIO") {
+        if (m.usuario) return false;
       }
-      if (filterGrupoConexion && m.grupo_conexion !== filterGrupoConexion && m.sociedad !== filterGrupoConexion) return false;
-      if (filterProfesion && (m.profesion_oficio || '') !== filterProfesion) return false;
-      if (filterNivelAcademico && (m.nivel_academico || '') !== filterNivelAcademico) return false;
-      if (filterEstadoCivil && (m.estado_civil || '') !== filterEstadoCivil) return false;
-      if (filterEtapa && m.etapa_id !== filterEtapa) return false;
-      if (memberSearchTerm) {
-        const s = memberSearchTerm.toLowerCase();
-        const matchName = m.nombre.toLowerCase().includes(s);
-        const matchEmail = (m.correo || '').toLowerCase().includes(s);
-        const matchPhone = (m.telefono || '').includes(s);
-        if (!matchName && !matchEmail && !matchPhone) return false;
-      }
-      return true;
-    });
+    }
+    if (memberSearchTerm) {
+      const s = memberSearchTerm.toLowerCase().trim();
+      const matchName = (m.nombre || '').toLowerCase().includes(s);
+      const matchEmail = (m.correo || '').toLowerCase().includes(s);
+      const matchPhone = (m.telefono || '').includes(s);
+      const matchFamilia = (m.familia_codigo || '').toLowerCase().includes(s);
+      if (!matchName && !matchEmail && !matchPhone && !matchFamilia) return false;
+    }
+    return true;
+  }).sort((a, b) => {
+    // Miembros con usuario pendiente de admitir primero para que no pasen desapercibidos
+    const aPendiente = a.usuario?.estado === 'PENDIENTE' ? 1 : 0;
+    const bPendiente = b.usuario?.estado === 'PENDIENTE' ? 1 : 0;
+    if (bPendiente !== aPendiente) return bPendiente - aPendiente;
+    // Luego los miembros más recientemente registrados primero
+    return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+  });
+
+  const totalMemberPages = memberPageSize === "all" ? 1 : Math.ceil(filteredMiembros.length / (typeof memberPageSize === "number" ? memberPageSize : 25));
+  const displayMiembros = (() => {
+    if (memberPageSize === "all") return filteredMiembros;
+    const start = (memberCurrentPage - 1) * memberPageSize;
+    return filteredMiembros.slice(start, start + memberPageSize);
   })();
 
   const generatePDF = () => {
@@ -1667,14 +1685,14 @@ const allSystemIcons = [
       </head><body>
       <div class="header">
         <h1>Listado de Miembros</h1>
-        <p>Fecha: ${new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })} | Total: ${displayMiembros.length} miembros${hasActiveFilters ? ' (filtrado)' : ''}</p>
+        <p>Fecha: ${new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })} | Total: ${filteredMiembros.length} miembros${hasActiveFilters ? ' (filtrado)' : ''}</p>
       </div>
       <table>
         <thead><tr>
           <th>#</th><th>Nombre</th><th>Cédula</th><th>Sexo</th><th>Edad</th><th>Teléfono</th><th>Correo</th><th>Grupo de Conexión</th><th>Sociedad</th><th>Etapa</th><th>Profesión</th><th>N. Académico</th><th>Estado Civil</th>
         </tr></thead>
         <tbody>
-          ${displayMiembros.map((m, i) => `
+          ${filteredMiembros.map((m, i) => `
             <tr>
               <td>${i + 1}</td>
               <td><strong>${m.nombre}</strong></td>
@@ -6700,6 +6718,80 @@ const allSystemIcons = [
                 </div>
               </div>
 
+              {/* ALERTA DE MIEMBROS PENDIENTES DE ADMISIÓN */}
+              {(() => {
+                const pendientes = miembros.filter(m => m.usuario && m.usuario.estado === 'PENDIENTE');
+                if (pendientes.length === 0) return null;
+                return (
+                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '16px', padding: '1rem 1.25rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', boxShadow: '0 2px 4px rgba(245, 158, 11, 0.08)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <span style={{ fontSize: '1.6rem' }}>⏳</span>
+                      <div>
+                        <strong style={{ fontSize: '0.95rem', color: '#92400e', display: 'block' }}>
+                          ¡Tienes {pendientes.length} nuevo(s) miembro(s) esperando admisión!
+                        </strong>
+                        <span style={{ fontSize: '0.8rem', color: '#b45309' }}>
+                          Se registraron en la plataforma y requieren ser admitidos para activar su acceso.
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => {
+                          setFilterEstadoUsuario(filterEstadoUsuario === 'PENDIENTE' ? '' : 'PENDIENTE');
+                          setMemberCurrentPage(1);
+                        }}
+                        style={{
+                          padding: '0.45rem 0.9rem',
+                          borderRadius: '8px',
+                          border: '1px solid #f59e0b',
+                          background: filterEstadoUsuario === 'PENDIENTE' ? '#f59e0b' : '#ffffff',
+                          color: filterEstadoUsuario === 'PENDIENTE' ? '#ffffff' : '#b45309',
+                          fontWeight: 700,
+                          fontSize: '0.8rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {filterEstadoUsuario === 'PENDIENTE' ? '✕ Quitar filtro' : '🔍 Ver pendientes'}
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!confirm(`¿Deseas admitir y activar a los ${pendientes.length} miembros pendientes a la vez?`)) return;
+                          try {
+                            for (const m of pendientes) {
+                              await fetch("/api/miembros", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ action: "updateUserStatus", data: { usuarioId: m.usuario.id, estado: "ACTIVO" } })
+                              });
+                            }
+                            const resM = await fetch("/api/miembros");
+                            const dataM = await resM.json();
+                            if (!dataM.error && Array.isArray(dataM)) setMiembros(dataM);
+                            alert("¡Todos los miembros pendientes han sido admitidos con éxito!");
+                          } catch (err) {
+                            console.error(err);
+                            alert("Error al admitir miembros.");
+                          }
+                        }}
+                        style={{
+                          padding: '0.45rem 0.9rem',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: '#16a34a',
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          fontSize: '0.8rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        ✔️ Admitir a todos ({pendientes.length})
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* PANEL DE FILTROS */}
               <div className={styles.configBlock} style={{ background: '#ffffff', border: '1px solid rgba(226, 232, 240, 0.6)', borderRadius: '24px', marginBottom: '1rem', boxShadow: 'var(--shadow-xl)', overflow: 'hidden' }}>
                 <button
@@ -6744,6 +6836,15 @@ const allSystemIcons = [
                 {showFiltersPanel && (
                   <div style={{ padding: '0 1.5rem 1.25rem 1.5rem', borderTop: '1px solid #f1f5f9' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem', marginTop: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Estado de Cuenta</label>
+                        <select value={filterEstadoUsuario} onChange={(e) => { setFilterEstadoUsuario(e.target.value); setMemberCurrentPage(1); }} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
+                          <option value="">Todos los miembros</option>
+                          <option value="PENDIENTE">⏳ Pendientes de admitir ({miembros.filter(m => m.usuario?.estado === 'PENDIENTE').length})</option>
+                          <option value="ACTIVO">✅ Cuentas activas</option>
+                          <option value="SIN_USUARIO">👤 Sin cuenta de usuario</option>
+                        </select>
+                      </div>
                       <div>
                         <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Sexo</label>
                         <select value={filterSexo} onChange={(e) => setFilterSexo(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', background: 'white' }}>
@@ -6822,26 +6923,47 @@ const allSystemIcons = [
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.75rem' }}>
                       <input
                         type="text"
-                        placeholder="🔍 Buscar por nombre, correo o teléfono..."
+                        placeholder="🔍 Buscar por nombre, correo, teléfono o familia..."
                         value={memberSearchTerm}
-                        onChange={(e) => setMemberSearchTerm(e.target.value)}
+                        onChange={(e) => { setMemberSearchTerm(e.target.value); setMemberCurrentPage(1); }}
                         style={{ flex: 1, minWidth: '200px', padding: '0.5rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
                       />
-                      <button onClick={() => { setFiltersActive(true); setShowFiltersPanel(false); }} style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: 'var(--color-primary)', color: 'white', border: 'none', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      <button onClick={() => { setFiltersActive(true); setShowFiltersPanel(false); setMemberCurrentPage(1); }} style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: 'var(--color-primary)', color: 'white', border: 'none', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                         🔍 Filtrar
                       </button>
-                      <button onClick={() => { setFiltersActive(false); setFilterSexo(""); setFilterEdadMin(""); setFilterEdadMax(""); setFilterGrupoConexion(""); setFilterProfesion(""); setFilterNivelAcademico(""); setFilterEstadoCivil(""); setFilterEtapa(""); setMemberSearchTerm(""); }} style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      <button onClick={() => { setFiltersActive(false); setFilterSexo(""); setFilterEdadMin(""); setFilterEdadMax(""); setFilterGrupoConexion(""); setFilterProfesion(""); setFilterNivelAcademico(""); setFilterEstadoCivil(""); setFilterEtapa(""); setFilterEstadoUsuario(""); setMemberSearchTerm(""); setMemberCurrentPage(1); }} style={{ padding: '0.5rem 1rem', borderRadius: '8px', background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                         ✕ Limpiar
                       </button>
                     </div>
                   </div>
                 )}
                 {/* BARRA DE ACCIONES - SIEMPRE VISIBLE */}
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', padding: showFiltersPanel ? '0 1.5rem 1rem' : '0 1.5rem 1rem', borderTop: showFiltersPanel ? 'none' : '1px solid #f1f5f9' }}>
-                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
-                    {hasActiveFilters ? `${displayMiembros.length} de ${miembros.length} miembros` : `Mostrando ${displayMiembros.length} miembros`}
-                  </span>
-                  <span style={{ marginLeft: 'auto', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', padding: showFiltersPanel ? '0 1.5rem 1rem' : '0 1.5rem 1rem', borderTop: showFiltersPanel ? 'none' : '1px solid #f1f5f9' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.85rem', color: '#1e293b', fontWeight: 700 }}>
+                      {hasActiveFilters 
+                        ? `Mostrando ${displayMiembros.length} de ${filteredMiembros.length} miembros filtrados (Total registrados: ${miembros.length})` 
+                        : `Mostrando ${displayMiembros.length} de ${miembros.length} miembros registrados`}
+                    </span>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: '#f8fafc', padding: '3px 8px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Mostrar:</span>
+                      <select
+                        value={String(memberPageSize)}
+                        onChange={(e) => {
+                          const val = e.target.value === 'all' ? 'all' : parseInt(e.target.value);
+                          setMemberPageSize(val);
+                          setMemberCurrentPage(1);
+                        }}
+                        style={{ border: 'none', background: 'transparent', fontSize: '0.78rem', fontWeight: 700, color: '#0284c7', cursor: 'pointer', outline: 'none' }}
+                      >
+                        <option value="25">25 por página</option>
+                        <option value="50">50 por página</option>
+                        <option value="100">100 por página</option>
+                        <option value="all">Ver todos ({filteredMiembros.length})</option>
+                      </select>
+                    </div>
+                  </div>
+                  <span style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                     <button 
                       onClick={() => setShowAddMemberModal(true)} 
                       style={{ padding: '0.45rem 0.9rem', borderRadius: '8px', background: '#0284c7', color: 'white', border: 'none', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
@@ -6902,11 +7024,12 @@ const allSystemIcons = [
                     </thead>
                     <tbody>
                       {displayMiembros.map((m, idx) => {
+                        const itemIndex = memberPageSize === 'all' ? idx + 1 : (memberCurrentPage - 1) * memberPageSize + idx + 1;
                         const mEtapaId = m.etapa_id || '';
                         const edad = calcEdad(m.fecha_nacimiento);
                         return (
                           <tr key={m.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '0.6rem 0.5rem', color: '#94a3b8', fontSize: '0.8rem' }}>{idx + 1}</td>
+                            <td style={{ padding: '0.6rem 0.5rem', color: '#94a3b8', fontSize: '0.8rem' }}>{itemIndex}</td>
                             <td style={{ padding: '0.6rem 0.5rem', color: '#1e293b' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap' }}>
                                 <span style={{ fontWeight: 600 }}>{m.nombre}</span>
@@ -7044,6 +7167,80 @@ const allSystemIcons = [
                     </tbody>
                   </table>
                 </div>
+
+                {/* PAGINACIÓN DE MIEMBROS */}
+                {totalMemberPages > 1 && memberPageSize !== 'all' && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #f1f5f9', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <span style={{ fontSize: '0.82rem', color: '#64748b' }}>
+                      Página <strong>{memberCurrentPage}</strong> de <strong>{totalMemberPages}</strong> ({filteredMiembros.length} miembros totales)
+                    </span>
+                    <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                      <button
+                        onClick={() => setMemberCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={memberCurrentPage <= 1}
+                        style={{
+                          padding: '0.4rem 0.8rem',
+                          borderRadius: '6px',
+                          border: '1px solid #cbd5e1',
+                          background: memberCurrentPage <= 1 ? '#f8fafc' : '#ffffff',
+                          color: memberCurrentPage <= 1 ? '#94a3b8' : '#334155',
+                          fontWeight: 600,
+                          fontSize: '0.8rem',
+                          cursor: memberCurrentPage <= 1 ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        ◀ Anterior
+                      </button>
+                      <div style={{ display: 'flex', gap: '0.25rem' }}>
+                        {Array.from({ length: totalMemberPages }, (_, i) => i + 1).map(p => {
+                          if (p === 1 || p === totalMemberPages || Math.abs(p - memberCurrentPage) <= 1) {
+                            return (
+                              <button
+                                key={p}
+                                onClick={() => setMemberCurrentPage(p)}
+                                style={{
+                                  padding: '0.4rem 0.75rem',
+                                  borderRadius: '6px',
+                                  border: p === memberCurrentPage ? 'none' : '1px solid #e2e8f0',
+                                  background: p === memberCurrentPage ? '#0284c7' : '#ffffff',
+                                  color: p === memberCurrentPage ? '#ffffff' : '#475569',
+                                  fontWeight: 700,
+                                  fontSize: '0.8rem',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                {p}
+                              </button>
+                            );
+                          }
+                          if (p === 2 && memberCurrentPage > 3) {
+                            return <span key="dots1" style={{ padding: '0 4px', color: '#94a3b8', alignSelf: 'center' }}>...</span>;
+                          }
+                          if (p === totalMemberPages - 1 && memberCurrentPage < totalMemberPages - 2) {
+                            return <span key="dots2" style={{ padding: '0 4px', color: '#94a3b8', alignSelf: 'center' }}>...</span>;
+                          }
+                          return null;
+                        })}
+                      </div>
+                      <button
+                        onClick={() => setMemberCurrentPage(prev => Math.min(totalMemberPages, prev + 1))}
+                        disabled={memberCurrentPage >= totalMemberPages}
+                        style={{
+                          padding: '0.4rem 0.8rem',
+                          borderRadius: '6px',
+                          border: '1px solid #cbd5e1',
+                          background: memberCurrentPage >= totalMemberPages ? '#f8fafc' : '#ffffff',
+                          color: memberCurrentPage >= totalMemberPages ? '#94a3b8' : '#334155',
+                          fontWeight: 600,
+                          fontSize: '0.8rem',
+                          cursor: memberCurrentPage >= totalMemberPages ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        Siguiente ▶
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* MODAL: GESTIÓN DE ETIQUETAS Y ALERTAS */}
