@@ -959,6 +959,12 @@ const allSystemIcons = [
     if (activeTab === 8) {
       loadSupportTickets();
     }
+    if (activeTab === 5 || activeTab === 7) {
+      fetch("/api/miembros")
+        .then(r => r.json())
+        .then(d => { if (!d.error && Array.isArray(d)) setMiembros(d); })
+        .catch(() => {});
+    }
   }, [activeTab]);
 
   const loadComunicados = async () => {
@@ -1481,7 +1487,33 @@ const allSystemIcons = [
   const [targetUsuarioId, setTargetUsuarioId] = useState("");
   const [showPromoteModal, setShowPromoteModal] = useState(false);
   const [promoteMemberName, setPromoteMemberName] = useState("");
+  const [promoteMemberId, setPromoteMemberId] = useState("");
   const [promoteRol, setPromoteRol] = useState("LIDER");
+  const [promoteHideExistingLeaders, setPromoteHideExistingLeaders] = useState(false);
+  const [refreshingMiembros, setRefreshingMiembros] = useState(false);
+
+  const refreshMiembrosList = async () => {
+    setRefreshingMiembros(true);
+    try {
+      const [resM, resLid] = await Promise.all([
+        fetch("/api/miembros"),
+        fetch("/api/liderazgo")
+      ]);
+      const dataM = await resM.json();
+      if (!dataM.error && Array.isArray(dataM)) {
+        setMiembros(dataM);
+      }
+      const dataLid = await resLid.json();
+      if (!dataLid.error && dataLid.usuarios) {
+        setUsuarios(dataLid.usuarios);
+      }
+    } catch (e) {
+      console.error("Error refreshing miembros:", e);
+    } finally {
+      setRefreshingMiembros(false);
+    }
+  };
+
   const [showManageUserModal, setShowManageUserModal] = useState(false);
   const [manageUsuarioId, setManageUsuarioId] = useState("");
   const [manageRol, setManageRol] = useState("LIDER");
@@ -1523,7 +1555,7 @@ const allSystemIcons = [
         personaIdsCovered.add(u.persona.id);
       }
       const name = u.persona?.nombre || u.email.split("@")[0];
-      const rolStr = u.rol === 'SUPERADMIN' ? 'Superadmin' : u.rol === 'ADMIN_IGLESIA' ? 'Admin' : 'Líder';
+      const rolStr = u.rol === 'SUPERADMIN' ? 'Superadmin' : u.rol === 'ADMIN_IGLESIA' ? 'Admin' : u.rol === 'MIEMBRO' ? 'Miembro' : 'Líder';
       list.push({
         id: `u_${u.id}`,
         type: 'usuario',
@@ -1552,8 +1584,8 @@ const allSystemIcons = [
 
   const filteredDirectivoCandidates = useMemo(() => {
     if (!directivoSearchFilter.trim()) return availableDirectivoCandidates;
-    const q = directivoSearchFilter.toLowerCase().trim();
-    return availableDirectivoCandidates.filter(c => c.searchStr.includes(q));
+    const q = (directivoSearchFilter || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    return availableDirectivoCandidates.filter(c => (c.searchStr || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(q));
   }, [availableDirectivoCandidates, directivoSearchFilter]);
 
   // Estados para tickets de soporte técnico
@@ -2286,13 +2318,17 @@ const allSystemIcons = [
 
   const handlePromoteNewLider = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!promoteMemberName) {
+    if (!promoteMemberName && !promoteMemberId) {
       alert("Por favor selecciona un miembro.");
       return;
     }
 
+    const targetMember = miembros.find(m => m.id === promoteMemberId) || miembros.find(m => m.nombre === promoteMemberName);
+    const targetName = targetMember?.nombre || promoteMemberName;
+
     await postAction("addLider", {
-      nombre_lider: promoteMemberName,
+      nombre_lider: targetName,
+      persona_id: targetMember?.id || promoteMemberId || null,
       rol: promoteRol,
       modulo_ids: selectedModuloIds,
       alcance_tipo: selectedAlcance,
@@ -2304,6 +2340,8 @@ const allSystemIcons = [
 
     setShowPromoteModal(false);
     setPromoteMemberName("");
+    setPromoteMemberId("");
+    setPromoteMemberSearchFilter("");
     setPromoteRol("LIDER");
     setSelectedModuloIds(["all"]);
     setSelectedModuloId("all");
@@ -5545,7 +5583,10 @@ const allSystemIcons = [
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <button 
-                    onClick={() => setShowPromoteModal(true)} 
+                    onClick={() => {
+                      setShowPromoteModal(true);
+                      refreshMiembrosList();
+                    }} 
                     className={styles.btnPrimary}
                     style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', fontSize: '0.85rem' }}
                   >
@@ -6072,42 +6113,179 @@ const allSystemIcons = [
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>Seleccionar Persona/Miembro</label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <button
+                              type="button"
+                              onClick={refreshMiembrosList}
+                              disabled={refreshingMiembros}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#0284c7',
+                                fontSize: '0.74rem',
+                                fontWeight: 700,
+                                cursor: refreshingMiembros ? 'wait' : 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.25rem',
+                                padding: '0.1rem 0.3rem'
+                              }}
+                              title="Refrescar listado de miembros desde el servidor"
+                            >
+                              {refreshingMiembros ? "🔄 Actualizando..." : "🔄 Actualizar lista"}
+                            </button>
+                            {promoteMemberSearchFilter ? (
+                              <span style={{ fontSize: '0.72rem', color: '#0284c7', fontWeight: 700 }}>
+                                {(() => {
+                                  const norm = (t: string) => (t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+                                  const q = norm(promoteMemberSearchFilter);
+                                  const qTel = promoteMemberSearchFilter.replace(/\D/g, '');
+                                  const base = promoteHideExistingLeaders 
+                                    ? miembros.filter(m => !usuarios.some(u => {
+                                        const r = (u.rol || '').toUpperCase();
+                                        const isLead = r === 'LIDER' || r === 'ADMIN_IGLESIA' || r === 'SUPERADMIN';
+                                        if (!isLead) return false;
+                                        return (u.persona?.id && u.persona.id === m.id) || (u.email && m.correo && u.email.toLowerCase() === m.correo.toLowerCase());
+                                      }))
+                                    : miembros;
+                                  return base.filter(m => norm(m.nombre).includes(q) || (qTel && (m.telefono || '').replace(/\D/g, '').includes(qTel)) || (m.correo || '').toLowerCase().includes(q)).length;
+                                })()} de {miembros.length} encontrados
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>
+                                {promoteHideExistingLeaders ? `${miembros.filter(m => !usuarios.some(u => {
+                                  const r = (u.rol || '').toUpperCase();
+                                  return (r === 'LIDER' || r === 'ADMIN_IGLESIA' || r === 'SUPERADMIN') && ((u.persona?.id && u.persona.id === m.id) || (u.email && m.correo && u.email.toLowerCase() === m.correo.toLowerCase()));
+                                })).length} sin rol` : `${miembros.length} miembros`}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div style={{ position: 'relative' }}>
+                          <input 
+                            type="text" 
+                            placeholder="🔍 Escribe el nombre o teléfono del miembro a buscar..." 
+                            value={promoteMemberSearchFilter}
+                            onChange={(e) => setPromoteMemberSearchFilter(e.target.value)}
+                            style={{ width: '100%', padding: '0.5rem 2rem 0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #0284c7', fontSize: '0.85rem', outline: 'none', backgroundColor: '#f0f9ff', fontWeight: 600, color: '#0369a1' }}
+                          />
                           {promoteMemberSearchFilter && (
-                            <span style={{ fontSize: '0.72rem', color: '#0284c7', fontWeight: 700 }}>
-                              {miembros.filter(m => !usuarios.some(u => u.persona?.id === m.id && (u.rol === 'LIDER' || u.rol === 'ADMIN_IGLESIA' || u.rol === 'SUPERADMIN'))).filter(m => (m.nombre || '').toLowerCase().includes(promoteMemberSearchFilter.toLowerCase()) || (m.telefono || '').includes(promoteMemberSearchFilter) || (m.correo || '').toLowerCase().includes(promoteMemberSearchFilter.toLowerCase())).length} de {miembros.length} encontrados
-                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setPromoteMemberSearchFilter("")}
+                              style={{
+                                position: 'absolute',
+                                right: '8px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: 'none',
+                                border: 'none',
+                                color: '#64748b',
+                                cursor: 'pointer',
+                                fontSize: '0.85rem',
+                                fontWeight: 'bold'
+                              }}
+                              title="Limpiar búsqueda"
+                            >
+                              ✕
+                            </button>
                           )}
                         </div>
-                        <input 
-                          type="text" 
-                          placeholder="🔍 Escribe el nombre o teléfono del miembro a buscar..." 
-                          value={promoteMemberSearchFilter}
-                          onChange={(e) => setPromoteMemberSearchFilter(e.target.value)}
-                          style={{ padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #0284c7', fontSize: '0.85rem', outline: 'none', backgroundColor: '#f0f9ff', fontWeight: 600, color: '#0369a1' }}
-                        />
-                        <select 
-                          value={promoteMemberName} 
-                          onChange={(e) => setPromoteMemberName(e.target.value)} 
-                          style={{ padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: 'white' }}
-                          required
-                        >
-                          {(() => {
-                            const avail = miembros.filter(m => !usuarios.some(u => u.persona?.id === m.id && (u.rol === 'LIDER' || u.rol === 'ADMIN_IGLESIA' || u.rol === 'SUPERADMIN')));
-                            const filtered = avail.filter(m => {
-                              if (!promoteMemberSearchFilter.trim()) return true;
-                              const q = promoteMemberSearchFilter.toLowerCase().trim();
-                              return (m.nombre || '').toLowerCase().includes(q) || (m.telefono || '').includes(q) || (m.correo || '').toLowerCase().includes(q);
-                            });
-                            return (
-                              <>
-                                <option value="">Selecciona un miembro ({filtered.length} encontrados)...</option>
-                                {filtered.map(m => (
-                                  <option key={m.id} value={m.nombre}>{m.nombre} {m.telefono ? `(${m.telefono})` : ''}</option>
-                                ))}
-                              </>
-                            );
-                          })()}
-                        </select>
+
+                        {/* Switch para ocultar líderes existentes si se desea */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.2rem 0.1rem' }}>
+                          <label style={{ fontSize: '0.74rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer', userSelect: 'none' }}>
+                            <input 
+                              type="checkbox" 
+                              checked={promoteHideExistingLeaders} 
+                              onChange={(e) => setPromoteHideExistingLeaders(e.target.checked)} 
+                            />
+                            Ocultar miembros que ya tienen rol de líder ({usuarios.filter(u => {
+                              const r = (u.rol || '').toUpperCase();
+                              const isLead = r === 'LIDER' || r === 'ADMIN_IGLESIA' || r === 'SUPERADMIN';
+                              return isLead && miembros.some(m => (u.persona?.id && u.persona.id === m.id) || (u.email && m.correo && u.email.toLowerCase() === m.correo.toLowerCase()));
+                            }).length})
+                          </label>
+                        </div>
+
+                        {(() => {
+                          const norm = (t: string) => (t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+                          const avail = promoteHideExistingLeaders
+                            ? miembros.filter(m => !usuarios.some(u => {
+                                const r = (u.rol || '').toUpperCase();
+                                const isLead = r === 'LIDER' || r === 'ADMIN_IGLESIA' || r === 'SUPERADMIN';
+                                if (!isLead) return false;
+                                return (u.persona?.id && u.persona.id === m.id) || (u.email && m.correo && u.email.toLowerCase() === m.correo.toLowerCase());
+                              }))
+                            : miembros;
+                          const q = norm(promoteMemberSearchFilter);
+                          const qTel = promoteMemberSearchFilter.replace(/\D/g, '');
+                          const filtered = avail.filter(m => {
+                            if (!promoteMemberSearchFilter.trim()) return true;
+                            return norm(m.nombre).includes(q) || (qTel && (m.telefono || '').replace(/\D/g, '').includes(qTel)) || (m.correo || '').toLowerCase().includes(q);
+                          });
+
+                          const selectedMember = miembros.find(m => m.id === promoteMemberId);
+                          const selectedMemberUser = selectedMember ? usuarios.find(u => {
+                            const r = (u.rol || '').toUpperCase();
+                            const isLead = r === 'LIDER' || r === 'ADMIN_IGLESIA' || r === 'SUPERADMIN';
+                            if (!isLead) return false;
+                            return (u.persona?.id && u.persona.id === selectedMember.id) || (u.email && selectedMember.correo && u.email.toLowerCase() === selectedMember.correo.toLowerCase());
+                          }) : null;
+
+                          return (
+                            <>
+                              <select 
+                                value={promoteMemberId} 
+                                onChange={(e) => {
+                                  const id = e.target.value;
+                                  setPromoteMemberId(id);
+                                  const found = miembros.find(m => m.id === id);
+                                  setPromoteMemberName(found ? found.nombre : "");
+                                }} 
+                                style={{ padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: 'white' }}
+                                required
+                              >
+                                <option value="">Selecciona un miembro ({filtered.length} disponibles)...</option>
+                                {filtered.map(m => {
+                                  const roleInfo = usuarios.find(u => {
+                                    const r = (u.rol || '').toUpperCase();
+                                    const isLead = r === 'LIDER' || r === 'ADMIN_IGLESIA' || r === 'SUPERADMIN';
+                                    if (!isLead) return false;
+                                    return (u.persona?.id && u.persona.id === m.id) || (u.email && m.correo && u.email.toLowerCase() === m.correo.toLowerCase());
+                                  });
+                                  const badge = roleInfo 
+                                    ? (roleInfo.rol === 'SUPERADMIN' ? '👑 Superadmin' : roleInfo.rol === 'ADMIN_IGLESIA' ? '🛡️ Admin' : '🔑 Líder') 
+                                    : '';
+
+                                  return (
+                                    <option key={m.id} value={m.id}>
+                                      👤 {m.nombre} {m.telefono && m.telefono !== "Sin teléfono" ? `(${m.telefono})` : ''} {badge ? `• [${badge}]` : ''}
+                                    </option>
+                                  );
+                                })}
+                              </select>
+
+                              {selectedMemberUser && (
+                                <div style={{ fontSize: '0.76rem', color: '#0369a1', background: '#e0f2fe', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #bae6fd', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                  <span>ℹ️</span>
+                                  <span><strong>{selectedMember?.nombre}</strong> ya tiene rol de <strong>{selectedMemberUser.rol}</strong>. Al guardar se le sumará esta nueva función/directiva a su perfil.</span>
+                                </div>
+                              )}
+
+                              {filtered.length === 0 && (
+                                <div style={{ fontSize: '0.78rem', color: '#64748b', background: '#f8fafc', padding: '0.6rem', borderRadius: '6px', border: '1px solid #e2e8f0', marginTop: '0.2rem', lineHeight: '1.4' }}>
+                                  {miembros.length === 0 ? (
+                                    <span>⚠️ No hay miembros cargados aún. Haz clic en <strong>🔄 Actualizar lista</strong> o agrega miembros en la pestaña <strong>Miembros</strong>.</span>
+                                  ) : (
+                                    <span>🔍 No se encontró ningún miembro con &quot;{promoteMemberSearchFilter}&quot;. Revisa el nombre o teléfono.</span>
+                                  )}
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
@@ -7593,7 +7771,16 @@ const allSystemIcons = [
                       <button onClick={() => setShowBulkImportModal(false)} style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>&times;</button>
                     </div>
 
-                    <BulkImportSection gruposConexion={gruposConexion} sociedades={sociedades} />
+                    <BulkImportSection 
+                      gruposConexion={gruposConexion} 
+                      sociedades={sociedades} 
+                      onImportSuccess={() => {
+                        fetch("/api/miembros")
+                          .then(r => r.json())
+                          .then(d => { if (!d.error && Array.isArray(d)) setMiembros(d); })
+                          .catch(() => {});
+                      }}
+                    />
                   </div>
                 </div>
               )}
@@ -9441,7 +9628,7 @@ const allSystemIcons = [
   );
 }
 
-function BulkImportSection({ gruposConexion, sociedades }: { gruposConexion: any[], sociedades: any[] }) {
+function BulkImportSection({ gruposConexion, sociedades, onImportSuccess }: { gruposConexion: any[], sociedades: any[], onImportSuccess?: () => void }) {
   const [pastedText, setPastedText] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ success: boolean; count: number; errors: any[] } | null>(null);
@@ -9578,6 +9765,9 @@ function BulkImportSection({ gruposConexion, sociedades }: { gruposConexion: any
           errors: resData.errors || [],
         });
         setPastedText("");
+        if (onImportSuccess) {
+          onImportSuccess();
+        }
       }
     } catch (e) {
       console.error(e);

@@ -570,14 +570,22 @@ export async function POST(request: Request) {
       }
 
       case "addLider": {
-        const { nombre_lider, modulo_id, alcance_tipo, sociedad_id, grupo_conexion_id, grupo_trabajo_id, rol, paginas_acceso } = data;
+        const { nombre_lider, persona_id, modulo_id, alcance_tipo, sociedad_id, grupo_conexion_id, grupo_trabajo_id, rol, paginas_acceso } = data;
         const targetRol = rol || "LIDER";
         const targetPages = Array.isArray(paginas_acceso) ? paginas_acceso.join(",") : (paginas_acceso || null);
 
-        // Intentar encontrar una persona con ese nombre o crearla
-        let persona = await prisma.persona.findFirst({
-          where: { nombre: nombre_lider, iglesia_id: defaultIglesiaId },
-        });
+        // Intentar encontrar una persona por persona_id o por nombre o crearla
+        let persona = null;
+        if (persona_id) {
+          persona = await prisma.persona.findFirst({
+            where: { id: persona_id, iglesia_id: defaultIglesiaId },
+          });
+        }
+        if (!persona && nombre_lider) {
+          persona = await prisma.persona.findFirst({
+            where: { nombre: nombre_lider, iglesia_id: defaultIglesiaId },
+          });
+        }
 
         // Validar límites del Plan SaaS
         const iglesia = await prisma.iglesia.findUnique({
@@ -636,11 +644,16 @@ export async function POST(request: Request) {
         }
 
         if (!persona) {
+          const lastStage = await prisma.etapaConfig.findFirst({
+            where: { iglesia_id: defaultIglesiaId },
+            orderBy: { orden_secuencial: 'desc' }
+          });
+
           persona = await prisma.persona.create({
             data: {
               iglesia_id: defaultIglesiaId,
               nombre: nombre_lider,
-              etapa_id: "etapa-3", // Por defecto en la última etapa si es líder
+              etapa_id: lastStage?.id || "etapa-3",
             },
           });
         }

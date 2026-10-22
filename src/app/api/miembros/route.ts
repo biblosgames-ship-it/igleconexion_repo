@@ -73,7 +73,7 @@ export async function GET() {
         sociedad: m.grupo_conexion?.sociedad?.nombre_sociedad || "Sociedad General",
         grupo_conexion: m.grupo_conexion?.nombre_grupo || "Grupo General",
         etapa_id: m.etapa_id,
-        etapa_nombre: m.etapa.nombre_etapa,
+        etapa_nombre: m.etapa?.nombre_etapa || "Sin etapa",
         dias_transcurridos: diasTranscurridos,
         tareas_completadas: m.historial_tareas.map((ht) => ht.tarea_id),
         subtareas_completadas: m.historial_subtareas.map((hs) => hs.subtarea_id),
@@ -88,9 +88,9 @@ export async function GET() {
         etiquetas: m.etiquetas.map((pe) => ({
           id: pe.id,
           etiqueta_id: pe.etiqueta_id,
-          nombre: pe.etiqueta.nombre,
-          color: pe.etiqueta.color,
-          icono: pe.etiqueta.icono,
+          nombre: pe.etiqueta?.nombre || "Etiqueta",
+          color: pe.etiqueta?.color || "#cbd5e1",
+          icono: pe.etiqueta?.icono || "🏷️",
           fecha_fin: pe.fecha_fin,
           notas: pe.notas,
           creado_por: pe.creado_por
